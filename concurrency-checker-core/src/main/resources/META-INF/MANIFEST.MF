@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Created-By: 1.8.0_05-b13 (Oracle Corporation)
+Implementation-Vendor: Anarsoft
+Implementation-Title: VMLens Agent
+Implementation-Version: 2.0.0.201511181111
+Can-Retransform-Classes: true
+Can-Redefine-Classes: true
+Premain-Class: concurrencytest.agent.Agent
