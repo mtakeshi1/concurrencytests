@@ -7,7 +7,9 @@
 - Better error output (thread monitor / lock status)
 - Better lock / monitor information
 - Recoded output and re-run with recorded output
-
+- Polymorphic checkpoints
+- better checkpoint names and details
+- 
 
 # Nice to haves
 

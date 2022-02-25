@@ -5,7 +5,7 @@ import concurrencytest.annotations.TestParameters;
 
 import static concurrencytest.annotations.CheckpointInjectionPoint.*;
 
-@TestParameters(injectionPoints = {FIELDS, VOLATILE_FIELDS, ARRAYS, SYNCHRONIZED_METHODS, SYNCHRONIZED_BLOCKS, METHOD_CALL, LOCKS, ATOMIC_VARIABLES, MANUAL})
+@TestParameters(defaultCheckpoints = {VOLATILE_FIELD_WRITE,SYNCHRONIZED_METHODS, SYNCHRONIZED_BLOCKS, LOCKS, ATOMIC_VARIABLES})
 public class ExceptionalRacingCondition {
 
     private final Object monitor = new Object();

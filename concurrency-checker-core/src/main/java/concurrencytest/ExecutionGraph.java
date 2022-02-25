@@ -1,5 +1,7 @@
 package concurrencytest;
 
+import concurrencytest.checkpoint.CheckpointImpl;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -14,9 +16,9 @@ public class ExecutionGraph {
 
     private Node initialNode;
 
-    private final Map<Long, Checkpoint> checkpointMap = new ConcurrentHashMap<>();
+    private final Map<Long, CheckpointImpl> checkpointMap = new ConcurrentHashMap<>();
 
-    public Checkpoint computeCheckpointIfAbsent(long id, Function<Long, Checkpoint> generator) {
+    public CheckpointImpl computeCheckpointIfAbsent(long id, Function<Long, CheckpointImpl> generator) {
         return checkpointMap.computeIfAbsent(id, generator);
     }
 
@@ -71,10 +73,10 @@ public class ExecutionGraph {
         return visiting;
     }
 
-    public Checkpoint getExistingCheckpont(long id) {
-        Checkpoint checkpoint = this.checkpointMap.get(id);
+    public CheckpointImpl getExistingCheckpont(long id) {
+        CheckpointImpl checkpoint = this.checkpointMap.get(id);
         if (checkpoint == null) {
-            throw new RuntimeException("Checkpoint with id: " + id + " not found");
+            throw new RuntimeException("CheckpointImpl with id: " + id + " not found");
         }
         return checkpoint;
     }

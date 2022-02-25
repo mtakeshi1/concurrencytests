@@ -1,5 +1,6 @@
 package concurrencytest;
 
+import concurrencytest.checkpoint.CheckpointImpl;
 import concurrencytest.util.InstrospectionHelper;
 import concurrencytest.util.Murmur3A;
 import concurrencytest.util.ReflectionHelper;
@@ -33,7 +34,7 @@ public class TestRuntime {
 
     private final Collection<ManagedThread> managedThreads = new HashSet<>();
 
-    private final Checkpoint threadFinishedCheckpoint = new Checkpoint(-3, "thread-finished");
+    private final CheckpointImpl threadFinishedCheckpoint = new CheckpointImpl(-3, "thread-finished");
 
     private final LockMonitorObserver monitorObserver = new LockMonitorObserver("monitor");
     private final LockMonitorObserver lockObserver = new LockMonitorObserver("lock");
@@ -64,7 +65,7 @@ public class TestRuntime {
     }
 
     public ExecutionDescription execute(String firstNode) throws InterruptedException {
-        List<Map.Entry<String, Checkpoint>> pathTaken = new ArrayList<>();
+        List<Map.Entry<String, CheckpointImpl>> pathTaken = new ArrayList<>();
         List<String> path = new ArrayList<>();
         startManagedThreads();
         try {
@@ -145,7 +146,7 @@ public class TestRuntime {
     }
 
     public ExecutionDescription resumeFrom(Queue<String> pathPreffix) throws InterruptedException {
-        List<Map.Entry<String, Checkpoint>> pathTaken = new ArrayList<>();
+        List<Map.Entry<String, CheckpointImpl>> pathTaken = new ArrayList<>();
         List<String> path = new ArrayList<>();
         startManagedThreads();
         try {
@@ -225,7 +226,7 @@ public class TestRuntime {
     }
 
     public ExecutionDescription executeFork(ThreadPoolExecutor executor) throws InterruptedException {
-        List<Map.Entry<String, Checkpoint>> pathTaken = new ArrayList<>();
+        List<Map.Entry<String, CheckpointImpl>> pathTaken = new ArrayList<>();
         List<String> path = new ArrayList<>();
         startManagedThreads();
         try {
@@ -393,7 +394,7 @@ public class TestRuntime {
         for (int i = 1; i < t.getStackTrace().length; i++) {
             sb.append(t.getStackTrace()[i].toString()).append("\n");
         }
-        Checkpoint c = testRuntime.getOrCreateCheckpoint(name, sb.toString(), Map.of("this", _this));
+        CheckpointImpl c = testRuntime.getOrCreateCheckpoint(name, sb.toString(), Map.of("this", _this));
         checkpointReached(c.getCheckpointId());
     }
 
@@ -474,7 +475,7 @@ public class TestRuntime {
             return;
         }
         ManagedThread managedThread = (ManagedThread) Thread.currentThread();
-        Checkpoint checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new Checkpoint(i, name, description, Collections.emptyMap()));
+        CheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new CheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.monitorObserver.waitingForMonitor(managedThread, monitor, description);
         managedThread.setCheckpointAndWait(checkpoint);
     }
@@ -485,7 +486,7 @@ public class TestRuntime {
             return;
         }
         ManagedThread thread = (ManagedThread) Thread.currentThread();
-        Checkpoint checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new Checkpoint(i, name, description, Collections.emptyMap()));
+        CheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new CheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.monitorObserver.monitorReleased(thread, monitor);
         thread.setCheckpointAndWait(checkpoint);
     }
@@ -496,7 +497,7 @@ public class TestRuntime {
             return;
         }
         ManagedThread managedThread = (ManagedThread) Thread.currentThread();
-        Checkpoint checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new Checkpoint(i, name, description, Collections.emptyMap()));
+        CheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new CheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.lockObserver.waitingForMonitor(managedThread, lock, description);
         managedThread.setCheckpointAndWait(checkpoint);
     }
@@ -507,17 +508,17 @@ public class TestRuntime {
             return;
         }
         ManagedThread thread = (ManagedThread) Thread.currentThread();
-        Checkpoint checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new Checkpoint(i, name, description, Collections.emptyMap()));
+        CheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new CheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.lockObserver.monitorReleased(thread, lock);
         thread.setCheckpointAndWait(checkpoint);
     }
 
-    private Checkpoint getOrCreateCheckpoint(String name, String description, Map<String, Object> context) {
+    private CheckpointImpl getOrCreateCheckpoint(String name, String description, Map<String, Object> context) {
         Murmur3A murmur3A = new Murmur3A(description.length());
         murmur3A.update(description.getBytes(StandardCharsets.UTF_8));
         murmur3A.update(name.getBytes(StandardCharsets.UTF_8));
         long value = murmur3A.getValue();
-        return graph.computeCheckpointIfAbsent(value, v -> new Checkpoint(v, name, description, context));
+        return graph.computeCheckpointIfAbsent(value, v -> new CheckpointImpl(v, name, description, context));
     }
 
 
@@ -527,7 +528,7 @@ public class TestRuntime {
             return;
         }
         ManagedThread thread = (ManagedThread) Thread.currentThread();
-        Checkpoint checkpoint = testRuntime.graph.getExistingCheckpont(id);
+        CheckpointImpl checkpoint = testRuntime.graph.getExistingCheckpont(id);
         if (checkpoint == null) {
             throw new RuntimeException("Unknown checkpoint with id: " + id);
         }
@@ -541,7 +542,7 @@ public class TestRuntime {
             return;
         }
         ManagedThread thread = (ManagedThread) Thread.currentThread();
-        Checkpoint checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new Checkpoint(i, name, description, Collections.emptyMap()));
+        CheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new CheckpointImpl(i, name, description, Collections.emptyMap()));
         thread.setCheckpointAndWait(checkpoint);
     }
 

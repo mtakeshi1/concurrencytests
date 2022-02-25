@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(ConcurrencyRunner.class)
-@TestParameters(parallelScenarios = 24, runTimeoutSeconds = 10000, actorTimeoutSeconds = 100000)
+@TestParameters(parallelScenarios = 24, runTimeoutSeconds = 10000, threadTimeoutSeconds = 100000)
 @Ignore
 public class LargerTest {
 

@@ -1,14 +1,16 @@
 package concurrencytest;
 
+import concurrencytest.checkpoint.CheckpointImpl;
+
 import java.util.Map;
 import java.util.Objects;
 
 public class Path {
     private final String actorIdentification;
-    private final Checkpoint checkpoint;
-    private final Map<String, Checkpoint> state;
+    private final CheckpointImpl checkpoint;
+    private final Map<String, CheckpointImpl> state;
 
-    public Path(String actorIdentification, Checkpoint checkpointId, Map<String, Checkpoint> state) {
+    public Path(String actorIdentification, CheckpointImpl checkpointId, Map<String, CheckpointImpl> state) {
         this.actorIdentification = actorIdentification;
         this.checkpoint = checkpointId;
         this.state = state;
@@ -31,11 +33,11 @@ public class Path {
         return actorIdentification;
     }
 
-    public Checkpoint getCheckpoint() {
+    public CheckpointImpl getCheckpoint() {
         return checkpoint;
     }
 
-    public Map<String, Checkpoint> getState() {
+    public Map<String, CheckpointImpl> getState() {
         return state;
     }
 }

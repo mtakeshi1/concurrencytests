@@ -1,11 +1,11 @@
-package concurrencytest;
+package concurrencytest.checkpoint;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class Checkpoint {
+public class CheckpointImpl {
 
     private final long checkpointId;
     private final String checkpointName;
@@ -13,14 +13,14 @@ public class Checkpoint {
     private final Map<String, Object> context;
 
 
-    public Checkpoint(long checkpointId, String checkpointName, String description, Map<String, Object> state) {
+    public CheckpointImpl(long checkpointId, String checkpointName, String description, Map<String, Object> state) {
         this.checkpointId = checkpointId;
         this.checkpointName = checkpointName;
         this.description = description;
         this.context = state;
     }
 
-    public Checkpoint(long checkpointId, String checkpointName) {
+    public CheckpointImpl(long checkpointId, String checkpointName) {
         this(checkpointId, checkpointName, checkpointName, Collections.emptyMap());
     }
 
@@ -45,7 +45,7 @@ public class Checkpoint {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Checkpoint that = (Checkpoint) o;
+        CheckpointImpl that = (CheckpointImpl) o;
         return checkpointId == that.checkpointId;
     }
 
@@ -56,7 +56,7 @@ public class Checkpoint {
 
     @Override
     public String toString() {
-        return "Checkpoint{" +
+        return "CheckpointImpl{" +
                 "checkpointId=" + checkpointId +
                 ", checkpointName='" + checkpointName + '\'' +
                 '}';

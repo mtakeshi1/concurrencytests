@@ -5,6 +5,7 @@ import concurrencytest.agent.InjectCheckpointVisitor;
 import concurrencytest.agent.OpenClassLoader;
 import concurrencytest.agent.ReadClassesVisitor;
 import concurrencytest.annotations.*;
+import concurrencytest.checkpoint.CheckpointImpl;
 import concurrencytest.util.ASMUtils;
 import concurrencytest.util.LongStatistics;
 import org.junit.After;
@@ -92,8 +93,8 @@ public class ConcurrencyRunner extends Runner {
         long lastTime = System.currentTimeMillis();
         ExecutionGraph graph = new ExecutionGraph();
         LongStatistics results = new LongStatistics();
-        Checkpoint initial = graph.computeCheckpointIfAbsent(-1, v -> new Checkpoint(v, "task-start"));
-        Checkpoint end = graph.computeCheckpointIfAbsent(-2, v -> new Checkpoint(v, "finish"));
+        CheckpointImpl initial = graph.computeCheckpointIfAbsent(-1, v -> new CheckpointImpl(v, "task-start"));
+        CheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new CheckpointImpl(v, "finish"));
         try {
             do {
                 if(doExecuteRunner(notifier, graph, executionCount, initial, end, parameters, actualTestClass, results)) {
@@ -147,8 +148,8 @@ public class ConcurrencyRunner extends Runner {
                     Queue<String> preffix = new ArrayDeque<>(preffixes[i]);
                     ExecutionGraph graph = graphs[i];
                     if (hasUnvisitesNodes(graph, preffix)) {
-                        Checkpoint initial = graph.computeCheckpointIfAbsent(-1, v -> new Checkpoint(v, "task-start"));
-                        Checkpoint end = graph.computeCheckpointIfAbsent(-2, v -> new Checkpoint(v, "finish"));
+                        CheckpointImpl initial = graph.computeCheckpointIfAbsent(-1, v -> new CheckpointImpl(v, "task-start"));
+                        CheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new CheckpointImpl(v, "finish"));
                         futures.add(executorService.submit(() -> doExecuteRunner(notifier, graph, executionCount, initial, end, preffix, parameters, actualTestClass, results)));
                     }
                 }
@@ -316,7 +317,7 @@ public class ConcurrencyRunner extends Runner {
                     }
                 };
                 CheckClassAdapter adapter = new CheckClassAdapter(writer, false);
-                InjectCheckpointVisitor outer = new InjectCheckpointVisitor(adapter, toRename.getName(), idGen::incrementAndGet, originalNames, unresolvedClassNames, Arrays.asList(parameters.injectionPoints()));
+                InjectCheckpointVisitor outer = new InjectCheckpointVisitor(adapter, toRename.getName(), idGen::incrementAndGet, originalNames, unresolvedClassNames, Arrays.asList(parameters.defaultCheckpoints()));
                 ClassRemapper remapper = new ClassRemapper(outer, simpleRemapper);
                 reader.accept(remapper, ClassReader.EXPAND_FRAMES);
                 byte[] bytecode = writer.toByteArray();
@@ -361,14 +362,14 @@ public class ConcurrencyRunner extends Runner {
         return graph.getInitialNode() == null || graph.getInitialNode().findNeighboor(node) == null || graph.getInitialNode().findNeighboor(node).hasUnvisitedState();
     }
 
-    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, Checkpoint initial, Checkpoint end,
+    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, CheckpointImpl initial, CheckpointImpl end,
                                     TestParameters parameters, Class<?> actualTestClass, LongStatistics results) {
         try {
             final Object hostInstance = actualTestClass.getConstructor().newInstance();
             invokeBefore(hostInstance, notifier);
             Runnable invariants = () -> invokeAnnotatedMethods(hostInstance, Invariant.class, notifier);
             TestActor[] array = Arrays.stream(actualTestClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(m -> this.toRunnable(m, hostInstance, initial, end, notifier)).toArray(TestActor[]::new);
-            TestRuntime runtime = new TestRuntime(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.actorTimeoutSeconds(), parameters.randomPick(), loader);
+            TestRuntime runtime = new TestRuntime(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.threadTimeoutSeconds(), parameters.randomPick(), loader);
             ExecutionDescription description = runtime.execute();
             try {
                 if (description == null) {
@@ -395,14 +396,14 @@ public class ConcurrencyRunner extends Runner {
         return false;
     }
 
-    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, Checkpoint initial, Checkpoint end,
+    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, CheckpointImpl initial, CheckpointImpl end,
                                     Queue<String> pathPreffix, TestParameters parameters, Class<?> actualTestClass, LongStatistics results) {
         try {
             final Object hostInstance = actualTestClass.getConstructor().newInstance();
             invokeBefore(hostInstance, notifier);
             Runnable invariants = () -> invokeAnnotatedMethods(hostInstance, Invariant.class, notifier);
             TestActor[] array = Arrays.stream(actualTestClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(m -> this.toRunnable(m, hostInstance, initial, end, notifier)).toArray(TestActor[]::new);
-            TestRuntime runtime = new TestRuntime(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.actorTimeoutSeconds(), parameters.randomPick(), loader);
+            TestRuntime runtime = new TestRuntime(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.threadTimeoutSeconds(), parameters.randomPick(), loader);
             ExecutionDescription description = runtime.resumeFrom(pathPreffix);
             try {
                 if (description == null) {
@@ -466,7 +467,7 @@ public class ConcurrencyRunner extends Runner {
             }
 
             @Override
-            public CheckpointInjectionPoint[] injectionPoints() {
+            public CheckpointInjectionPoint[] defaultCheckpoints() {
                 return new CheckpointInjectionPoint[]{CheckpointInjectionPoint.ALL};
             }
 
@@ -496,7 +497,7 @@ public class ConcurrencyRunner extends Runner {
             }
 
             @Override
-            public int actorTimeoutSeconds() {
+            public int threadTimeoutSeconds() {
                 return TestRuntime.DEFAULT_ACTOR_TIMEOUT_SECONDS;
             }
 
@@ -515,7 +516,7 @@ public class ConcurrencyRunner extends Runner {
         invokeAnnotatedMethods(hostInstance, Before.class, notifier);
     }
 
-    private TestActor toRunnable(Method method, Object hostInstance, Checkpoint initialCheckpoint, Checkpoint finishedCheckpoint, RunNotifier notifier) {
+    private TestActor toRunnable(Method method, Object hostInstance, CheckpointImpl initialCheckpoint, CheckpointImpl finishedCheckpoint, RunNotifier notifier) {
         try {
             Runnable task = new Runnable() {
                 @Override

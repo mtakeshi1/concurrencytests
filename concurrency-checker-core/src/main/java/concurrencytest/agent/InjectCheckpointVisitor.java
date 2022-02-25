@@ -53,7 +53,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
         }
         set.addAll(injectionPoints);
         if (injectionPoints.contains(CheckpointInjectionPoint.FIELDS)) {
-            set.add(CheckpointInjectionPoint.VOLATILE_FIELDS);
+            set.add(CheckpointInjectionPoint.VOLATILE_FIELD_WRITE);
         }
         return set;
     }
@@ -235,7 +235,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
                 default:
                     description = "<unknown> " + owner + "." + name + " - " + descriptor;
             }
-            if (injectionPoints.contains(CheckpointInjectionPoint.FIELDS) || (fieldIsVolatile(owner, name) && injectionPoints.contains(CheckpointInjectionPoint.VOLATILE_FIELDS))) {
+            if (injectionPoints.contains(CheckpointInjectionPoint.FIELDS) || (fieldIsVolatile(owner, name) && injectionPoints.contains(CheckpointInjectionPoint.VOLATILE_FIELD_WRITE))) {
                 visitCheckpoint(description);
             }
         }
@@ -421,18 +421,18 @@ public class InjectCheckpointVisitor extends ClassVisitor {
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 return;
             }
-            if (Type.getInternalName(TestRuntime.class).equals(owner) && !injectionPoints.contains(CheckpointInjectionPoint.MANUAL)) {
-                //unwind method arguments
-                Type[] argumentTypes = Type.getMethodType(descriptor).getArgumentTypes();
-                for (var argType : argumentTypes) {
-                    if (argType.getSize() == 2) {
-                        super.visitInsn(Opcodes.DUP2);
-                    } else {
-                        super.visitInsn(Opcodes.DUP);
-                    }
-                }
-                return;
-            }
+//            if (Type.getInternalName(TestRuntime.class).equals(owner) && !injectionPoints.contains(CheckpointInjectionPoint.MANUAL)) {
+//                unwind method arguments
+//                Type[] argumentTypes = Type.getMethodType(descriptor).getArgumentTypes();
+//                for (var argType : argumentTypes) {
+//                    if (argType.getSize() == 2) {
+//                        super.visitInsn(Opcodes.DUP2);
+//                    } else {
+//                        super.visitInsn(Opcodes.DUP);
+//                    }
+//                }
+//                return;
+//            }
             String methodDetails;
             switch (opcode) {
                 case Opcodes.INVOKESTATIC:

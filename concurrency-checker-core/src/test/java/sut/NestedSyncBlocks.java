@@ -8,7 +8,7 @@ import sut.mock.Session;
 import sut.mock.SessionManager;
 import sut.mock.SessionState;
 
-@TestParameters(parallelScenarios = 1, injectionPoints = {CheckpointInjectionPoint.SYNCHRONIZED_BLOCKS, CheckpointInjectionPoint.MANUAL})
+@TestParameters(parallelScenarios = 1, defaultCheckpoints = {CheckpointInjectionPoint.SYNCHRONIZED_BLOCKS})
 public class NestedSyncBlocks {
 
     private final SessionManager sessionManager = new SessionManager();

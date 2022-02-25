@@ -15,9 +15,9 @@ public @interface TestParameters {
 
     Class<?>[] instrumentedClasses() default {};
 
-    int maxLoopCount() default 1000;
+    int maxLoopCount() default 100;
 
-    int actorTimeoutSeconds() default 10;
+    int threadTimeoutSeconds() default 10;
 
     int runTimeoutSeconds() default 10;
 
@@ -27,6 +27,9 @@ public @interface TestParameters {
 
     int parallelScenarios() default -1;
 
-    CheckpointInjectionPoint[]  injectionPoints() default {CheckpointInjectionPoint.ALL};
+    CheckpointInjectionPoint[] defaultCheckpoints() default {
+            CheckpointInjectionPoint.VOLATILE_FIELD_WRITE, CheckpointInjectionPoint.ARRAYS, CheckpointInjectionPoint.SYNCHRONIZED_METHODS,
+            CheckpointInjectionPoint.SYNCHRONIZED_BLOCKS, CheckpointInjectionPoint.ATOMIC_VARIABLES, CheckpointInjectionPoint.LOCKS
+    };
 
 }

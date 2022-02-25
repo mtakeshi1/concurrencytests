@@ -5,7 +5,7 @@ import concurrencytest.annotations.TestParameters;
 import org.junit.After;
 import org.junit.Assert;
 
-@TestParameters(actorTimeoutSeconds = 1, runTimeoutSeconds = 2)
+@TestParameters(threadTimeoutSeconds = 1, runTimeoutSeconds = 2)
 public class RacyIndySynchronizedMethodRef {
 
 

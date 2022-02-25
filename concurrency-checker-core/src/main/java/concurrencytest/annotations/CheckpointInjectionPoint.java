@@ -3,7 +3,7 @@ package concurrencytest.annotations;
 public enum CheckpointInjectionPoint {
     ALL,
     FIELDS,
-    VOLATILE_FIELDS,
+    VOLATILE_FIELD_WRITE,
     ARRAYS,
     SYNCHRONIZED_METHODS,
     SYNCHRONIZED_BLOCKS,
@@ -11,7 +11,6 @@ public enum CheckpointInjectionPoint {
     LOCKS,
     ATOMIC_VARIABLES,
     EXCEPTION_THROWN,
-    TRY_CATCH_BLOCK,
-    MANUAL
+    TRY_CATCH_BLOCK
 
 }

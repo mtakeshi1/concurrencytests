@@ -1,5 +1,7 @@
 package concurrencytest;
 
+import concurrencytest.checkpoint.CheckpointImpl;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -9,22 +11,22 @@ public class ExecutionDescription {
 
     private final Throwable error;
 
-    private final List<Map.Entry<String, Checkpoint>> path;
+    private final List<Map.Entry<String, CheckpointImpl>> path;
 
-    private ExecutionDescription(Throwable error, List<Map.Entry<String, Checkpoint>> path) {
+    private ExecutionDescription(Throwable error, List<Map.Entry<String, CheckpointImpl>> path) {
         this.error = error;
         this.path = path;
     }
 
-    private ExecutionDescription(List<Map.Entry<String, Checkpoint>> path) {
+    private ExecutionDescription(List<Map.Entry<String, CheckpointImpl>> path) {
         this(null, path);
     }
 
-    public static ExecutionDescription executionCompleted(List<Map.Entry<String, Checkpoint>> pathTaken) {
+    public static ExecutionDescription executionCompleted(List<Map.Entry<String, CheckpointImpl>> pathTaken) {
         return new ExecutionDescription(pathTaken);
     }
 
-    public static ExecutionDescription deadlockFound(Collection<ManagedThread> alive, List<Map.Entry<String, Checkpoint>> pathTaken) {
+    public static ExecutionDescription deadlockFound(Collection<ManagedThread> alive, List<Map.Entry<String, CheckpointImpl>> pathTaken) {
 //        throw new RuntimeException("TODO");
         //TODO add more information
         Collection<String> collect = alive.stream().map(ManagedThread::getName).collect(Collectors.toList());
@@ -40,7 +42,7 @@ public class ExecutionDescription {
         return error;
     }
 
-    public List<Map.Entry<String, Checkpoint>> getPath() {
+    public List<Map.Entry<String, CheckpointImpl>> getPath() {
         return path;
     }
 

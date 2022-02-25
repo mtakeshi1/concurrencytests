@@ -9,8 +9,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
@@ -42,9 +40,7 @@ public class Agent {
                 @Override
                 public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
                     if (classInternalNames.contains(className)) {
-                        byte[] bytes = injectCheckpoints(className, loader, classfileBuffer, idGenerator::incrementAndGet, unresolvedClassNames, injectionPoints);
-                        dump(bytes, className);
-                        return bytes;
+                        return injectCheckpoints(className, loader, classfileBuffer, idGenerator::incrementAndGet, unresolvedClassNames, injectionPoints);
                     }
                     return null;
 
@@ -64,14 +60,6 @@ public class Agent {
             for (Class agentClass : callbacks) {
                 invokeAgentDone(agentClass, null);
             }
-        }
-    }
-
-    private static void dump(byte[] bytes, String className) {
-        String fname = "/tmp/" + className.substring(className.lastIndexOf('/') + 1) + ".class";
-        try (var fout = new FileOutputStream(fname)) {
-            fout.write(bytes);
-        } catch (IOException e) {
         }
     }
 

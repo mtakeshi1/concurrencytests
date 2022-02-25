@@ -1,5 +1,7 @@
 package concurrencytest;
 
+import concurrencytest.checkpoint.CheckpointImpl;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -7,11 +9,11 @@ public class ManagedThread extends Thread {
 
     private final TestRuntime testRuntime;
     private int loopCount;
-    private Checkpoint checkpoint;
+    private CheckpointImpl checkpoint;
     private final Object threadIdentification;
     private boolean allowedToContinue;
 
-    private LList<Checkpoint> reachedCheckpoints = LList.empty();
+    private LList<CheckpointImpl> reachedCheckpoints = LList.empty();
 
     //TODO record monitor / lock states
     private String waitingForMonitorOrLock;
@@ -33,7 +35,7 @@ public class ManagedThread extends Thread {
         return loopCount;
     }
 
-    public synchronized Checkpoint getCheckpoint() {
+    public synchronized CheckpointImpl getCheckpoint() {
         return checkpoint;
     }
 
@@ -44,11 +46,11 @@ public class ManagedThread extends Thread {
         }
     }
 
-    public LList<Checkpoint> getReachedCheckpoints() {
+    public LList<CheckpointImpl> getReachedCheckpoints() {
         return reachedCheckpoints;
     }
 
-    public synchronized void setCheckpointAndWait(Checkpoint checkpoint) {
+    public synchronized void setCheckpointAndWait(CheckpointImpl checkpoint) {
         if (testRuntime.isDisabled()) {
             return;
         }
