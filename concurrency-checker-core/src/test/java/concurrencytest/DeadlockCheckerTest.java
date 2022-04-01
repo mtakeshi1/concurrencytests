@@ -1,21 +1,21 @@
 package concurrencytest;
 
+import concurrencytest.exception.DeadlockFoundException;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
-import sut.ExceptionalRacingCondition;
 import sut.NestedSyncBlocks;
 import sut.ShouldDetectDeadlockTest;
 
-public class DeadlockChecker extends RunListener {
+public class DeadlockCheckerTest extends RunListener {
 
     private volatile Throwable failure;
 
     @Test
-    public void run() throws Exception {
+    public void run() {
         ConcurrencyRunner runner = new ConcurrencyRunner(ShouldDetectDeadlockTest.class);
         RunNotifier notifier = new RunNotifier();
         notifier.addListener(this);
@@ -36,9 +36,8 @@ public class DeadlockChecker extends RunListener {
     }
 
 
-
     @Override
-    public void testFailure(Failure failure) throws Exception {
+    public void testFailure(Failure failure) {
         this.failure = failure.getException();
     }
 }

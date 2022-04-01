@@ -17,8 +17,6 @@
 package concurrencytest.util;
 
 
-import concurrencytest.PrimitiveArrayUtils;
-
 import java.util.zip.Checksum;
 
 /**

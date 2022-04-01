@@ -1,4 +1,4 @@
-package concurrencytest;
+package concurrencytest.util;
 
 /*
  * Copyright (C) 2014-2020 Markus Junginger, greenrobot (http://greenrobot.org)

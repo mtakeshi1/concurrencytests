@@ -1,6 +1,7 @@
 package concurrencytest;
 
 import concurrencytest.checkpoint.CheckpointImpl;
+import concurrencytest.exception.DeadlockFoundException;
 
 import java.util.Collection;
 import java.util.List;

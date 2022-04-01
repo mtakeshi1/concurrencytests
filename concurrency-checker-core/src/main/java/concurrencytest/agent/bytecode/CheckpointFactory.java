@@ -1,4 +1,4 @@
-package concurrencytest.bytecode;
+package concurrencytest.agent.bytecode;
 
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;

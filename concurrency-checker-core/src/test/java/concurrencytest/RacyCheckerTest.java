@@ -1,5 +1,6 @@
 package concurrencytest;
 
+import concurrencytest.exception.DeadlockFoundException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.notification.Failure;
@@ -11,31 +12,31 @@ import sut.RacyIndyLambda;
 import sut.ShouldDetectDeadlockTest;
 
 
-public class RacyChecker extends RunListener {
+public class RacyCheckerTest extends RunListener {
 
     private volatile Throwable failure;
 
     @Test
-    public void deadlockCheck() throws Exception {
+    public void deadlockCheck() {
         checkShouldFail(ShouldDetectDeadlockTest.class, "Should have detected deadlock", DeadlockFoundException.class);
     }
 
     @Test
-    public void runField() throws Exception {
+    public void runField() {
         checkShouldFail(RacyActorsFieldAccess.class, "Should have failed racing condition with field access", AssertionError.class);
     }
 
     @Test
-    public void runMethod() throws Exception {
+    public void runMethod() {
         checkShouldFail(RacyActorsGetters.class, "Should detect racing condition with method calls", AssertionError.class);
     }
 
     @Test
-    public void testIndyLambda() throws Exception {
+    public void testIndyLambda() {
         checkShouldFail(RacyIndyLambda.class, "Should detect racing condition with indy to lambda", AssertionError.class);
     }
 
-    private void checkShouldFail(Class<?> sut, String description, Class<?> throwableType) throws Exception {
+    private void checkShouldFail(Class<?> sut, String description, Class<?> throwableType) {
         ConcurrencyRunner runner = new ConcurrencyRunner(sut);
         RunNotifier notifier = new RunNotifier();
         notifier.addListener(this);
@@ -45,7 +46,7 @@ public class RacyChecker extends RunListener {
     }
 
     @Override
-    public void testFailure(Failure failure) throws Exception {
+    public void testFailure(Failure failure) {
         this.failure = failure.getException();
         failure.getException().printStackTrace();
     }
