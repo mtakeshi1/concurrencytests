@@ -1,6 +1,6 @@
 package sut.mock;
 
-import concurrencytest.TestRuntime;
+import concurrencytest.TestRuntimeImpl;
 
 public class SessionManager {
 
@@ -10,7 +10,7 @@ public class SessionManager {
         SessionState state = new SessionState("brand new session");
         synchronized (state) {
             sharedSession.setSessionState(state);
-            TestRuntime.autoCheckpoint(this);
+            TestRuntimeImpl.autoCheckpoint(this);
             sharedSession.start();
         }
     }

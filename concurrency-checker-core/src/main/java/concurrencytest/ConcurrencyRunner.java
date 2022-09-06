@@ -97,7 +97,7 @@ public class ConcurrencyRunner extends Runner {
         CheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new CheckpointImpl(v, "finish"));
         try {
             do {
-                if(doExecuteRunner(notifier, graph, executionCount, initial, end, parameters, actualTestClass, results)) {
+                if (doExecuteRunner(notifier, graph, executionCount, initial, end, parameters, actualTestClass, results)) {
                     return;
                 }
                 if (lastTime + 10000 < System.currentTimeMillis()) {
@@ -203,7 +203,7 @@ public class ConcurrencyRunner extends Runner {
         }
         return calculatePreffixesRecursive(newCopy, initialThreadNames, maxLength);
     }
-
+    @SuppressWarnings("unchecked")
     private Queue<String>[] calculatePreffixes(String[] initialThreadNames, int maxLength) {
         List<Queue<String>> newCopy = new ArrayList<>(initialThreadNames.length);
         for (String newName : initialThreadNames) {
@@ -211,6 +211,7 @@ public class ConcurrencyRunner extends Runner {
             nq.add(newName);
             newCopy.add(nq);
         }
+
         List<Queue<String>> queues = calculatePreffixesRecursive(newCopy, initialThreadNames, maxLength);
         return queues.toArray(new Queue[queues.size()]);
     }
@@ -369,7 +370,7 @@ public class ConcurrencyRunner extends Runner {
             invokeBefore(hostInstance, notifier);
             Runnable invariants = () -> invokeAnnotatedMethods(hostInstance, Invariant.class, notifier);
             TestActor[] array = Arrays.stream(actualTestClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(m -> this.toRunnable(m, hostInstance, initial, end, notifier)).toArray(TestActor[]::new);
-            TestRuntime runtime = new TestRuntime(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.threadTimeoutSeconds(), parameters.randomPick(), loader);
+            TestRuntimeImpl runtime = new TestRuntimeImpl(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.threadTimeoutSeconds(), parameters.randomPick(), loader);
             ExecutionDescription description = runtime.execute();
             try {
                 if (description == null) {
@@ -403,7 +404,7 @@ public class ConcurrencyRunner extends Runner {
             invokeBefore(hostInstance, notifier);
             Runnable invariants = () -> invokeAnnotatedMethods(hostInstance, Invariant.class, notifier);
             TestActor[] array = Arrays.stream(actualTestClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(m -> this.toRunnable(m, hostInstance, initial, end, notifier)).toArray(TestActor[]::new);
-            TestRuntime runtime = new TestRuntime(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.threadTimeoutSeconds(), parameters.randomPick(), loader);
+            TestRuntimeImpl runtime = new TestRuntimeImpl(array, graph, invariants, executionCount.incrementAndGet(), parameters.maxLoopCount(), parameters.threadTimeoutSeconds(), parameters.randomPick(), loader);
             ExecutionDescription description = runtime.resumeFrom(pathPreffix);
             try {
                 if (description == null) {
@@ -493,12 +494,12 @@ public class ConcurrencyRunner extends Runner {
 
             @Override
             public int maxLoopCount() {
-                return TestRuntime.DEFAULT_MAX_LOOP_COUNT;
+                return TestRuntimeImpl.DEFAULT_MAX_LOOP_COUNT;
             }
 
             @Override
             public int threadTimeoutSeconds() {
-                return TestRuntime.DEFAULT_ACTOR_TIMEOUT_SECONDS;
+                return TestRuntimeImpl.DEFAULT_ACTOR_TIMEOUT_SECONDS;
             }
 
             @Override
@@ -527,7 +528,7 @@ public class ConcurrencyRunner extends Runner {
                         if (Modifier.isSynchronized(method.getModifiers())) {
                             Object lockTarget = Modifier.isStatic(method.getModifiers()) ? hostInstance.getClass() : hostInstance;
                             String checkpointName = method.getDeclaringClass().getName() + "." + method.getName() + " ( before monitor acquired )";
-                            TestRuntime.beforeMonitorAcquiredCheckpoint(lockTarget, runnerGeneratedCheckpointIds.decrementAndGet(), checkpointName, "");
+                            TestRuntimeImpl.beforeMonitorAcquiredCheckpoint(lockTarget, runnerGeneratedCheckpointIds.decrementAndGet(), checkpointName, "");
                         }
                         method.invoke(hostInstance);
                     } catch (InvocationTargetException e) {
@@ -542,7 +543,7 @@ public class ConcurrencyRunner extends Runner {
                         if (Modifier.isSynchronized(method.getModifiers())) {
                             Object lockTarget = Modifier.isStatic(method.getModifiers()) ? hostInstance.getClass() : hostInstance;
                             String checkpointName = method.getDeclaringClass().getName() + "." + method.getName() + " ( after monitor released )";
-                            TestRuntime.afterMonitorReleasedCheckpoint(lockTarget, runnerGeneratedCheckpointIds.decrementAndGet(), checkpointName, "");
+                            TestRuntimeImpl.afterMonitorReleasedCheckpoint(lockTarget, runnerGeneratedCheckpointIds.decrementAndGet(), checkpointName, "");
                         }
                         currentThread.setCheckpointAndWait(finishedCheckpoint);
                     }

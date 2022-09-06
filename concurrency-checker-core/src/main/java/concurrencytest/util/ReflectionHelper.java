@@ -1,19 +1,27 @@
 package concurrencytest.util;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.*;
 
-public class ReflectionHelper {
+public class ReflectionHelper implements ClassResolver {
 
     private static final Map<String, Class<?>> PRIMITIVE_CLASS_NAMES;
     private static final Map<Class<?>, String> PRIMITIVE_INTERNAL_NAMES;
 
+    private static final Map<Integer, String> OPCODE_NAMES;
+
     private static void populate(Class<?> c, Map<String, Class<?>> m) {
         m.put(c.getName(), c);
     }
+
+    private static final ReflectionHelper INSTANCE = new ReflectionHelper();
 
     static {
         HashMap<String, Class<?>> m = new HashMap<>();
@@ -39,6 +47,13 @@ public class ReflectionHelper {
         n.put(void.class, "V");
         PRIMITIVE_CLASS_NAMES = Collections.unmodifiableMap(m);
         PRIMITIVE_INTERNAL_NAMES = Collections.unmodifiableMap(n);
+        Map<Integer, String> map = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(ReflectionHelper.class.getResourceAsStream("/opcodes.properties")))) {
+            reader.lines().map(s -> s.split("=")).forEach(arr -> map.put(Integer.parseInt(arr[0]), arr[1]));
+        } catch (IOException | UncheckedIOException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+        OPCODE_NAMES = Collections.unmodifiableMap(map);
     }
 
     public static Class<?> resolveType(String className) throws ClassNotFoundException {
@@ -71,5 +86,54 @@ public class ReflectionHelper {
 
     public static boolean isUnmodifiableCollection(Class<?> type) {
         return type.getName().startsWith("java.util.Collections$Unmodifiable") && (Collection.class.isAssignableFrom(type) || Map.class.isAssignableFrom(type));
+    }
+
+    public static String renderOpcode(int opcode) {
+        return OPCODE_NAMES.get(opcode);
+    }
+
+    public static ClassResolver getInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    public Class<?> resolveName(String className) {
+        try {
+            return resolveType(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Method lookupMethod(Class<?> declaringClass, int access, String name, Class<?>[] args, Class<?> returnType) {
+        for (Method m : declaringClass.getDeclaredMethods()) {
+            if (m.getName().equals(name) && m.getReturnType().equals(returnType) && java.util.Arrays.equals(m.getParameterTypes(), args)) {
+                return m;
+            }
+        }
+        throw new RuntimeException(String.format("Could not find method with name %s, parameter types: %s and return type: %s on class: %s", name, Arrays.toString(args), returnType, declaringClass));
+    }
+
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> Constructor<T> lookupConstructor(Class<T> declaringClass, Class<?>[] args) {
+        for (Constructor<?> ctor : declaringClass.getConstructors()) {
+            if (Arrays.equals(ctor.getParameterTypes(), args)) {
+                return (Constructor<T>) ctor;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Field lookupField(Class<?> ownerType, String name) {
+        for (Field f : ownerType.getDeclaredFields()) {
+            if (f.getName().equals(name)) {
+                return f;
+            }
+        }
+        throw new RuntimeException(String.format("Could not find field %s on type: %s", name, ownerType.getName()));
     }
 }

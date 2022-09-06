@@ -27,7 +27,7 @@ public class ASMSample implements Opcodes {
         methodVisitor.visitInsn(LCONST_1);
         methodVisitor.visitLdcInsn("");
         methodVisitor.visitLdcInsn("");
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntime", "checkActualDispatchForStaticMethod", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)Z", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntimeImpl", "checkActualDispatchForStaticMethod", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)Z", false);
         methodVisitor.visitVarInsn(ISTORE, 2);
 
         methodVisitor.visitTryCatchBlock(label0, label1, label2, "java/lang/Throwable");
@@ -48,7 +48,7 @@ public class ASMSample implements Opcodes {
         methodVisitor.visitLdcInsn(2L);
         methodVisitor.visitLdcInsn("");
         methodVisitor.visitLdcInsn("");
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntime", "afterMonitorReleasedCheckpoint", "(Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntimeImpl", "afterMonitorReleasedCheckpoint", "(Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V", false);
         Label label8 = new Label();
         methodVisitor.visitJumpInsn(GOTO, label8);
         methodVisitor.visitLabel(label6);
@@ -56,7 +56,7 @@ public class ASMSample implements Opcodes {
         methodVisitor.visitLdcInsn(3L);
         methodVisitor.visitLdcInsn("");
         methodVisitor.visitLdcInsn("");
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntime", "checkpointReached", "(JLjava/lang/String;Ljava/lang/String;)V", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntimeImpl", "checkpointReached", "(JLjava/lang/String;Ljava/lang/String;)V", false);
         methodVisitor.visitLabel(label8);
         methodVisitor.visitLabel(label1);
 
@@ -76,14 +76,14 @@ public class ASMSample implements Opcodes {
         methodVisitor.visitLdcInsn(2L);
         methodVisitor.visitLdcInsn("");
         methodVisitor.visitLdcInsn("");
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntime", "afterMonitorReleasedCheckpoint", "(Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntimeImpl", "afterMonitorReleasedCheckpoint", "(Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V", false);
         Label label12 = new Label();
         methodVisitor.visitJumpInsn(GOTO, label12);
         methodVisitor.visitLabel(label10);
         methodVisitor.visitLdcInsn(3L);
         methodVisitor.visitLdcInsn("");
         methodVisitor.visitLdcInsn("");
-        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntime", "checkpointReached", "(JLjava/lang/String;Ljava/lang/String;)V", false);
+        methodVisitor.visitMethodInsn(INVOKESTATIC, "concurrencytest/TestRuntimeImpl", "checkpointReached", "(JLjava/lang/String;Ljava/lang/String;)V", false);
         methodVisitor.visitLabel(label12);
         methodVisitor.visitVarInsn(ALOAD, 3);
         methodVisitor.visitInsn(ATHROW);

@@ -16,15 +16,15 @@ public class ClassTest {
 
     public Object bla() throws Throwable {
         Object maybeMonitor = ClassTest.class;
-        boolean is = TestRuntime.checkActualDispatchForStaticMethod((Class<?>) maybeMonitor, "syncStaticMethod", "", 1, "", "");
+        boolean is = TestRuntimeImpl.checkActualDispatchForStaticMethod((Class<?>) maybeMonitor, "syncStaticMethod", "", 1, "", "");
         try {
             Object o = syncStaticMethod(1, 1, null);
             return o;
         } finally {
             if (is) {
-                TestRuntime.afterMonitorReleasedCheckpoint(maybeMonitor, 2, "", "");
+                TestRuntimeImpl.afterMonitorReleasedCheckpoint(maybeMonitor, 2, "", "");
             } else {
-                TestRuntime.checkpointReached(3, "", "");
+                TestRuntimeImpl.checkpointReached(3, "", "");
             }
         }
     }

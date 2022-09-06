@@ -12,7 +12,6 @@ public class CheckpointImpl {
     private final String description;
     private final Map<String, Object> context;
 
-
     public CheckpointImpl(long checkpointId, String checkpointName, String description, Map<String, Object> state) {
         this.checkpointId = checkpointId;
         this.checkpointName = checkpointName;
@@ -24,7 +23,7 @@ public class CheckpointImpl {
         this(checkpointId, checkpointName, checkpointName, Collections.emptyMap());
     }
 
-    public long getCheckpointId() {
+    public long checkpointId() {
         return checkpointId;
     }
 

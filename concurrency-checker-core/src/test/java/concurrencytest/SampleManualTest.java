@@ -26,9 +26,9 @@ public class SampleManualTest {
 
     @Actor
     public void actor1() {
-        TestRuntime.autoCheckpoint(this);
+        TestRuntimeImpl.autoCheckpoint(this);
         int localCount = counter + 1;
-        TestRuntime.autoCheckpoint(this);
+        TestRuntimeImpl.autoCheckpoint(this);
         counter = localCount;
         testArray(null, null, null, null, null, null);
     }
@@ -39,9 +39,9 @@ public class SampleManualTest {
 
     @Actor
     public void actor2() {
-        TestRuntime.autoCheckpoint(this);
+        TestRuntimeImpl.autoCheckpoint(this);
         int localCount = counter + 2;
-        TestRuntime.autoCheckpoint(this);
+        TestRuntimeImpl.autoCheckpoint(this);
         counter = localCount;
     }
 

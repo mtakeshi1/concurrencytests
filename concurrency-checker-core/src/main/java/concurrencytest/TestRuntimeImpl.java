@@ -16,11 +16,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
-public class TestRuntime {
+public class TestRuntimeImpl {
 
     public static final int DEFAULT_ACTOR_TIMEOUT_SECONDS = 10;
     public static final int DEFAULT_MAX_LOOP_COUNT = 1000;
-    private static final ThreadLocal<TestRuntime> CURRENT_RUNTIME = new ThreadLocal<>();
+    private static final ThreadLocal<TestRuntimeImpl> CURRENT_RUNTIME = new ThreadLocal<>();
 
     private final TestActor[] tasks;
     private final ExecutionGraph graph;
@@ -39,7 +39,7 @@ public class TestRuntime {
     private final LockMonitorObserver monitorObserver = new LockMonitorObserver("monitor");
     private final LockMonitorObserver lockObserver = new LockMonitorObserver("lock");
 
-    public TestRuntime(TestActor[] tasks, ExecutionGraph graph, Runnable invariantsCheck, int runNumber, int maxLoopCount, int actorTimeoutSeconds, boolean randomPick, ClassLoader loader) {
+    public TestRuntimeImpl(TestActor[] tasks, ExecutionGraph graph, Runnable invariantsCheck, int runNumber, int maxLoopCount, int actorTimeoutSeconds, boolean randomPick, ClassLoader loader) {
         this.tasks = tasks;
         this.graph = graph;
         this.group = new ThreadGroup("test-actor-group-#" + runNumber);
@@ -60,7 +60,7 @@ public class TestRuntime {
         }
     }
 
-    public static void setCurrentInstance(TestRuntime testRuntime) {
+    public static void setCurrentInstance(TestRuntimeImpl testRuntime) {
         CURRENT_RUNTIME.set(testRuntime);
     }
 
@@ -385,7 +385,7 @@ public class TestRuntime {
     }
 
     public static void autoCheckpoint(String name, Object _this) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -395,7 +395,7 @@ public class TestRuntime {
             sb.append(t.getStackTrace()[i].toString()).append("\n");
         }
         CheckpointImpl c = testRuntime.getOrCreateCheckpoint(name, sb.toString(), Map.of("this", _this));
-        checkpointReached(c.getCheckpointId());
+        checkpointReached(c.checkpointId());
     }
 
     public boolean isDisabled() {
@@ -403,7 +403,7 @@ public class TestRuntime {
     }
 
     public static void autoCheckpoint(Object _this) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -411,7 +411,7 @@ public class TestRuntime {
     }
 
     public static boolean checkActualDispatchForMonitor(Object callTarget, String methodName, String methodDescription, long checkpointId, String checkpointName, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return false;
         }
@@ -426,7 +426,7 @@ public class TestRuntime {
     }
 
     public static boolean checkActualDispatchForStaticMethod(Class<?> callTarget, String methodName, String methodDescription, long checkpointId, String checkpointName, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return false;
         }
@@ -470,7 +470,7 @@ public class TestRuntime {
     }
 
     public static void beforeMonitorAcquiredCheckpoint(Object monitor, long id, String name, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -481,7 +481,7 @@ public class TestRuntime {
     }
 
     public static void afterMonitorReleasedCheckpoint(Object monitor, long id, String name, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -492,7 +492,7 @@ public class TestRuntime {
     }
 
     public static void beforeLockAcquiredCheckpoint(Lock lock, long id, String name, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -503,7 +503,7 @@ public class TestRuntime {
     }
 
     public static void afterLockReleasedCheckpoint(Lock lock, long id, String name, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -523,7 +523,7 @@ public class TestRuntime {
 
 
     public static void checkpointReached(long id) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }
@@ -537,7 +537,7 @@ public class TestRuntime {
 
 
     public static void checkpointReached(long id, String name, String description) {
-        TestRuntime testRuntime = CURRENT_RUNTIME.get();
+        TestRuntimeImpl testRuntime = CURRENT_RUNTIME.get();
         if (testRuntime == null) {
             return;
         }

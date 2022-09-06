@@ -12,9 +12,15 @@ public @interface FieldCheckpoint {
 
     String declaringClassNameRegex() default ".+";
 
-    InjectionPoint[] points() default {InjectionPoint.AFTER};
-
     String fieldNameRegex();
+
+    //TODO maybe have a field type specifier?
+
+    InjectionPoint[] injectionPoints() default {InjectionPoint.AFTER};
+
+    AccessModifier[] accessModifiers() default {AccessModifier.PUBLIC, AccessModifier.PROTECTED, AccessModifier.DEFAULT, AccessModifier.PRIVATE};
+
+    BehaviourModifier[] behaviourModifiers() default {BehaviourModifier.STATIC, BehaviourModifier.SYNCHRONIZED, BehaviourModifier.VOLATILE, BehaviourModifier.TRANSIENT, BehaviourModifier.INSTANCE_MEMBER};
 
     boolean fieldRead() default false;
 

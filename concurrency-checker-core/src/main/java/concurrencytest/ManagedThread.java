@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ManagedThread extends Thread {
 
-    private final TestRuntime testRuntime;
+    private final TestRuntimeImpl testRuntime;
     private int loopCount;
     private CheckpointImpl checkpoint;
     private final Object threadIdentification;
@@ -19,7 +19,7 @@ public class ManagedThread extends Thread {
     private String waitingForMonitorOrLock;
     private List<String> ownedLocksAndMonitors;
 
-    public ManagedThread(ThreadGroup group, Runnable task, String threadIdentification, TestRuntime runtime) {
+    public ManagedThread(ThreadGroup group, Runnable task, String threadIdentification, TestRuntimeImpl runtime) {
         super(group, task, threadIdentification);
         this.threadIdentification = threadIdentification;
         this.testRuntime = runtime;
@@ -27,7 +27,7 @@ public class ManagedThread extends Thread {
 
     @Override
     public void run() {
-        TestRuntime.setCurrentInstance(this.testRuntime);
+        TestRuntimeImpl.setCurrentInstance(this.testRuntime);
         super.run();
     }
 

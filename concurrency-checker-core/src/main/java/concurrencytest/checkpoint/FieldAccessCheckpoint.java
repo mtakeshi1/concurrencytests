@@ -1,6 +1,6 @@
 package concurrencytest.checkpoint;
 
-public interface FieldCheckpoint extends Checkpoint {
+public interface FieldAccessCheckpoint extends Checkpoint {
 
     Class<?> declaringClass();
 

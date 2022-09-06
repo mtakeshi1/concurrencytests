@@ -14,4 +14,5 @@ public @interface LineNumberCheckpoint {
 
     int lineNumber();
 
+    InjectionPoint injectionPoint();
 }

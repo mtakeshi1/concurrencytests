@@ -1,6 +1,6 @@
 package concurrencytest.agent;
 
-import concurrencytest.TestRuntime;
+import concurrencytest.TestRuntimeImpl;
 import concurrencytest.annotations.CheckpointInjectionPoint;
 import concurrencytest.util.ReflectionHelper;
 import org.objectweb.asm.*;
@@ -179,7 +179,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
         @Override
         public void visitCode() {
             super.visitCode();
-//            if(Modifier.isSynchronized(originalAccessModifiers) && injectionPoints.contains(CheckpointInjectionPoint.SYNCHRONIZED_METHODS)) {
+//            if(BehaviourModifier.isSynchronized(originalAccessModifiers) && injectionPoints.contains(CheckpointInjectionPoint.SYNCHRONIZED_METHODS)) {
 //                outerTry = new Label();
 //                endTry = new Label();
 //                handler = new Label();
@@ -352,28 +352,28 @@ public class InjectCheckpointVisitor extends ClassVisitor {
             super.visitLdcInsn(checkpointIdGenerator.getAsLong());
             super.visitLdcInsn(checkpointName());
             super.visitLdcInsn(description);
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "beforeMonitorAcquiredCheckpoint", monitorDescriptor, false);
+            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "beforeMonitorAcquiredCheckpoint", monitorDescriptor, false);
         }
 
         private void afterMonitorCheckpoint(String description) {
             super.visitLdcInsn(checkpointIdGenerator.getAsLong());
             super.visitLdcInsn(checkpointName());
             super.visitLdcInsn(description);
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "afterMonitorReleasedCheckpoint", monitorDescriptor, false);
+            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "afterMonitorReleasedCheckpoint", monitorDescriptor, false);
         }
 
         private void beforeLockCheckpoint(String description) {
             super.visitLdcInsn(checkpointIdGenerator.getAsLong());
             super.visitLdcInsn(checkpointName());
             super.visitLdcInsn(description);
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "beforeLockAcquiredCheckpoint", monitorDescriptor, false);
+            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "beforeLockAcquiredCheckpoint", monitorDescriptor, false);
         }
 
         private void afterLockCheckpoint(String description) {
             super.visitLdcInsn(checkpointIdGenerator.getAsLong());
             super.visitLdcInsn(checkpointName());
             super.visitLdcInsn(description);
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "afterLockReleasedCheckpoint", lockDescriptor, false);
+            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "afterLockReleasedCheckpoint", lockDescriptor, false);
         }
 
         private void visitCheckpoint(String namePreffix, String description) {
@@ -381,7 +381,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
             super.visitLdcInsn(checkpointId);
             super.visitLdcInsn(namePreffix + checkpointName());
             super.visitLdcInsn(description);
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "checkpointReached", methodDescriptor, false);
+            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "checkpointReached", methodDescriptor, false);
         }
 
         private void visitCheckpoint(String description) {
@@ -421,7 +421,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 return;
             }
-//            if (Type.getInternalName(TestRuntime.class).equals(owner) && !injectionPoints.contains(CheckpointInjectionPoint.MANUAL)) {
+//            if (Type.getInternalName(TestRuntimeImpl.class).equals(owner) && !injectionPoints.contains(CheckpointInjectionPoint.MANUAL)) {
 //                unwind method arguments
 //                Type[] argumentTypes = Type.getMethodType(descriptor).getArgumentTypes();
 //                for (var argType : argumentTypes) {
@@ -533,9 +533,9 @@ public class InjectCheckpointVisitor extends ClassVisitor {
             super.visitLdcInsn(lastInstructionDescription);
 
             if (opcode == Opcodes.INVOKESTATIC) {
-                super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "checkActualDispatchForStaticMethod", checkStaticDispatchDescriptor, false);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "checkActualDispatchForStaticMethod", checkStaticDispatchDescriptor, false);
             } else {
-                super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntime.class), "checkActualDispatchForMonitor", checkDispatchDescriptor, false);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TestRuntimeImpl.class), "checkActualDispatchForMonitor", checkDispatchDescriptor, false);
 
             }
             // the stack now has a boolean / int and we must store on a local variable
