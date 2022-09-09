@@ -1,10 +1,11 @@
 package concurrencytest.asm.testClasses;
 
+import concurrencytest.CheckpointRuntimeAccessor;
 import concurrencytest.annotations.FieldCheckpoint;
 import concurrencytest.annotations.InjectionPoint;
 
 @FieldCheckpoint(fieldNameRegex = ".+", injectionPoints = {InjectionPoint.BEFORE, InjectionPoint.AFTER})
-public class AnnotationTarget implements Runnable {
+public class InjectionTarget implements Runnable {
 
     public Integer intPublicField;
     private float floatPrivateField;
@@ -12,5 +13,8 @@ public class AnnotationTarget implements Runnable {
     @Override
     public void run() {
         System.out.println(intPublicField);
+        for(int i = 0; i < 10; i++) {
+            CheckpointRuntimeAccessor.manualCheckpoint();
+        }
     }
 }

@@ -4,7 +4,7 @@ import concurrencytest.annotations.InjectionPoint;
 
 public interface Checkpoint {
 
-    long checkpointId();
+    int checkpointId();
 
     InjectionPoint injectionPoint();
 

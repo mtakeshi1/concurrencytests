@@ -4,7 +4,7 @@ import concurrencytest.annotations.AccessModifier;
 import concurrencytest.annotations.BehaviourModifier;
 import concurrencytest.annotations.FieldCheckpoint;
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.asm.testClasses.AnnotationTarget;
+import concurrencytest.asm.testClasses.InjectionTarget;
 import concurrencytest.checkpoint.FieldAccessCheckpoint;
 import concurrencytest.config.FieldAnnotationMatch;
 import concurrencytest.util.ReflectionHelper;
@@ -34,18 +34,19 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         FieldCheckpoint fc = new FieldAnnotationProxy() {
             @Override
             public Class<?> declaringClass() {
-                return AnnotationTarget.class;
+                return InjectionTarget.class;
             }
+
             @Override
             public InjectionPoint[] injectionPoints() {
                 return new InjectionPoint[]{InjectionPoint.AFTER};
             }
         };
-        Runnable target = (Runnable) injectFieldCheckpoints(AnnotationTarget.class, fc);
+        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
         Assert.assertEquals(1, register.allCheckpoints().size());
         ManagedRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
-        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0);
+        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).getCheckpoint();
         Assert.assertEquals("intPublicField", after.fieldName());
         Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());
         Assert.assertTrue(after.fieldRead());
@@ -72,11 +73,11 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
                 return new InjectionPoint[]{InjectionPoint.BEFORE};
             }
         };
-        Runnable target = (Runnable) injectFieldCheckpoints(AnnotationTarget.class, fc);
+        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
         Assert.assertEquals(1, register.allCheckpoints().size());
         ManagedRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
-        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0);
+        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).getCheckpoint();
         Assert.assertEquals("out", after.fieldName());
         Assert.assertEquals(InjectionPoint.BEFORE, after.injectionPoint());
         Assert.assertTrue(after.fieldRead());
@@ -137,20 +138,20 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         FieldCheckpoint fc = new FieldAnnotationProxy() {
             @Override
             public Class<?> declaringClass() {
-                return AnnotationTarget.class;
+                return InjectionTarget.class;
             }
         };
-        Runnable target = (Runnable) injectFieldCheckpoints(AnnotationTarget.class, fc);
+        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
         Assert.assertEquals(2, register.allCheckpoints().size());
         ManagedRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(2, managedRuntime.getCheckpoints().size());
-        FieldAccessCheckpoint before = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0);
+        FieldAccessCheckpoint before = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).getCheckpoint();
         Assert.assertEquals("intPublicField", before.fieldName());
         Assert.assertEquals(InjectionPoint.BEFORE, before.injectionPoint());
         Assert.assertTrue(before.fieldRead());
         Assert.assertFalse(before.fieldWrite());
         Assert.assertEquals(Integer.class, before.fieldType());
-        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(1);
+        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(1).getCheckpoint();
         Assert.assertNotEquals(before.checkpointId(), after.checkpointId());
         Assert.assertEquals("intPublicField", after.fieldName());
         Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());

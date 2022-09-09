@@ -1,4 +1,4 @@
-package concurrencytest.checkpoint;
+package concurrencytest.runtime;
 
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
@@ -17,7 +17,9 @@ public interface CheckpointRuntime {
 //
 //    void afterLockReleasedCheckpoint(Lock lock, long id, Supplier<Checkpoint> checkpointSupplier);
 
-    void checkpointReached(long id);
+    void checkpointReached(int id);
 
-    void fieldAccessCheckpoint(long checkpointId, Object owner, Object value);
+    void checkpointReached(int id, String details);
+
+    void fieldAccessCheckpoint(int checkpointId, Object owner, Object value);
 }

@@ -9,7 +9,7 @@ public class FieldAccessCheckpointImpl extends Checkpoint2 implements FieldAcces
     private final String fieldName;
     private final boolean read;
 
-    public FieldAccessCheckpointImpl(long id, InjectionPoint injectionPoint, String details, String sourceFile, int lineNumber,
+    public FieldAccessCheckpointImpl(int id, InjectionPoint injectionPoint, String details, String sourceFile, int lineNumber,
                                      Class<?> declaringClass, Class<?> fieldType, String fieldName, boolean read) {
         super(id, injectionPoint, details, sourceFile, lineNumber);
         this.declaringClass = declaringClass;

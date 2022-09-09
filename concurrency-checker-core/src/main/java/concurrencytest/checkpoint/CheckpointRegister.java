@@ -8,10 +8,11 @@ public interface CheckpointRegister {
 
     FieldAccessCheckpoint newFieldCheckpoint(InjectionPoint injectionPoint, Class<?> declaringClass, String fieldName, Class<?> fieldType, boolean read, String details, String sourceFile, int lineNumber);
 
-    Map<Long, Checkpoint> allCheckpoints();
+    Map<Integer, Checkpoint> allCheckpoints();
 
-    default Checkpoint checkpointById(long id) {
+    default Checkpoint checkpointById(int id) {
         return allCheckpoints().get(id);
     }
 
+    Checkpoint newManualCheckpoint(String source, int latestLineNumber);
 }

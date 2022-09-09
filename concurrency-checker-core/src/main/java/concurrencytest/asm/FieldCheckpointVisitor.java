@@ -9,10 +9,7 @@ import concurrencytest.checkpoint.FieldAccessCheckpoint;
 import concurrencytest.config.FieldAccessMatch;
 import concurrencytest.util.ClassResolver;
 import concurrencytest.util.ReflectionHelper;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -51,7 +48,6 @@ public class FieldCheckpointVisitor extends ClassVisitor {
             super(delegate, checkpointRegister, source);
         }
 
-
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
             String ownerClassName = owner.replace('/', '.');
@@ -75,29 +71,9 @@ public class FieldCheckpointVisitor extends ClassVisitor {
             FieldAccessCheckpoint checkpoint = checkpointRegister.newFieldCheckpoint(before ? InjectionPoint.BEFORE : InjectionPoint.AFTER, resolveType(null, owner), name,
                     resolveType(null, fieldClassName), opcode == Opcodes.GETSTATIC || opcode == Opcodes.GETFIELD, details, source, latestLineNumber);
             super.visitLdcInsn(checkpoint.checkpointId());
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(CheckpointRuntimeAccessor.class), "checkpointReached", Type.getMethodDescriptor(Type.VOID_TYPE, Type.LONG_TYPE), false);
+            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(CheckpointRuntimeAccessor.class), "checkpointReached", Type.getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE), false);
         }
 
-    }
-
-    private Collection<BehaviourModifier> findBehaviourModifiers(Class<?> resolvedOnwer, String name) {
-        try {
-            Field declaredField = resolvedOnwer.getDeclaredField(name);
-            int modifiers = declaredField.getModifiers();
-            return BehaviourModifier.unreflect(modifiers);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private AccessModifier findAccessModifier(Class<?> resolvedOnwer, String name) {
-        try {
-            Field declaredField = resolvedOnwer.getDeclaredField(name);
-            int modifiers = declaredField.getModifiers();
-            return AccessModifier.unreflect(modifiers);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private Class<?> resolveType(Class<?> maybeResolved, String owner) {
