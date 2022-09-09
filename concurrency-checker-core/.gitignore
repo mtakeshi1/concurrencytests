@@ -7,3 +7,4 @@ target/
 velocity.log
 .idea
 *.iml
+concurrency-checker-tests/.idea/
