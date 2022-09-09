@@ -33,7 +33,7 @@ public class FieldCheckpointVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        return new FieldCheckpointMethodVisitor(super.visitMethod(access, name, descriptor, signature, exceptions));
+        return new FieldCheckpointMethodVisitor(super.visitMethod(access, name, descriptor, signature, exceptions), access);
     }
 
     @Override
@@ -44,8 +44,8 @@ public class FieldCheckpointVisitor extends ClassVisitor {
 
     private class FieldCheckpointMethodVisitor extends BaseMethodVisitor {
 
-        public FieldCheckpointMethodVisitor(MethodVisitor delegate) {
-            super(delegate, checkpointRegister, source);
+        public FieldCheckpointMethodVisitor(MethodVisitor delegate, int access) {
+            super(delegate, checkpointRegister, source, access);
         }
 
         @Override

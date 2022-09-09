@@ -1,5 +1,4 @@
 # Before I consider 'usable':
-
 - @ManualCheckpoints
 - off-heap graph - allows forking
 - Fork to another jvm 
@@ -8,8 +7,8 @@
 - Better error output (thread monitor / lock status)
 - Better lock / monitor information
 - Recoded output and re-run with recorded output
-- Polymorphic checkpoints
-- better checkpoint names and details
+- Polymorphic checkpoints - OK
+- better checkpoint names and details 
  
 
 # Nice to haves
