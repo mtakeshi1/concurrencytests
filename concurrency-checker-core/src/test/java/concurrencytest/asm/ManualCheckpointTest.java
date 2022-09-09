@@ -1,7 +1,5 @@
 package concurrencytest.asm;
 
-import concurrencytest.asm.BaseClassVisitorTest;
-import concurrencytest.asm.ManualCheckpointVisitor;
 import concurrencytest.asm.testClasses.InjectionTarget;
 import concurrencytest.asm.testClasses.InjectionTarget2;
 import concurrencytest.checkpoint.Checkpoint;
@@ -20,8 +18,8 @@ public class ManualCheckpointTest extends BaseClassVisitorTest {
         Assert.assertTrue(checkpoint instanceof ManualCheckpointImpl);
         Assert.assertEquals(1, register.allCheckpoints().size());
         for (var state : runtime.getCheckpoints()) {
-            Assert.assertEquals(checkpoint, state.getCheckpoint());
-            Assert.assertEquals("", state.getDetails());
+            Assert.assertEquals(checkpoint, state.checkpoint());
+            Assert.assertEquals("", state.details());
         }
     }
 
@@ -38,8 +36,8 @@ public class ManualCheckpointTest extends BaseClassVisitorTest {
         ManagedRuntime runtime = execute(instance, c -> ((Runnable) c).run());
         Assert.assertEquals(1, runtime.getCheckpoints().size());
         var state = runtime.getCheckpoints().get(0);
-        Assert.assertEquals(checkpoint, state.getCheckpoint());
-        Assert.assertEquals(value, state.getDetails());
+        Assert.assertEquals(checkpoint, state.checkpoint());
+        Assert.assertEquals(value, state.details());
 
     }
 

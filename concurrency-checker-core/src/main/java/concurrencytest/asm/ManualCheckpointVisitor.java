@@ -27,12 +27,12 @@ public class ManualCheckpointVisitor extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
-        return new ManualCheckpointMethodVisitor(delegate, register, source);
+        return new ManualCheckpointMethodVisitor(delegate, register, source, access);
     }
 
     private class ManualCheckpointMethodVisitor extends BaseMethodVisitor {
-        public ManualCheckpointMethodVisitor(MethodVisitor delegate, CheckpointRegister register, String source) {
-            super(delegate, register, source);
+        public ManualCheckpointMethodVisitor(MethodVisitor delegate, CheckpointRegister register, String source, int accessModifiers) {
+            super(delegate, register, source, accessModifiers);
         }
 
         @Override
