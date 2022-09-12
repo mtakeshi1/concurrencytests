@@ -3,47 +3,38 @@ package concurrencytest.asm;
 import concurrencytest.CheckpointRuntimeAccessor;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
+import concurrencytest.util.ClassResolver;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class ManualCheckpointVisitor extends ClassVisitor {
-    private final CheckpointRegister register;
+public class ManualCheckpointVisitor extends BaseClassVisitor {
 
-    private String source = "unknown";
-
-    public ManualCheckpointVisitor(ClassVisitor classVisitor, CheckpointRegister register, Class<?> declaringClass) {
-        super(Opcodes.ASM7, classVisitor);
-        this.register = register;
-    }
-
-    @Override
-    public void visitSource(String source, String debug) {
-        super.visitSource(source, debug);
-        this.source = source;
+    public ManualCheckpointVisitor(ClassVisitor classVisitor, CheckpointRegister register, Class<?> declaringClass, ClassResolver classResolver) {
+        super(classVisitor, register, declaringClass, classResolver);
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
-        return new ManualCheckpointMethodVisitor(delegate, register, source, access);
+        return new ManualCheckpointMethodVisitor(delegate, checkpointRegister, sourceName, access, name, descriptor);
     }
 
     private class ManualCheckpointMethodVisitor extends BaseMethodVisitor {
-        public ManualCheckpointMethodVisitor(MethodVisitor delegate, CheckpointRegister register, String source, int accessModifiers) {
-            super(delegate, register, source, accessModifiers);
+        public ManualCheckpointMethodVisitor(MethodVisitor delegate, CheckpointRegister register, String source, int accessModifiers, String methodName, String methodDescriptor) {
+            super(delegate, register, source, accessModifiers, methodName, methodDescriptor);
         }
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
             if (opcode == Opcodes.INVOKESTATIC && Type.getInternalName(CheckpointRuntimeAccessor.class).equals(owner) && "manualCheckpoint".equals(name)) {
-                Checkpoint checkpoint = register.newManualCheckpoint(source, latestLineNumber);
-                super.visitLdcInsn(checkpoint.checkpointId());
+                Checkpoint checkpoint = checkpointRegister.newManualCheckpoint("", sourceName, latestLineNumber);
                 if (Type.getMethodType(descriptor).getArgumentTypes().length > 0) {
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(CheckpointRuntimeAccessor.class), "checkpointReached", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(String.class), Type.INT_TYPE), false);
+                    super.invokeStringCheckpointWithContext(checkpoint);
                 } else {
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(CheckpointRuntimeAccessor.class), "checkpointReached", Type.getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE), false);
+                    super.invokeEmptyCheckpoint(checkpoint);
+
                 }
             } else {
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);

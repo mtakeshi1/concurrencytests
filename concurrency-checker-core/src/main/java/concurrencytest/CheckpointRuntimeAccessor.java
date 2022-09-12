@@ -20,18 +20,19 @@ public class CheckpointRuntimeAccessor {
     public static void manualCheckpoint(String details) {
     }
 
-    public static void checkpointReached(String details, int checkpointId) {
+    public static void genericCheckpointReached(Object context, int checkpointId) {
         CheckpointRuntime runtime = runtimeThreadLocal.get();
         if (runtime != null) {
-            runtime.checkpointReached(checkpointId, details);
+            runtime.checkpointReached(checkpointId, context);
         }
     }
 
+    public static void checkpointWithMessageReached(String details, int checkpointId) {
+        genericCheckpointReached(details, checkpointId);
+    }
+
     public static void checkpointReached(int checkpointId) {
-        CheckpointRuntime runtime = runtimeThreadLocal.get();
-        if (runtime != null) {
-            runtime.checkpointReached(checkpointId);
-        }
+        genericCheckpointReached("", checkpointId);
     }
 
     public static void setup(CheckpointRuntime runtime) {

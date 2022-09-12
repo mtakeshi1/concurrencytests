@@ -10,7 +10,7 @@ public interface MonitorCheckpoint extends Checkpoint {
 
     boolean monitorAcquire();
 
-    default boolean monitorRelease() {
+    default boolean isMonitorRelease() {
         return !monitorAcquire();
     }
 

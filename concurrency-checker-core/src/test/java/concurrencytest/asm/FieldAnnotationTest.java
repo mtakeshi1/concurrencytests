@@ -44,7 +44,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         };
         Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
         Assert.assertEquals(1, register.allCheckpoints().size());
-        ManagedRuntime managedRuntime = execute(target, Runnable::run);
+        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
         FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
         Assert.assertEquals("intPublicField", after.fieldName());
@@ -75,7 +75,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         };
         Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
         Assert.assertEquals(1, register.allCheckpoints().size());
-        ManagedRuntime managedRuntime = execute(target, Runnable::run);
+        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
         FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
         Assert.assertEquals("out", after.fieldName());
@@ -143,7 +143,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         };
         Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
         Assert.assertEquals(2, register.allCheckpoints().size());
-        ManagedRuntime managedRuntime = execute(target, Runnable::run);
+        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(2, managedRuntime.getCheckpoints().size());
         FieldAccessCheckpoint before = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
         Assert.assertEquals("intPublicField", before.fieldName());

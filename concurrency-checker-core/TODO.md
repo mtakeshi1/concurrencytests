@@ -9,6 +9,8 @@
 - Recoded output and re-run with recorded output
 - Polymorphic checkpoints - OK
 - better checkpoint names and details 
+- wait / notify / lock.condition coordination
+- random / sleep detection
  
 
 # Nice to haves

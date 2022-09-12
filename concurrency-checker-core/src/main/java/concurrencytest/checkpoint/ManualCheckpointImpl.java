@@ -2,8 +2,12 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 
-public class ManualCheckpointImpl extends Checkpoint2 {
-    public ManualCheckpointImpl(int checkpointId, String source, int lineNumber) {
-        super(checkpointId, InjectionPoint.BEFORE, "", source, lineNumber);
+public record ManualCheckpointImpl(int checkpointId, String details, String sourceFile,
+                                   int lineNumber) implements Checkpoint {
+    public InjectionPoint injectionPoint() {
+        return InjectionPoint.AFTER;
     }
 }
+
+
+

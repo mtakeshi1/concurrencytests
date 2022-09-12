@@ -1,51 +1,38 @@
 package concurrencytest.asm;
 
-import concurrencytest.CheckpointRuntimeAccessor;
-import concurrencytest.annotations.AccessModifier;
-import concurrencytest.annotations.BehaviourModifier;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.FieldAccessCheckpoint;
 import concurrencytest.config.FieldAccessMatch;
 import concurrencytest.util.ClassResolver;
 import concurrencytest.util.ReflectionHelper;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
 
-public class FieldCheckpointVisitor extends ClassVisitor {
+public class FieldCheckpointVisitor extends BaseClassVisitor {
     //TODO check if we need something like a classresolver
     private final FieldAccessMatch checkpointMatchConfiguration;
-    private final CheckpointRegister checkpointRegister;
-    private final Class<?> classUnderEnhancement;
-    private final ClassResolver classResolver;
 
-    private String source = "uknown";
 
     public FieldCheckpointVisitor(FieldAccessMatch fieldCheckpoint, ClassVisitor delegate, CheckpointRegister checkpointRegister, Class<?> classUnderEnhancement, ClassResolver classResolver) {
-        super(Opcodes.ASM7, delegate);
+        super(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         this.checkpointMatchConfiguration = fieldCheckpoint;
-        this.checkpointRegister = checkpointRegister;
-        this.classUnderEnhancement = classUnderEnhancement;
-        this.classResolver = classResolver;
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        return new FieldCheckpointMethodVisitor(super.visitMethod(access, name, descriptor, signature, exceptions), access);
+        return new FieldCheckpointMethodVisitor(sourceName, super.visitMethod(access, name, descriptor, signature, exceptions), access, name, descriptor);
     }
 
-    @Override
-    public void visitSource(String source, String debug) {
-        super.visitSource(source, debug);
-        this.source = source;
-    }
 
     private class FieldCheckpointMethodVisitor extends BaseMethodVisitor {
 
-        public FieldCheckpointMethodVisitor(MethodVisitor delegate, int access) {
-            super(delegate, checkpointRegister, source, access);
+        public FieldCheckpointMethodVisitor(String sourceName, MethodVisitor delegate, int access, String methodName, String descriptor) {
+            super(delegate, checkpointRegister, sourceName, access, methodName, descriptor);
         }
 
         @Override
@@ -69,21 +56,11 @@ public class FieldCheckpointVisitor extends ClassVisitor {
         private void injectCheckpoint(int opcode, String owner, String fieldClassName, String name, boolean before) {
             String details = String.format("%s %s %s.%s", before ? "BEFORE" : "AFTER", ReflectionHelper.renderOpcode(opcode), owner, name);
             FieldAccessCheckpoint checkpoint = checkpointRegister.newFieldCheckpoint(before ? InjectionPoint.BEFORE : InjectionPoint.AFTER, resolveType(null, owner), name,
-                    resolveType(null, fieldClassName), opcode == Opcodes.GETSTATIC || opcode == Opcodes.GETFIELD, details, source, latestLineNumber);
-            super.visitLdcInsn(checkpoint.checkpointId());
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(CheckpointRuntimeAccessor.class), "checkpointReached", Type.getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE), false);
+                    resolveType(null, fieldClassName), opcode == Opcodes.GETSTATIC || opcode == Opcodes.GETFIELD, details, sourceName, latestLineNumber);
+            super.invokeEmptyCheckpoint(checkpoint);
         }
 
     }
 
-    private Class<?> resolveType(Class<?> maybeResolved, String owner) {
-        if (maybeResolved != null) {
-            return maybeResolved;
-        }
-        try {
-            return ReflectionHelper.resolveType(owner);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
+
 }

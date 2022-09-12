@@ -1,6 +1,7 @@
 package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
+import org.objectweb.asm.Type;
 
 import java.util.Map;
 
@@ -14,5 +15,10 @@ public interface CheckpointRegister {
         return allCheckpoints().get(id);
     }
 
-    Checkpoint newManualCheckpoint(String source, int latestLineNumber);
+    //TODO not sure if details is needed for manual checkpoint
+    Checkpoint newManualCheckpoint(String details, String source, int latestLineNumber);
+
+    MonitorCheckpoint newMonitorEnterCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
+
+    MonitorCheckpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
 }
