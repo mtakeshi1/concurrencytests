@@ -3,19 +3,20 @@ package concurrencytest.asm;
 import concurrencytest.CheckpointRuntimeAccessor;
 import concurrencytest.agent.OpenClassLoader;
 import concurrencytest.asm.testClasses.InjectionTarget;
+import concurrencytest.asm.testClasses.SyncRunnable;
 import concurrencytest.checkpoint.*;
+import concurrencytest.runtime.RecordingCheckpointRuntime;
+import concurrencytest.runtime.StandardCheckpointRegister;
 import concurrencytest.util.ASMUtils;
 import org.junit.Assert;
 import org.junit.Test;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
 public class BaseClassVisitorTest {
@@ -54,4 +55,26 @@ public class BaseClassVisitorTest {
         Runnable run = (Runnable) prepared.getConstructor().newInstance();
         run.run();
     }
+
+    @Test
+    public void testRemoveSyncModifier() throws Exception {
+        Class<?> aClass = prepare(SyncRunnable.class, ((targetClass, delegate) -> new BaseClassVisitor(delegate, null, null, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                if (name.equals("run")) {
+                    return super.visitMethod(Modifier.PUBLIC, name, descriptor, signature, exceptions);
+                } else {
+                    return super.visitMethod(access, name, descriptor, signature, exceptions);
+                }
+            }
+        }));
+        Object instance = aClass.getConstructor().newInstance();
+        try {
+            ((Runnable) instance).run();
+            Assert.fail("should've thrown IllegalMonitorStateException");
+        } catch (IllegalMonitorStateException e) {
+            // should have
+        }
+    }
+
 }

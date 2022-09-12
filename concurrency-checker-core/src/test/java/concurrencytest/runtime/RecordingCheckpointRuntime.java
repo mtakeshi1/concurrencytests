@@ -1,4 +1,4 @@
-package concurrencytest.asm;
+package concurrencytest.runtime;
 
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;

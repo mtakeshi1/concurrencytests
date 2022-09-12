@@ -1,9 +1,10 @@
-package concurrencytest.config;
+package concurrencytest.checkpoint.matcher;
 
 import concurrencytest.annotations.AccessModifier;
 import concurrencytest.annotations.BehaviourModifier;
 import concurrencytest.annotations.FieldCheckpoint;
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.config.FieldAccessMatch;
 import concurrencytest.util.ArrayUtils;
 
 import java.util.List;

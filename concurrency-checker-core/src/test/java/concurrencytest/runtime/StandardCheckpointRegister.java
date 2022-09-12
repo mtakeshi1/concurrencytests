@@ -1,10 +1,11 @@
-package concurrencytest.asm;
+package concurrencytest.runtime;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.*;
 import concurrencytest.util.ReflectionHelper;
 import org.objectweb.asm.Type;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,7 +20,7 @@ public class StandardCheckpointRegister implements CheckpointRegister {
     public FieldAccessCheckpoint newFieldCheckpoint(InjectionPoint injectionPoint, Class<?> declaringClass, String fieldName, Class<?> fieldType, boolean read, String details, String sourceFile, int lineNumber) {
 
         FieldAccessCheckpointImpl fieldAccessCheckpoint = new FieldAccessCheckpointImpl(
-                idGenerator.incrementAndGet(), injectionPoint, details, sourceFile, lineNumber, declaringClass, fieldType, fieldName, read
+                idGenerator.incrementAndGet(), injectionPoint, details, sourceFile, lineNumber, declaringClass, fieldName, fieldType, read
         );
         allCheckpoints.put(fieldAccessCheckpoint.checkpointId(), fieldAccessCheckpoint);
         return fieldAccessCheckpoint;
@@ -55,6 +56,13 @@ public class StandardCheckpointRegister implements CheckpointRegister {
     @Override
     public MonitorCheckpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
         var checkpoint = new MonitorCheckpointImpl(idGenerator.incrementAndGet(), injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, resolveType(monitorOwnerType), false);
+        allCheckpoints.put(checkpoint.checkpointId(), checkpoint);
+        return checkpoint;
+    }
+
+    @Override
+    public Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Method method, InjectionPoint injectionPoint) {
+        MethodCallCheckpointImpl checkpoint = new MethodCallCheckpointImpl(idGenerator.incrementAndGet(), injectionPoint, sourceName, latestLineNumber, method);
         allCheckpoints.put(checkpoint.checkpointId(), checkpoint);
         return checkpoint;
     }

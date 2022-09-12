@@ -5,6 +5,7 @@ import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.MonitorCheckpoint;
 import concurrencytest.runtime.CheckpointReached;
 import concurrencytest.runtime.MonitorCheckpointReached;
+import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.util.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;

@@ -5,6 +5,9 @@ import concurrencytest.util.ClassResolver;
 import concurrencytest.util.ReflectionHelper;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+
+import java.lang.reflect.Method;
 
 public class BaseClassVisitor extends ClassVisitor {
 
@@ -26,7 +29,38 @@ public class BaseClassVisitor extends ClassVisitor {
         sourceName = source;
     }
 
-    protected Class<?> resolveType(Class<?> maybeResolved, String owner) {
+    protected Method resolveMethod(Class<?> callTarget, String methodName, String descriptor) {
+        Type type = Type.getMethodType(descriptor);
+        Type[] argTypes = type.getArgumentTypes();
+        Class<?>[] params = new Class[argTypes.length];
+        for (int i = 0; i < argTypes.length; i++) {
+            params[i] = resolveType(null, argTypes[i].getClassName());
+        }
+        try {
+            return resolveMethodRecursive(callTarget, methodName, params);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Method resolveMethodRecursive(Class<?> callTarget, String methodName, Class<?>[] params) throws NoSuchMethodException {
+        try {
+            return callTarget.getDeclaredMethod(methodName, params);
+        } catch (NoSuchMethodException e) {
+            if (callTarget.getSuperclass() == null && callTarget.getInterfaces().length == 0) {
+                throw e;
+            }
+            for (Class<?> implementedInterface : callTarget.getInterfaces()) {
+                try {
+                    resolveMethodRecursive(implementedInterface, methodName, params);
+                } catch (NoSuchMethodException ex) {
+                }
+            }
+            return resolveMethodRecursive(callTarget.getSuperclass(), methodName, params);
+        }
+    }
+
+    protected final Class<?> resolveType(Class<?> maybeResolved, String owner) {
         if (maybeResolved != null) {
             return maybeResolved;
         }
