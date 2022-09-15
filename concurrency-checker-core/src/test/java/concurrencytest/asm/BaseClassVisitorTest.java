@@ -2,24 +2,20 @@ package concurrencytest.asm;
 
 import concurrencytest.CheckpointRuntimeAccessor;
 import concurrencytest.agent.OpenClassLoader;
-import concurrencytest.asm.testClasses.InjectionTarget;
-import concurrencytest.asm.testClasses.SyncCallable;
-import concurrencytest.checkpoint.*;
+import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.runtime.StandardCheckpointRegister;
 import concurrencytest.util.ASMUtils;
 import org.junit.Assert;
-import org.junit.Test;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.util.TraceClassVisitor;
 
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-import java.util.function.Consumer;
 
 public class BaseClassVisitorTest {
 
@@ -38,50 +34,37 @@ public class BaseClassVisitorTest {
 
     protected CheckpointRegister register = new StandardCheckpointRegister();
 
-    public Class<?> prepare(Class<?> target, VisitorBuilderFunction factory) throws IOException, ClassNotFoundException {
+    public Class<?> prepare(Class<?> target, VisitorBuilderFunction factory) throws Exception {
+        try {
+            return prepare(target, factory, false);
+        } catch (Exception e) {
+            prepare(target, factory, true);
+            throw e;
+        }
+    }
+
+    public Class<?> prepare(Class<?> target, VisitorBuilderFunction factory, boolean dump) throws Exception {
         ClassReader reader = ASMUtils.readClass(target);
         Assert.assertNotNull(reader);
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-        TraceClassVisitor traceClassVisitor = new TraceClassVisitor(writer, new PrintWriter(System.out));
+        ClassVisitor delegate;
+        if (dump) {
+            delegate = new TraceClassVisitor(writer, new PrintWriter(System.out));
+        } else {
+            delegate = writer;
+        }
         String newName = target.getName() + "$$Injected_" + idSeed++;
         String oldInternalName = Type.getType(target).getInternalName();
         String newInternalName = newName.replace('.', '/');
-        ClassRemapper map = new ClassRemapper(traceClassVisitor, new SimpleRemapper(oldInternalName, newInternalName));
+        ClassRemapper map = new ClassRemapper(delegate, new SimpleRemapper(oldInternalName, newInternalName));
         ClassVisitor visitor = factory.buildFor(target, map);
         reader.accept(visitor, ClassReader.EXPAND_FRAMES);
         byte[] byteCode = writer.toByteArray();
         OpenClassLoader loader = new OpenClassLoader();
         loader.addClass(newName, byteCode);
-        return Class.forName(newName, true, loader);
-    }
-
-
-    @Test
-    public void testNoOp() throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        Class<?> prepared = prepare(InjectionTarget.class, (t, cv) -> cv);
-        Runnable run = (Runnable) prepared.getConstructor().newInstance();
-        run.run();
-    }
-
-    @Test
-    public void testRemoveSyncModifier() throws Exception {
-        Class<?> aClass = prepare(SyncCallable.class, ((targetClass, delegate) -> new BaseClassVisitor(delegate, null, null, null) {
-            @Override
-            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                if (name.equals("run")) {
-                    return super.visitMethod(Modifier.PUBLIC, name, descriptor, signature, exceptions);
-                } else {
-                    return super.visitMethod(access, name, descriptor, signature, exceptions);
-                }
-            }
-        }));
-        Object instance = aClass.getConstructor().newInstance();
-        try {
-            ((Runnable) instance).run();
-            Assert.fail("should've thrown IllegalMonitorStateException");
-        } catch (IllegalMonitorStateException e) {
-            // should have
-        }
+        Class<?> name = Class.forName(newName, true, loader);
+        name.getConstructor().newInstance();
+        return name;
     }
 
 }

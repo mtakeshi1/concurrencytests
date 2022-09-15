@@ -10,78 +10,20 @@ import concurrencytest.util.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 
 public class FieldAnnotationTest extends BaseClassVisitorTest {
 
-    public Object injectFieldCheckpoints(Class<?> baseType, FieldCheckpoint checkpoint) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public Object injectFieldCheckpoints(Class<?> baseType, FieldCheckpoint checkpoint) throws Exception {
         var config = new FieldAnnotationMatch(checkpoint);
         return injectFieldCheckpoints(baseType, config);
     }
 
-    public Object injectFieldCheckpoints(Class<?> baseType, FieldAnnotationMatch config) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+    public Object injectFieldCheckpoints(Class<?> baseType, FieldAnnotationMatch config) throws Exception {
         Class<?> injected = super.prepare(baseType, (c, cv) -> new FieldCheckpointVisitor(config, cv, register, baseType, ReflectionHelper.getInstance()));
         Assert.assertNotNull(injected);
         return injected.getConstructor().newInstance();
-    }
-
-    @Test
-    public void simpleInjectionAfter() throws Exception {
-        FieldCheckpoint fc = new FieldAnnotationProxy() {
-            @Override
-            public Class<?> declaringClass() {
-                return InjectionTarget.class;
-            }
-
-            @Override
-            public InjectionPoint[] injectionPoints() {
-                return new InjectionPoint[]{InjectionPoint.AFTER};
-            }
-        };
-        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
-        Assert.assertEquals(1, register.allCheckpoints().size());
-        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
-        Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
-        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
-        Assert.assertEquals("intPublicField", after.fieldName());
-        Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());
-        Assert.assertTrue(after.fieldRead());
-        Assert.assertFalse(after.fieldWrite());
-        Assert.assertEquals(Integer.class, after.fieldType());
-    }
-
-    @Test
-    public void simpleInjectionAfterDeclaringClass() throws Exception {
-        FieldCheckpoint fc = new FieldAnnotationProxy() {
-
-            @Override
-            public Class<?> declaringClass() {
-                return System.class;
-            }
-
-            @Override
-            public BehaviourModifier[] behaviourModifiers() {
-                return new BehaviourModifier[]{BehaviourModifier.STATIC, BehaviourModifier.FINAL};
-            }
-
-            @Override
-            public InjectionPoint[] injectionPoints() {
-                return new InjectionPoint[]{InjectionPoint.BEFORE};
-            }
-        };
-        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
-        Assert.assertEquals(1, register.allCheckpoints().size());
-        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
-        Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
-        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
-        Assert.assertEquals("out", after.fieldName());
-        Assert.assertEquals(InjectionPoint.BEFORE, after.injectionPoint());
-        Assert.assertTrue(after.fieldRead());
-        Assert.assertFalse(after.fieldWrite());
-        Assert.assertEquals(PrintStream.class, after.fieldType());
     }
 
     private static class FieldAnnotationProxy implements FieldCheckpoint {
@@ -133,6 +75,64 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
     }
 
     @Test
+    public void simpleInjectionAfter() throws Exception {
+        FieldCheckpoint fc = new FieldAnnotationProxy() {
+            @Override
+            public Class<?> declaringClass() {
+                return InjectionTarget.class;
+            }
+
+            @Override
+            public InjectionPoint[] injectionPoints() {
+                return new InjectionPoint[]{InjectionPoint.AFTER};
+            }
+        };
+        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
+        Assert.assertEquals(3, register.allCheckpoints().size());
+        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
+        Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
+        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
+        Assert.assertEquals("intPublicField", after.fieldName());
+        Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());
+        Assert.assertTrue(after.fieldRead());
+        Assert.assertFalse(after.fieldWrite());
+        Assert.assertEquals(Integer.class, after.fieldType());
+        Assert.assertTrue(after.lineNumber() > 0);
+    }
+
+    @Test
+    public void simpleInjectionAfterDeclaringClass() throws Exception {
+        FieldCheckpoint fc = new FieldAnnotationProxy() {
+
+            @Override
+            public Class<?> declaringClass() {
+                return System.class;
+            }
+
+            @Override
+            public BehaviourModifier[] behaviourModifiers() {
+                return new BehaviourModifier[]{BehaviourModifier.STATIC, BehaviourModifier.FINAL};
+            }
+
+            @Override
+            public InjectionPoint[] injectionPoints() {
+                return new InjectionPoint[]{InjectionPoint.BEFORE};
+            }
+        };
+        Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
+        Assert.assertEquals(3, register.allCheckpoints().size());
+        RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
+        Assert.assertEquals(1, managedRuntime.getCheckpoints().size());
+        FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
+        Assert.assertEquals("out", after.fieldName());
+        Assert.assertEquals(InjectionPoint.BEFORE, after.injectionPoint());
+        Assert.assertTrue(after.fieldRead());
+        Assert.assertFalse(after.fieldWrite());
+        Assert.assertEquals(PrintStream.class, after.fieldType());
+        Assert.assertTrue(after.lineNumber() > 0);
+    }
+
+    @Test
     public void simpleInjectionBeforeAfterPublicIntegerField() throws Exception {
         FieldCheckpoint fc = new FieldAnnotationProxy() {
             @Override
@@ -141,7 +141,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
             }
         };
         Runnable target = (Runnable) injectFieldCheckpoints(InjectionTarget.class, fc);
-        Assert.assertEquals(2, register.allCheckpoints().size());
+        Assert.assertEquals(4, register.allCheckpoints().size());
         RecordingCheckpointRuntime managedRuntime = execute(target, Runnable::run);
         Assert.assertEquals(2, managedRuntime.getCheckpoints().size());
         FieldAccessCheckpoint before = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(0).checkpoint();
@@ -157,6 +157,8 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         Assert.assertTrue(after.fieldRead());
         Assert.assertFalse(after.fieldWrite());
         Assert.assertEquals(Integer.class, before.fieldType());
+        Assert.assertTrue(after.lineNumber() > 0);
+        Assert.assertTrue(before.lineNumber() > 0);
     }
 
 }

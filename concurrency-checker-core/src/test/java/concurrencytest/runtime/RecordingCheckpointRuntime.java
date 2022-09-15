@@ -3,10 +3,6 @@ package concurrencytest.runtime;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.MonitorCheckpoint;
-import concurrencytest.runtime.CheckpointReached;
-import concurrencytest.runtime.CheckpointRuntime;
-import concurrencytest.runtime.MonitorCheckpointReached;
-import concurrencytest.runtime.RegularCheckpointReached;
 import org.junit.Assert;
 
 import java.util.ArrayList;
@@ -25,6 +21,8 @@ public class RecordingCheckpointRuntime implements CheckpointRuntime {
     public RecordingCheckpointRuntime(CheckpointRegister checkpointRegister) {
         this.checkpointRegister = checkpointRegister;
     }
+
+
 
 //        @Override
 //        public void beforeMonitorAcquiredCheckpoint(Object monitor, int id) {
@@ -51,6 +49,18 @@ public class RecordingCheckpointRuntime implements CheckpointRuntime {
 //                throw new IllegalArgumentException("Checkpoint with id %d should've been a monitor checkpoint but was: %s".formatted(id, checkpoint.getClass()));
 //            }
 //        }
+
+    @Override
+    public void beforeActorStartCheckpoint() {
+        Checkpoint checkpoint = checkpointRegister.taskStartingCheckpoint();
+        checkpoints.add(new RegularCheckpointReached(checkpoint, "", Thread.currentThread()));
+    }
+
+    @Override
+    public void actorFinishedCheckpoint() {
+        Checkpoint checkpoint = checkpointRegister.taskFinishedCheckpoint();
+        checkpoints.add(new RegularCheckpointReached(checkpoint, "", Thread.currentThread()));
+    }
 
     @Override
     public void checkpointReached(int id) {

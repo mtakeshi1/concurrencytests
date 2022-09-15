@@ -38,4 +38,27 @@ public class CheckpointRuntimeAccessor {
     public static void setup(CheckpointRuntime runtime) {
         runtimeThreadLocal.set(runtime);
     }
+
+    public static CheckpointRuntime getCheckpointRuntime() {
+        return runtimeThreadLocal.get();
+    }
+
+    public static void associateRuntime(CheckpointRuntime checkpointRuntime) {
+        runtimeThreadLocal.set(checkpointRuntime);
+    }
+
+    public static void releaseRuntime() {
+        CheckpointRuntime runtime = runtimeThreadLocal.get();
+        if(runtime != null) {
+            runtime.actorFinishedCheckpoint();
+            runtimeThreadLocal.remove();
+        }
+    }
+
+    public static void beforeStartCheckpoint() {
+        CheckpointRuntime runtime = runtimeThreadLocal.get();
+        if (runtime != null) {
+            runtime.beforeActorStartCheckpoint();
+        }
+    }
 }

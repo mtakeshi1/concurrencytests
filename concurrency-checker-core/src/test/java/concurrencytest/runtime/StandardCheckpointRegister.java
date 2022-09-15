@@ -16,6 +16,10 @@ public class StandardCheckpointRegister implements CheckpointRegister {
 
     private final AtomicInteger idGenerator = new AtomicInteger();
 
+    private final Checkpoint taskStartCheckpoint = new FixedCheckpoint(idGenerator.incrementAndGet(), InjectionPoint.BEFORE, "ACTOR_STARTING");
+
+    private final Checkpoint taskFinishedCheckpoint = new FixedCheckpoint(idGenerator.incrementAndGet(), InjectionPoint.AFTER, "ACTOR_FINISHING");
+
     @Override
     public FieldAccessCheckpoint newFieldCheckpoint(InjectionPoint injectionPoint, Class<?> declaringClass, String fieldName, Class<?> fieldType, boolean read, String details, String sourceFile, int lineNumber) {
 
@@ -24,6 +28,21 @@ public class StandardCheckpointRegister implements CheckpointRegister {
         );
         allCheckpoints.put(fieldAccessCheckpoint.checkpointId(), fieldAccessCheckpoint);
         return fieldAccessCheckpoint;
+    }
+
+    public StandardCheckpointRegister() {
+        allCheckpoints.put(taskStartCheckpoint.checkpointId(), taskStartCheckpoint);
+        allCheckpoints.put(taskFinishedCheckpoint.checkpointId(), taskFinishedCheckpoint);
+    }
+
+    @Override
+    public Checkpoint taskStartingCheckpoint() {
+        return taskStartCheckpoint;
+    }
+
+    @Override
+    public Checkpoint taskFinishedCheckpoint() {
+        return taskFinishedCheckpoint;
     }
 
     @Override
@@ -65,5 +84,11 @@ public class StandardCheckpointRegister implements CheckpointRegister {
         MethodCallCheckpointImpl checkpoint = new MethodCallCheckpointImpl(idGenerator.incrementAndGet(), injectionPoint, sourceName, latestLineNumber, method);
         allCheckpoints.put(checkpoint.checkpointId(), checkpoint);
         return checkpoint;
+    }
+
+    @Override
+    public Checkpoint newParkCheckpoint(String details, String sourceName, int latestLineNumber) {
+        //TODO
+        return null;
     }
 }

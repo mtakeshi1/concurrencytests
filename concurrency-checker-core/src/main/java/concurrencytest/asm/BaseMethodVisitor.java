@@ -12,9 +12,9 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 
 public abstract class BaseMethodVisitor extends MethodVisitor {
-    private final CheckpointRegister checkpointRegister;
+    protected final CheckpointRegister checkpointRegister;
     protected final String sourceName;
-    private final int allModifiers;
+    protected final int allModifiers;
     protected final String methodName;
     protected final String methodDescriptor;
     protected final AccessModifier accessModifier;

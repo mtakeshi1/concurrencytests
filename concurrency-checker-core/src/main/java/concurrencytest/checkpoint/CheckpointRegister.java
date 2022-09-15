@@ -16,6 +16,9 @@ public interface CheckpointRegister {
         return allCheckpoints().get(id);
     }
 
+    Checkpoint taskStartingCheckpoint();
+    Checkpoint taskFinishedCheckpoint();
+
     //TODO not sure if details is needed for manual checkpoint
     Checkpoint newManualCheckpoint(String details, String source, int latestLineNumber);
 
@@ -24,4 +27,6 @@ public interface CheckpointRegister {
     MonitorCheckpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
 
     Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Method method, InjectionPoint before);
+
+    Checkpoint newParkCheckpoint(String details, String sourceName, int latestLineNumber);
 }

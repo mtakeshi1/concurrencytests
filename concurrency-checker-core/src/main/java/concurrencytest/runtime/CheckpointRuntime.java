@@ -14,6 +14,10 @@ public interface CheckpointRuntime {
 //
 //    void afterLockReleasedCheckpoint(Lock lock, long id, Supplier<Checkpoint> checkpointSupplier);
 
+    void beforeActorStartCheckpoint();
+
+    void actorFinishedCheckpoint();
+
     void checkpointReached(int id);
 
     void checkpointReached(int id, Object context);

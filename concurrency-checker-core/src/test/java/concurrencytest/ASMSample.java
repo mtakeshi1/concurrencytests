@@ -1,5 +1,6 @@
 package concurrencytest;
 
+import concurrencytest.asm.testClasses.SyncBlockTarget;
 import concurrencytest.asm.testClasses.SyncCallable;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.ASMifier;
@@ -53,7 +54,7 @@ public class ASMSample implements Opcodes {
 
     public static void main(String[] args) throws Exception {
         ASMifier asMifier = new ASMifier();
-        ClassReader reader = new ClassReader(ASMSample.class.getResourceAsStream("/" + SyncCallable.class.getName().replace('.', '/') + ".class"));
+        ClassReader reader = new ClassReader(SyncBlockTarget.class.getResourceAsStream("/" + SyncBlockTarget.class.getName().replace('.', '/') + ".class"));
 
         TraceClassVisitor traceClassVisitor = new TraceClassVisitor(null, asMifier, new PrintWriter(System.out));
         reader.accept(traceClassVisitor, ClassReader.EXPAND_FRAMES);

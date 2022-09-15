@@ -1,11 +1,24 @@
 package concurrencytest.runtime;
 
+import concurrencytest.CheckpointRuntimeAccessor;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ManagedThread extends Thread {
-    public ManagedThread() {
+
+    private volatile CheckpointRuntime checkpointRuntime = CheckpointRuntimeAccessor.getCheckpointRuntime();
+
+    private volatile String actorName;
+
+    private final AtomicInteger childIndex = new AtomicInteger();
+
+    public ManagedThread(Runnable target, CheckpointRuntime runtime, String actorName) {
+        super(target);
+        this.checkpointRuntime = runtime;
+        this.actorName = actorName;
     }
 
-    public ManagedThread(Runnable target) {
-        super(target);
+    public ManagedThread() {
     }
 
     public ManagedThread(ThreadGroup group, Runnable target) {
@@ -38,6 +51,32 @@ public class ManagedThread extends Thread {
 
     @Override
     public void run() {
-        super.run();
+        CheckpointRuntimeAccessor.associateRuntime(this.checkpointRuntime);
+        try {
+            CheckpointRuntimeAccessor.beforeStartCheckpoint();
+            super.run();
+        } finally {
+            CheckpointRuntimeAccessor.releaseRuntime();
+        }
+    }
+
+    public CheckpointRuntime getCheckpointRuntime() {
+        return checkpointRuntime;
+    }
+
+    public void setCheckpointRuntime(CheckpointRuntime checkpointRuntime) {
+        this.checkpointRuntime = checkpointRuntime;
+    }
+
+    public String getActorName() {
+        return actorName;
+    }
+
+    public void setActorName(String actorName) {
+        this.actorName = actorName;
+    }
+
+    public AtomicInteger getChildIndex() {
+        return childIndex;
     }
 }

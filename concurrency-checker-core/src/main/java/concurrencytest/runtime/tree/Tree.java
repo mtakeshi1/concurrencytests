@@ -1,4 +1,4 @@
-package concurrencytest.tree;
+package concurrencytest.runtime.tree;
 
 public interface Tree {
 
