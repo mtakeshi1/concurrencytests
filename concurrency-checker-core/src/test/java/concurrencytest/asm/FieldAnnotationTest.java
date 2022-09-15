@@ -1,7 +1,5 @@
 package concurrencytest.asm;
 
-import concurrencytest.annotations.AccessModifier;
-import concurrencytest.annotations.BehaviourModifier;
 import concurrencytest.annotations.FieldCheckpoint;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.asm.testClasses.InjectionTarget;

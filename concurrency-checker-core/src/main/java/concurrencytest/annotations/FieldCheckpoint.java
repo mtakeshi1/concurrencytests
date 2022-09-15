@@ -1,5 +1,8 @@
 package concurrencytest.annotations;
 
+import concurrencytest.asm.AccessModifier;
+import concurrencytest.asm.BehaviourModifier;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

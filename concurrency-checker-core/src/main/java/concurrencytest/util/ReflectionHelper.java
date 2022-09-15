@@ -12,6 +12,13 @@ import java.util.*;
 
 public class ReflectionHelper implements ClassResolver {
 
+    public static final int BRIDGE    = 0x00000040;
+    public static final int VARARGS   = 0x00000080;
+    public static final int SYNTHETIC = 0x00001000;
+    public static final int ANNOTATION  = 0x00002000;
+    public static final int ENUM      = 0x00004000;
+    public static final int MANDATED  = 0x00008000;
+
     private static final Map<String, Class<?>> PRIMITIVE_CLASS_NAMES;
     private static final Map<Class<?>, String> PRIMITIVE_INTERNAL_NAMES;
 

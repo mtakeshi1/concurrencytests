@@ -1,10 +1,10 @@
-package concurrencytest.annotations;
+package concurrencytest.asm;
 
 import java.lang.reflect.Modifier;
 
 public enum AccessModifier {
 
-    PUBLIC, PROTECTED, DEFAULT, PRIVATE;
+    PUBLIC(Modifier.PUBLIC), PROTECTED(Modifier.PROTECTED), DEFAULT(0), PRIVATE(Modifier.PRIVATE);
 
     public static AccessModifier unreflect(int modifiers) {
         if (Modifier.isPrivate(modifiers)) {
@@ -17,6 +17,16 @@ public enum AccessModifier {
             return PROTECTED;
         }
         return DEFAULT;
+    }
+
+    private final int modifier;
+
+    AccessModifier(int modifier) {
+        this.modifier = modifier;
+    }
+
+    public int modifier() {
+        return modifier;
     }
 
     public static AccessModifier[] all() {
