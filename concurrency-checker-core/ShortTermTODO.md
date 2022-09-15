@@ -1,0 +1,4 @@
+- stack tracking method visitor
+- CheckpointLocation
+- test for MethodInvocationVisitor
+- change protected members to private

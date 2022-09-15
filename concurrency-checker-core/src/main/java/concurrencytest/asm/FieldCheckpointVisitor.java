@@ -1,8 +1,8 @@
 package concurrencytest.asm;
 
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.checkpoint.FieldAccessCheckpoint;
 import concurrencytest.config.FieldAccessMatch;
 import concurrencytest.util.ClassResolver;
 import concurrencytest.util.ReflectionHelper;
@@ -32,7 +32,7 @@ public class FieldCheckpointVisitor extends BaseClassVisitor {
     private class FieldCheckpointMethodVisitor extends BaseMethodVisitor {
 
         public FieldCheckpointMethodVisitor(String sourceName, MethodVisitor delegate, int access, String methodName, String descriptor) {
-            super(delegate, checkpointRegister, sourceName, access, methodName, descriptor);
+            super(classUnderEnhancement, delegate, FieldCheckpointVisitor.this.checkpointRegister, sourceName, access, methodName, descriptor, FieldCheckpointVisitor.this.classResolver);
         }
 
         @Override
@@ -55,7 +55,7 @@ public class FieldCheckpointVisitor extends BaseClassVisitor {
 
         private void injectCheckpoint(int opcode, String owner, String fieldClassName, String name, boolean before) {
             String details = String.format("%s %s %s.%s", before ? "BEFORE" : "AFTER", ReflectionHelper.renderOpcode(opcode), owner, name);
-            FieldAccessCheckpoint checkpoint = checkpointRegister.newFieldCheckpoint(before ? InjectionPoint.BEFORE : InjectionPoint.AFTER, resolveType(null, owner), name,
+            Checkpoint checkpoint = checkpointRegister.newFieldCheckpoint(before ? InjectionPoint.BEFORE : InjectionPoint.AFTER, resolveType(null, owner), name,
                     resolveType(null, fieldClassName), opcode == Opcodes.GETSTATIC || opcode == Opcodes.GETFIELD, details, sourceName, latestLineNumber);
             super.invokeEmptyCheckpoint(checkpoint);
         }

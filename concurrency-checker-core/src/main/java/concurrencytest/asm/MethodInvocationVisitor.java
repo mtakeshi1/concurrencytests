@@ -28,7 +28,7 @@ public class MethodInvocationVisitor extends BaseClassVisitor {
 
     private class MethodInvocationVisistor extends BaseMethodVisitor {
         public MethodInvocationVisistor(MethodVisitor delegate, int access, String name, String descriptor) {
-            super(delegate, MethodInvocationVisitor.this.checkpointRegister, MethodInvocationVisitor.this.sourceName, access, name, descriptor);
+            super(classUnderEnhancement, delegate, MethodInvocationVisitor.this.checkpointRegister, MethodInvocationVisitor.this.sourceName, access, name, descriptor, MethodInvocationVisitor.this.classResolver);
         }
 
         //TODO check how the last parameter (isInterface) interacts with interfaces and default methods (and maybe records?)

@@ -3,11 +3,13 @@ package concurrencytest.asm;
 import concurrencytest.CheckpointRuntimeAccessor;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
+import concurrencytest.util.ClassResolver;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 
@@ -18,15 +20,19 @@ public abstract class BaseMethodVisitor extends MethodVisitor {
     protected final String methodName;
     protected final String methodDescriptor;
     protected final AccessModifier accessModifier;
+    private final Class<?> classUnderEnhancement;
 
     protected int latestLineNumber = -1;
     protected Label latestLabel;
 
     protected int nextFreeLocalVariable;
 
-    protected final Collection<BehaviourModifier> modifiers;
+    private Method method;
 
-    public BaseMethodVisitor(MethodVisitor delegate, CheckpointRegister register, String sourceName, int modifiers, String methodName, String descriptor) {
+    protected final Collection<BehaviourModifier> modifiers;
+    protected final ClassResolver classResolver;
+
+    public BaseMethodVisitor(Class<?> classUnderEnhancement, MethodVisitor delegate, CheckpointRegister register, String sourceName, int modifiers, String methodName, String descriptor, ClassResolver resolver) {
         super(Opcodes.ASM7, delegate);
         this.checkpointRegister = register;
         this.sourceName = sourceName;
@@ -38,6 +44,8 @@ public abstract class BaseMethodVisitor extends MethodVisitor {
         }
         this.modifiers = BehaviourModifier.unreflect(modifiers);
         this.accessModifier = AccessModifier.unreflect(modifiers);
+        this.classResolver = resolver;
+        this.classUnderEnhancement = classUnderEnhancement;
     }
 
     protected Type peekStackType() {
@@ -80,5 +88,22 @@ public abstract class BaseMethodVisitor extends MethodVisitor {
     protected void invokeEmptyCheckpoint(Checkpoint checkpoint) {
         super.visitLdcInsn(checkpoint.checkpointId());
         super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(CheckpointRuntimeAccessor.class), "checkpointReached", Type.getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE), false);
+    }
+
+    protected final Method resolvedMethod() {
+        if (method == null) {
+            Type methodType = Type.getMethodType(this.methodDescriptor);
+            Type[] argumentTypes = methodType.getArgumentTypes();
+            Class<?>[] resolvedParameterTypes = new Class[argumentTypes.length];
+            for (int i = 0; i < argumentTypes.length; i++) {
+                resolvedParameterTypes[i] = classResolver.resolveName(argumentTypes[i].getClassName());
+            }
+            try {
+                this.method = classUnderEnhancement.getMethod(methodName, resolvedParameterTypes);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return method;
     }
 }

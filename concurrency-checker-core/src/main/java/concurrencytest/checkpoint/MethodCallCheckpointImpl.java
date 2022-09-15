@@ -1,13 +1,11 @@
-package concurrencytest.runtime;
+package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.checkpoint.MethodCallCheckpoint;
 
 import java.lang.reflect.Method;
 
-public record MethodCallCheckpointImpl(int checkpointId, InjectionPoint injectionPoint, String sourceFile,
-                                       int lineNumber,
-                                       Method method) implements MethodCallCheckpoint {
+public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
+                                       int lineNumber, Method method) implements MethodCallCheckpoint {
     @Override
     public String details() {
         return null;

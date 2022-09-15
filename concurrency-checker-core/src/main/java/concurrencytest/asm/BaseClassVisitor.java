@@ -14,13 +14,14 @@ public class BaseClassVisitor extends ClassVisitor {
     protected final CheckpointRegister checkpointRegister;
     protected final Class<?> classUnderEnhancement;
     protected final ClassResolver classResolver;
-    protected String sourceName = "unkown";
+    protected String sourceName;
 
     public BaseClassVisitor(ClassVisitor delegate, CheckpointRegister register, Class<?> classUnderEnhancement, ClassResolver classResolver) {
         super(Opcodes.ASM7, delegate);
         this.checkpointRegister = register;
         this.classUnderEnhancement = classUnderEnhancement;
         this.classResolver = classResolver;
+        this.sourceName = classUnderEnhancement.getName();
     }
 
     @Override
@@ -54,6 +55,7 @@ public class BaseClassVisitor extends ClassVisitor {
                 try {
                     resolveMethodRecursive(implementedInterface, methodName, params);
                 } catch (NoSuchMethodException ex) {
+                    //ignore
                 }
             }
             return resolveMethodRecursive(callTarget.getSuperclass(), methodName, params);

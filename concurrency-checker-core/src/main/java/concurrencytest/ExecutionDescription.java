@@ -1,6 +1,6 @@
 package concurrencytest;
 
-import concurrencytest.checkpoint.CheckpointImpl;
+import concurrencytest.checkpoint.OldCheckpointImpl;
 import concurrencytest.exception.DeadlockFoundException;
 
 import java.util.Collection;
@@ -12,22 +12,22 @@ public class ExecutionDescription {
 
     private final Throwable error;
 
-    private final List<Map.Entry<String, CheckpointImpl>> path;
+    private final List<Map.Entry<String, OldCheckpointImpl>> path;
 
-    private ExecutionDescription(Throwable error, List<Map.Entry<String, CheckpointImpl>> path) {
+    private ExecutionDescription(Throwable error, List<Map.Entry<String, OldCheckpointImpl>> path) {
         this.error = error;
         this.path = path;
     }
 
-    private ExecutionDescription(List<Map.Entry<String, CheckpointImpl>> path) {
+    private ExecutionDescription(List<Map.Entry<String, OldCheckpointImpl>> path) {
         this(null, path);
     }
 
-    public static ExecutionDescription executionCompleted(List<Map.Entry<String, CheckpointImpl>> pathTaken) {
+    public static ExecutionDescription executionCompleted(List<Map.Entry<String, OldCheckpointImpl>> pathTaken) {
         return new ExecutionDescription(pathTaken);
     }
 
-    public static ExecutionDescription deadlockFound(Collection<ManagedThread> alive, List<Map.Entry<String, CheckpointImpl>> pathTaken) {
+    public static ExecutionDescription deadlockFound(Collection<ManagedThread> alive, List<Map.Entry<String, OldCheckpointImpl>> pathTaken) {
 //        throw new RuntimeException("TODO");
         //TODO add more information
         Collection<String> collect = alive.stream().map(ManagedThread::getName).collect(Collectors.toList());
@@ -43,7 +43,7 @@ public class ExecutionDescription {
         return error;
     }
 
-    public List<Map.Entry<String, CheckpointImpl>> getPath() {
+    public List<Map.Entry<String, OldCheckpointImpl>> getPath() {
         return path;
     }
 

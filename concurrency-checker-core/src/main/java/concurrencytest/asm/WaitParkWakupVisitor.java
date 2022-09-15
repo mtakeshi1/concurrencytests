@@ -16,7 +16,7 @@ public class WaitParkWakupVisitor extends BaseClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
-        return new BaseMethodVisitor(delegate, checkpointRegister, sourceName, access, name, descriptor) {
+        return new BaseMethodVisitor(classUnderEnhancement, delegate, checkpointRegister, sourceName, access, name, descriptor, classResolver) {
 
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
@@ -34,8 +34,12 @@ public class WaitParkWakupVisitor extends BaseClassVisitor {
             private boolean isNotifyOrUnpark(String owner, String name, String descriptor) {
                 if ("notify".equals(name) || "notifyAll".equals(name)) {
                     return true;
+                } else if (("jdk/internal/misc/Unsafe".equals(owner) || "sun/misc/Unsafe".equals(owner)) && "unpark".equals(name)) {
+                    return true;
+                } else if ("java/util/concurrent/locks/LockSupport".equals(owner)) {
+                    return name.startsWith("unpark");
                 }
-                return ("jdk/internal/misc/Unsafe".equals(owner) || "sun/misc/Unsafe".equals(owner)) && "unpark".equals(name);
+                return false;
             }
 
             private boolean isWaitOrPark(String owner, String name, String descriptor) {
@@ -44,8 +48,12 @@ public class WaitParkWakupVisitor extends BaseClassVisitor {
                     return argumentTypes.length == 0 ||
                             (argumentTypes.length == 1 && argumentTypes[0].equals(Type.LONG_TYPE)) ||
                             (argumentTypes.length == 2 && argumentTypes[0].equals(Type.LONG_TYPE) && argumentTypes[1].equals(Type.INT_TYPE));
+                } else if (("jdk/internal/misc/Unsafe".equals(owner) || "sun/misc/Unsafe".equals(owner)) && "park".equals(name)) {
+                    return true;
+                } else if ("java/util/concurrent/locks/LockSupport".equals(owner)) {
+                    return name.startsWith("park");
                 }
-                return ("jdk/internal/misc/Unsafe".equals(owner) || "sun/misc/Unsafe".equals(owner)) && "park".equals(name);
+                return false;
             }
 
             private void dropArguments(String descriptor) {

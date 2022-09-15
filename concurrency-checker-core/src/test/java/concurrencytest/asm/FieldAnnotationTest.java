@@ -151,7 +151,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         Assert.assertFalse(before.fieldWrite());
         Assert.assertEquals(Integer.class, before.fieldType());
         FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(1).checkpoint();
-        Assert.assertNotEquals(before.checkpointId(), after.checkpointId());
+        Assert.assertNotEquals(before, after);
         Assert.assertEquals("intPublicField", after.fieldName());
         Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());
         Assert.assertTrue(after.fieldRead());

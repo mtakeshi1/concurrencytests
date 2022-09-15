@@ -1,10 +1,6 @@
 package concurrencytest.checkpoint;
 
-import concurrencytest.annotations.InjectionPoint;
-
-public interface MethodCallCheckpoint extends Checkpoint {
-
-    InjectionPoint injectionPoint();
+public interface MethodCallCheckpoint extends CheckpointDescription {
 
     String methodName();
 

@@ -1,20 +1,20 @@
 package concurrencytest;
 
-import concurrencytest.checkpoint.CheckpointImpl;
+import concurrencytest.checkpoint.OldCheckpointImpl;
 
 import java.util.Objects;
 
 public class ThreadState {
 
     private final String actorIdentification;
-    private final CheckpointImpl checkpoint;
+    private final OldCheckpointImpl checkpoint;
     private final boolean alive;
     private final boolean runnable;
     private final String details;
 
     // TODO loop count
 
-    public ThreadState(String actorIdentification, CheckpointImpl checkpoint, boolean alive, boolean runnable, String details, int loopcount) {
+    public ThreadState(String actorIdentification, OldCheckpointImpl checkpoint, boolean alive, boolean runnable, String details, int loopcount) {
         this.actorIdentification = actorIdentification;
         this.checkpoint = checkpoint;
         this.alive = alive;
@@ -22,7 +22,7 @@ public class ThreadState {
         this.details = details;
     }
 
-    public ThreadState(String actorIdentification, CheckpointImpl checkpoint, boolean alive, boolean runnable, int loopcount) {
+    public ThreadState(String actorIdentification, OldCheckpointImpl checkpoint, boolean alive, boolean runnable, int loopcount) {
         this(actorIdentification, checkpoint, alive, runnable, "", loopcount);
     }
 
@@ -43,7 +43,7 @@ public class ThreadState {
         return actorIdentification;
     }
 
-    public CheckpointImpl getCheckpoint() {
+    public OldCheckpointImpl getCheckpoint() {
         return checkpoint;
     }
 

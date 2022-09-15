@@ -2,7 +2,7 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 
-public record FixedCheckpoint(int checkpointId, InjectionPoint injectionPoint, String details) implements Checkpoint {
+public record FixedCheckpoint(InjectionPoint injectionPoint, String details) implements CheckpointDescription {
 
     @Override
     public String sourceFile() {

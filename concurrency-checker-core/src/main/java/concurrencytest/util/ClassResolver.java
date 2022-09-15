@@ -1,7 +1,5 @@
 package concurrencytest.util;
 
-import org.objectweb.asm.Type;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

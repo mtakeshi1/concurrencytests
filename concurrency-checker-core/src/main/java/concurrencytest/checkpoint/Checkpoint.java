@@ -2,16 +2,22 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 
-public interface Checkpoint {
+public record Checkpoint(int checkpointId, CheckpointDescription checkpointDescription) {
 
-    int checkpointId();
+    public InjectionPoint injectionPoint() {
+        return checkpointDescription().injectionPoint();
+    }
 
-    InjectionPoint injectionPoint();
+    public String details() {
+        return checkpointDescription().details();
+    }
 
-    String details();
+    public String sourceFile() {
+        return checkpointDescription().sourceFile();
+    }
 
-    String sourceFile();
-
-    int lineNumber();
+    public int lineNumber() {
+        return checkpointDescription().lineNumber();
+    }
 
 }

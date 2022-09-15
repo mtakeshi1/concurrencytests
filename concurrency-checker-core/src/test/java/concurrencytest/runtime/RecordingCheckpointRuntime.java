@@ -53,30 +53,30 @@ public class RecordingCheckpointRuntime implements CheckpointRuntime {
     @Override
     public void beforeActorStartCheckpoint() {
         Checkpoint checkpoint = checkpointRegister.taskStartingCheckpoint();
-        checkpoints.add(new RegularCheckpointReached(checkpoint, "", Thread.currentThread()));
+        checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), "", Thread.currentThread()));
     }
 
     @Override
     public void actorFinishedCheckpoint() {
         Checkpoint checkpoint = checkpointRegister.taskFinishedCheckpoint();
-        checkpoints.add(new RegularCheckpointReached(checkpoint, "", Thread.currentThread()));
+        checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), "", Thread.currentThread()));
     }
 
     @Override
     public void checkpointReached(int id) {
         Checkpoint checkpoint = checkpointRegister.checkpointById(id);
         Assert.assertNotNull("checkpoint not found: " + id, checkpoint);
-        checkpoints.add(new RegularCheckpointReached(checkpoint, "", Thread.currentThread()));
+        checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), "", Thread.currentThread()));
     }
 
     @Override
     public void checkpointReached(int id, Object details) {
         Checkpoint checkpoint = checkpointRegister.checkpointById(id);
         Assert.assertNotNull("checkpoint not found: " + id, checkpoint);
-        if (checkpoint instanceof MonitorCheckpoint monitorCheckpoint) {
+        if (checkpoint.checkpointDescription() instanceof MonitorCheckpoint monitorCheckpoint) {
             checkpoints.add(new MonitorCheckpointReached(monitorCheckpoint, details, Thread.currentThread()));
         } else {
-            checkpoints.add(new RegularCheckpointReached(checkpoint, String.valueOf(details), Thread.currentThread()));
+            checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), String.valueOf(details), Thread.currentThread()));
         }
     }
 

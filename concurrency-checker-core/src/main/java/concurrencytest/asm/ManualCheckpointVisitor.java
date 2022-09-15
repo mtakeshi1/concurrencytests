@@ -23,7 +23,7 @@ public class ManualCheckpointVisitor extends BaseClassVisitor {
 
     private class ManualCheckpointMethodVisitor extends BaseMethodVisitor {
         public ManualCheckpointMethodVisitor(MethodVisitor delegate, CheckpointRegister register, String source, int accessModifiers, String methodName, String methodDescriptor) {
-            super(delegate, register, source, accessModifiers, methodName, methodDescriptor);
+            super(classUnderEnhancement, delegate, register, source, accessModifiers, methodName, methodDescriptor, ManualCheckpointVisitor.this.classResolver);
         }
 
         @Override

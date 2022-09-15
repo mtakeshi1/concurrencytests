@@ -43,7 +43,7 @@ public class SynchronizedMethodDeclarationTest extends BaseClassVisitorTest {
         Object newInstance = injected.getConstructor().newInstance();
         Assert.assertTrue(newInstance instanceof Callable<?>);
         Assert.assertEquals(8, register.allCheckpoints().size());
-        Assert.assertTrue(register.allCheckpoints().values().stream().filter(s -> s instanceof MonitorCheckpoint).allMatch(s -> s.lineNumber() == -1));
+        Assert.assertTrue(register.allCheckpoints().values().stream().filter(s -> s.checkpointDescription() instanceof MonitorCheckpoint).allMatch(s -> s.lineNumber() == -1));
     }
 
 }

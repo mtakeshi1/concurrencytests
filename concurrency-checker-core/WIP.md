@@ -8,6 +8,8 @@
 - check if, for synchronized methods, its enough to unset the modifier and manually inject the synchronized block
 - better configuration of checkpoint injection
 - use records for CheckpointReached
+- checkpoint location shouldn't be ambiguous
+
 
 # planned / done checkpoint types
 - manual - missing stack manipulation of details
@@ -21,6 +23,6 @@
 
 # open questions
 - should we persist / serialize thread state / details with the checkpoint?
-- should we special case java.util.concurrent.Lock
+- should we special case java.util.concurrent.Lock?
 - decide what to do with new Thread() { public void run() {} }
 - 

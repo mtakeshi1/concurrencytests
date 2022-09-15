@@ -20,9 +20,9 @@ public class ThreadConstrutorVisitor extends BaseClassVisitor {
         return new ReplaceThreadConstructorVisitor(visitor, checkpointRegister, sourceName, access, name, descriptor);
     }
 
-    private static class ReplaceThreadConstructorVisitor extends BaseMethodVisitor {
+    private class ReplaceThreadConstructorVisitor extends BaseMethodVisitor {
         public ReplaceThreadConstructorVisitor(MethodVisitor delegate, CheckpointRegister register, String sourceName, int modifiers, String methodName, String descriptor) {
-            super(delegate, register, sourceName, modifiers, methodName, descriptor);
+            super(classUnderEnhancement, delegate, register, sourceName, modifiers, methodName, descriptor, ThreadConstrutorVisitor.this.classResolver);
         }
 
         @Override

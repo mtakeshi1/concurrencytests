@@ -5,21 +5,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class CheckpointImpl {
+public class OldCheckpointImpl {
 
     private final long checkpointId;
     private final String checkpointName;
     private final String description;
     private final Map<String, Object> context;
 
-    public CheckpointImpl(long checkpointId, String checkpointName, String description, Map<String, Object> state) {
+    public OldCheckpointImpl(long checkpointId, String checkpointName, String description, Map<String, Object> state) {
         this.checkpointId = checkpointId;
         this.checkpointName = checkpointName;
         this.description = description;
         this.context = state;
     }
 
-    public CheckpointImpl(long checkpointId, String checkpointName) {
+    public OldCheckpointImpl(long checkpointId, String checkpointName) {
         this(checkpointId, checkpointName, checkpointName, Collections.emptyMap());
     }
 
@@ -44,7 +44,7 @@ public class CheckpointImpl {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CheckpointImpl that = (CheckpointImpl) o;
+        OldCheckpointImpl that = (OldCheckpointImpl) o;
         return checkpointId == that.checkpointId;
     }
 

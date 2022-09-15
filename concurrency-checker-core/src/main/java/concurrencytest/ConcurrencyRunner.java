@@ -5,7 +5,7 @@ import concurrencytest.agent.InjectCheckpointVisitor;
 import concurrencytest.agent.OpenClassLoader;
 import concurrencytest.agent.ReadClassesVisitor;
 import concurrencytest.annotations.*;
-import concurrencytest.checkpoint.CheckpointImpl;
+import concurrencytest.checkpoint.OldCheckpointImpl;
 import concurrencytest.util.ASMUtils;
 import concurrencytest.util.LongStatistics;
 import org.junit.After;
@@ -93,8 +93,8 @@ public class ConcurrencyRunner extends Runner {
         long lastTime = System.currentTimeMillis();
         ExecutionGraph graph = new ExecutionGraph();
         LongStatistics results = new LongStatistics();
-        CheckpointImpl initial = graph.computeCheckpointIfAbsent(-1, v -> new CheckpointImpl(v, "task-start"));
-        CheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new CheckpointImpl(v, "finish"));
+        OldCheckpointImpl initial = graph.computeCheckpointIfAbsent(-1, v -> new OldCheckpointImpl(v, "task-start"));
+        OldCheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new OldCheckpointImpl(v, "finish"));
         try {
             do {
                 if (doExecuteRunner(notifier, graph, executionCount, initial, end, parameters, actualTestClass, results)) {
@@ -148,8 +148,8 @@ public class ConcurrencyRunner extends Runner {
                     Queue<String> preffix = new ArrayDeque<>(preffixes[i]);
                     ExecutionGraph graph = graphs[i];
                     if (hasUnvisitesNodes(graph, preffix)) {
-                        CheckpointImpl initial = graph.computeCheckpointIfAbsent(-1, v -> new CheckpointImpl(v, "task-start"));
-                        CheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new CheckpointImpl(v, "finish"));
+                        OldCheckpointImpl initial = graph.computeCheckpointIfAbsent(-1, v -> new OldCheckpointImpl(v, "task-start"));
+                        OldCheckpointImpl end = graph.computeCheckpointIfAbsent(-2, v -> new OldCheckpointImpl(v, "finish"));
                         futures.add(executorService.submit(() -> doExecuteRunner(notifier, graph, executionCount, initial, end, preffix, parameters, actualTestClass, results)));
                     }
                 }
@@ -363,7 +363,7 @@ public class ConcurrencyRunner extends Runner {
         return graph.getInitialNode() == null || graph.getInitialNode().findNeighboor(node) == null || graph.getInitialNode().findNeighboor(node).hasUnvisitedState();
     }
 
-    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, CheckpointImpl initial, CheckpointImpl end,
+    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, OldCheckpointImpl initial, OldCheckpointImpl end,
                                     TestParameters parameters, Class<?> actualTestClass, LongStatistics results) {
         try {
             final Object hostInstance = actualTestClass.getConstructor().newInstance();
@@ -397,7 +397,7 @@ public class ConcurrencyRunner extends Runner {
         return false;
     }
 
-    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, CheckpointImpl initial, CheckpointImpl end,
+    private boolean doExecuteRunner(RunNotifier notifier, ExecutionGraph graph, AtomicInteger executionCount, OldCheckpointImpl initial, OldCheckpointImpl end,
                                     Queue<String> pathPreffix, TestParameters parameters, Class<?> actualTestClass, LongStatistics results) {
         try {
             final Object hostInstance = actualTestClass.getConstructor().newInstance();
@@ -517,7 +517,7 @@ public class ConcurrencyRunner extends Runner {
         invokeAnnotatedMethods(hostInstance, Before.class, notifier);
     }
 
-    private TestActor toRunnable(Method method, Object hostInstance, CheckpointImpl initialCheckpoint, CheckpointImpl finishedCheckpoint, RunNotifier notifier) {
+    private TestActor toRunnable(Method method, Object hostInstance, OldCheckpointImpl initialCheckpoint, OldCheckpointImpl finishedCheckpoint, RunNotifier notifier) {
         try {
             Runnable task = new Runnable() {
                 @Override
