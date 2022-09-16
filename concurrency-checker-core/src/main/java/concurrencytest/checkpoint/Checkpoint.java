@@ -2,7 +2,9 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 
-public record Checkpoint(int checkpointId, CheckpointDescription checkpointDescription) {
+import java.io.Serializable;
+
+public record Checkpoint(int checkpointId, CheckpointDescription checkpointDescription) implements Serializable {
 
     public InjectionPoint injectionPoint() {
         return checkpointDescription().injectionPoint();
