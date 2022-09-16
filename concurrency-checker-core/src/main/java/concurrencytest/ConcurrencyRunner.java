@@ -533,12 +533,12 @@ public class ConcurrencyRunner extends Runner {
                         method.invoke(hostInstance);
                     } catch (InvocationTargetException e) {
                         if (!(e.getTargetException() instanceof ThreadDisabled)) {
-                            notifier.fireTestFailure(new Failure(childDescription(), new RuntimeException("Could not execute actor on method: " + method, e)));
+                            notifier.fireTestFailure(new Failure(childDescription(), new RuntimeException("Could not execute actor on methodOrConstructor: " + method, e)));
                         }
                     } catch (ThreadDisabled e) {
                         //safe to ignore
                     } catch (Exception e) {
-                        notifier.fireTestFailure(new Failure(childDescription(), new RuntimeException("Could not execute actor on method: " + method, e)));
+                        notifier.fireTestFailure(new Failure(childDescription(), new RuntimeException("Could not execute actor on methodOrConstructor: " + method, e)));
                     } finally {
                         if (Modifier.isSynchronized(method.getModifiers())) {
                             Object lockTarget = Modifier.isStatic(method.getModifiers()) ? hostInstance.getClass() : hostInstance;
@@ -551,7 +551,7 @@ public class ConcurrencyRunner extends Runner {
             };
             return new TestActor(method.getName(), task);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create TestActor for method: " + method, e);
+            throw new RuntimeException("Failed to create TestActor for methodOrConstructor: " + method, e);
         }
     }
 

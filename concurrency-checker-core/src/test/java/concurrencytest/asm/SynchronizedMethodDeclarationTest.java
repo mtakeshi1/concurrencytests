@@ -2,7 +2,7 @@ package concurrencytest.asm;
 
 import concurrencytest.asm.testClasses.SyncCallable;
 import concurrencytest.checkpoint.MonitorCheckpoint;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -1,6 +1,6 @@
 package concurrencytest.asm.testClasses;
 
-import concurrencytest.CheckpointRuntimeAccessor;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 
 public class InjectionTarget2 implements Runnable{
 

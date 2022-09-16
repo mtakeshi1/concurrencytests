@@ -1,4 +1,4 @@
-package concurrencytest;
+package concurrencytest.runtime;
 
 import concurrencytest.runtime.CheckpointRuntime;
 
@@ -11,7 +11,6 @@ public class CheckpointRuntimeAccessor {
         if (runtime != null) {
             runtime.fieldAccessCheckpoint(checkpointId, owner, value);
         }
-
     }
 
     public static void manualCheckpoint() {

@@ -2,10 +2,10 @@ package concurrencytest.runtime;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.*;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Method;
+import java.lang.reflect.Member;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,7 +73,7 @@ public class StandardCheckpointRegister implements CheckpointRegister {
     }
 
     @Override
-    public Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Method method, InjectionPoint injectionPoint) {
+    public Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Member method, InjectionPoint injectionPoint) {
         return registerCheckpoint(new MethodCallCheckpointImpl(injectionPoint, sourceName, latestLineNumber, method));
     }
 

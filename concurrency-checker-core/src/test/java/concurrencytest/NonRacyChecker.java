@@ -29,7 +29,7 @@ public class NonRacyChecker extends RunListener {
     @Test
     @Ignore
     public void testSynchronizedIndy() throws Exception {
-        shouldNotFail(RacyIndySynchronizedMethodRef.class, "Should not find racing condition on method ref to a synchronized method");
+        shouldNotFail(RacyIndySynchronizedMethodRef.class, "Should not find racing condition on methodOrConstructor ref to a synchronized methodOrConstructor");
     }
 
     public void shouldNotFail(Class<?> sut, String message) throws Exception {

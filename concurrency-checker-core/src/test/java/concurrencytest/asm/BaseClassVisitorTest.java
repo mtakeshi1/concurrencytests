@@ -1,6 +1,6 @@
 package concurrencytest.asm;
 
-import concurrencytest.CheckpointRuntimeAccessor;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.agent.OpenClassLoader;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.RecordingCheckpointRuntime;

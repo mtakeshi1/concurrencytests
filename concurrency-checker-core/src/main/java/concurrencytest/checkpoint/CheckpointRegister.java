@@ -4,6 +4,8 @@ import com.sun.source.tree.BreakTree;
 import concurrencytest.annotations.InjectionPoint;
 import org.objectweb.asm.Type;
 
+import java.lang.reflect.Executable;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +37,7 @@ public interface CheckpointRegister {
 
     Checkpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
 
-    Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Method method, InjectionPoint before);
+    Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Member method, InjectionPoint before);
 
     Checkpoint newParkCheckpoint(String details, String sourceName, int latestLineNumber);
 

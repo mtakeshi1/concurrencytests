@@ -1,6 +1,6 @@
 package concurrencytest.agent;
 
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Field;

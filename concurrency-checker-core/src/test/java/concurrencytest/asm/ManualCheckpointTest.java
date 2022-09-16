@@ -5,7 +5,7 @@ import concurrencytest.asm.testClasses.InjectionTarget2;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.ManualCheckpointImpl;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -1,11 +1,14 @@
 package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.reflection.StaticInitializer;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
-                                       int lineNumber, Method method) implements MethodCallCheckpoint {
+                                       int lineNumber, Member methodOrConstructor) implements MethodCallCheckpoint {
     @Override
     public String details() {
         return null;
@@ -13,21 +16,34 @@ public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sou
 
     @Override
     public String methodName() {
-        return method.getName();
+        return methodOrConstructor.getName();
     }
 
     @Override
     public Class<?> declaringType() {
-        return method.getDeclaringClass();
+        return methodOrConstructor.getDeclaringClass();
     }
 
     @Override
     public Class<?>[] parameterTypes() {
-        return method.getParameterTypes();
+        if (methodOrConstructor instanceof Method m) {
+            return m.getParameterTypes();
+        } else if (methodOrConstructor instanceof Constructor<?> c) {
+            return c.getParameterTypes();
+        } else {
+            return new Class[0];
+        }
     }
 
     @Override
     public Class<?> returnType() {
-        return method.getReturnType();
+        if (methodOrConstructor instanceof Method m) {
+            return m.getReturnType();
+        } else if (methodOrConstructor instanceof Constructor<?> c) {
+            return c.getDeclaringClass();
+        } else if(methodOrConstructor instanceof StaticInitializer st) {
+            return st.getDeclaringClass();
+        }
+        throw new IllegalArgumentException("Cannot determine return type for: " + methodOrConstructor);
     }
 }

@@ -1,4 +1,4 @@
-package concurrencytest.util;
+package concurrencytest.reflection;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -119,7 +119,7 @@ public class ReflectionHelper implements ClassResolver {
                 return m;
             }
         }
-        throw new RuntimeException(String.format("Could not find method with name %s, parameter types: %s and return type: %s on class: %s", name, Arrays.toString(args), returnType, declaringClass));
+        throw new RuntimeException(String.format("Could not find methodOrConstructor with name %s, parameter types: %s and return type: %s on class: %s", name, Arrays.toString(args), returnType, declaringClass));
     }
 
 

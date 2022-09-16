@@ -1,4 +1,4 @@
-package concurrencytest.util;
+package concurrencytest.reflection;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

@@ -10,6 +10,7 @@ import java.util.Collection;
 
 public interface MethodInvocationMatcher {
 
+    //they should use CheckpointLocation
 
     default boolean matches(Class<?> classUnderEnhancement, Class<?> invocationTargetType, String methodName, String methodDescriptor, int modifiers, int opcode, InjectionPoint injectionPoint) {
         AccessModifier accessModifier = AccessModifier.unreflect(modifiers);
@@ -18,7 +19,7 @@ public interface MethodInvocationMatcher {
         return matches(classUnderEnhancement, invocationTargetType, methodName, Type.getMethodType(methodDescriptor), accessModifier, unreflect, injectionPoint);
     }
 
-    boolean matches(Class<?> classUnderEnhancement, Class<?> fieldOwner, String fieldName, Type methodDescriptorType,
+    boolean matches(Class<?> classUnderEnhancement, Class<?> invocationTargetType, String methodName, Type methodDescriptorType,
                     AccessModifier accessModifier, Collection<BehaviourModifier> behaviourModifiers, InjectionPoint injectionPoint);
 
 

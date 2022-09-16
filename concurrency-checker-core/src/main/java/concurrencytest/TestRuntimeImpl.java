@@ -3,7 +3,7 @@ package concurrencytest;
 import concurrencytest.checkpoint.OldCheckpointImpl;
 import concurrencytest.util.InstrospectionHelper;
 import concurrencytest.util.Murmur3A;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.objectweb.asm.Type;
 
 import java.lang.management.ManagementFactory;

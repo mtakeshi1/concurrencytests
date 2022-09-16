@@ -1,17 +1,12 @@
 package concurrencytest.asm;
 
 import concurrencytest.asm.testClasses.SyncBlockTarget;
-import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.checkpoint.MonitorCheckpoint;
 import concurrencytest.runtime.CheckpointReached;
 import concurrencytest.runtime.MonitorCheckpointReached;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class SynchronizedBlockTest extends BaseClassVisitorTest {
 

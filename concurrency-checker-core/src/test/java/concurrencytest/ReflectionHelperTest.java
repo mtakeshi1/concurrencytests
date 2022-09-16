@@ -1,6 +1,6 @@
 package concurrencytest;
 
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.Type;

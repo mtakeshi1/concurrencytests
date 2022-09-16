@@ -1,9 +1,9 @@
 package concurrencytest.asm;
 
-import concurrencytest.CheckpointRuntimeAccessor;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.util.ClassResolver;
+import concurrencytest.reflection.ClassResolver;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

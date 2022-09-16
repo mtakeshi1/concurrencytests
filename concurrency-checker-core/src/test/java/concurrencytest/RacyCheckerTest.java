@@ -28,7 +28,7 @@ public class RacyCheckerTest extends RunListener {
 
     @Test
     public void runMethod() {
-        checkShouldFail(RacyActorsGetters.class, "Should detect racing condition with method calls", AssertionError.class);
+        checkShouldFail(RacyActorsGetters.class, "Should detect racing condition with methodOrConstructor calls", AssertionError.class);
     }
 
     @Test

@@ -1,13 +1,14 @@
 package concurrencytest.asm;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.util.ClassResolver;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ClassResolver;
+import concurrencytest.reflection.ReflectionHelper;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Method;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Member;
 
 public class BaseClassVisitor extends ClassVisitor {
 
@@ -30,7 +31,7 @@ public class BaseClassVisitor extends ClassVisitor {
         sourceName = source;
     }
 
-    protected Method resolveMethod(Class<?> callTarget, String methodName, String descriptor) {
+    protected Member resolveMethodOrConstructor(Class<?> callTarget, String methodName, String descriptor) {
         Type type = Type.getMethodType(descriptor);
         Type[] argTypes = type.getArgumentTypes();
         Class<?>[] params = new Class[argTypes.length];
@@ -38,13 +39,16 @@ public class BaseClassVisitor extends ClassVisitor {
             params[i] = resolveType(null, argTypes[i].getClassName());
         }
         try {
+            if (methodName.equals("<init>")) {
+                return callTarget.getConstructor(params);
+            }
             return resolveMethodRecursive(callTarget, methodName, params);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Method resolveMethodRecursive(Class<?> callTarget, String methodName, Class<?>[] params) throws NoSuchMethodException {
+    private Executable resolveMethodRecursive(Class<?> callTarget, String methodName, Class<?>[] params) throws NoSuchMethodException {
         try {
             return callTarget.getDeclaredMethod(methodName, params);
         } catch (NoSuchMethodException e) {

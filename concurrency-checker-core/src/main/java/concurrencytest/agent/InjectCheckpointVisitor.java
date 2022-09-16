@@ -2,7 +2,7 @@ package concurrencytest.agent;
 
 import concurrencytest.TestRuntimeImpl;
 import concurrencytest.annotations.CheckpointInjectionPoint;
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Field;
@@ -415,14 +415,14 @@ public class InjectCheckpointVisitor extends ClassVisitor {
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-            //unwind method call target and parameters into local variables, call something to actually resolve the method and check if its synchronized
+            //unwind methodOrConstructor call target and parameters into local variables, call something to actually resolve the methodOrConstructor and check if its synchronized
             //add checkpoint if it is and record the result
             if (isUnmodifiable(owner) || isPure(owner, name, descriptor) || name.equals("<init>") || name.equals("<clinit>")) {
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 return;
             }
 //            if (Type.getInternalName(TestRuntimeImpl.class).equals(owner) && !injectionPoints.contains(CheckpointInjectionPoint.MANUAL)) {
-//                unwind method arguments
+//                unwind methodOrConstructor arguments
 //                Type[] argumentTypes = Type.getMethodType(descriptor).getArgumentTypes();
 //                for (var argType : argumentTypes) {
 //                    if (argType.getSize() == 2) {
@@ -514,7 +514,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
                 super.visitVarInsn(methodType.getArgumentTypes()[i].getOpcode(Opcodes.ISTORE), localVariables[i]);
             }
             Object callTargetReference;
-            //stack now contains the call target or nothing if its a static method
+            //stack now contains the call target or nothing if its a static methodOrConstructor
             if (opcode == Opcodes.INVOKESTATIC) {
                 // stack is empty so we push the target class
                 super.visitLdcInsn(Type.getObjectType(owner));
@@ -525,7 +525,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
                 callTargetReference = localVar;
                 localVar++;
             }
-            //stack now contains the call target or the class if its a static method
+            //stack now contains the call target or the class if its a static methodOrConstructor
             super.visitLdcInsn(name);
             super.visitLdcInsn(descriptor);
             super.visitLdcInsn(checkpointIdGenerator.getAsLong());
@@ -540,7 +540,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
             }
             // the stack now has a boolean / int and we must store on a local variable
             super.visitVarInsn(Opcodes.ISTORE, localVar);
-//            // we now push the method arguments back
+//            // we now push the methodOrConstructor arguments back
             Label begin = new Label();
             Label end = new Label();
             Label handler = new Label();
@@ -576,7 +576,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
             Label elseLabel = new Label();
             Label ifelseExit = new Label();
             super.visitJumpInsn(Opcodes.IFEQ, elseLabel);
-            // if( dispatch == true ) - in other words, the method call was a synchronized one
+            // if( dispatch == true ) - in other words, the methodOrConstructor call was a synchronized one
             if (callTarget instanceof Type) {
                 super.visitLdcInsn(callTarget);
             } else {
@@ -586,7 +586,7 @@ public class InjectCheckpointVisitor extends ClassVisitor {
             super.visitJumpInsn(Opcodes.GOTO, ifelseExit);
             // else block
             super.visitLabel(elseLabel);
-            // the method was not dispatched to a synchronized so we do a plain checkpoint
+            // the methodOrConstructor was not dispatched to a synchronized so we do a plain checkpoint
             visitCheckpoint(lastInstructionDescription);
             super.visitLabel(ifelseExit);
         }

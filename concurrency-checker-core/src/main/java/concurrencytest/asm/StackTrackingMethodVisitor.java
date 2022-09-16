@@ -1,7 +1,7 @@
 package concurrencytest.asm;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.util.ClassResolver;
+import concurrencytest.reflection.ClassResolver;
 import org.objectweb.asm.MethodVisitor;
 
 public class StackTrackingMethodVisitor extends BaseMethodVisitor {

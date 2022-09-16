@@ -1,7 +1,5 @@
 package concurrencytest.runtime;
 
-import concurrencytest.CheckpointRuntimeAccessor;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ManagedThread extends Thread {

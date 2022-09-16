@@ -1,6 +1,6 @@
 package concurrencytest.asm;
 
-import concurrencytest.util.ReflectionHelper;
+import concurrencytest.reflection.ReflectionHelper;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;

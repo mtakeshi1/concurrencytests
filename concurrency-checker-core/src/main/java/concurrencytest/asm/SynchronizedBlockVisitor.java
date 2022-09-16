@@ -3,7 +3,7 @@ package concurrencytest.asm;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.util.ClassResolver;
+import concurrencytest.reflection.ClassResolver;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

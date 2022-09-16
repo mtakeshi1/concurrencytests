@@ -1,6 +1,6 @@
 package concurrencytest.asm.testClasses;
 
-import concurrencytest.CheckpointRuntimeAccessor;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.annotations.FieldCheckpoint;
 import concurrencytest.annotations.InjectionPoint;
 
