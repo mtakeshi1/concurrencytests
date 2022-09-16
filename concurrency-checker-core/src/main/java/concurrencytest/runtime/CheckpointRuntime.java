@@ -23,4 +23,5 @@ public interface CheckpointRuntime {
     void checkpointReached(int id, Object context);
 
     void fieldAccessCheckpoint(int checkpointId, Object owner, Object value);
+
 }

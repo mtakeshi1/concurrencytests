@@ -2,32 +2,10 @@ package concurrencytest.runtime.tree;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
-public interface ThreadState {
+public record ThreadState(String name, int checkpoint, int loopCount, List<Integer> ownedMonitors,
+                          OptionalInt waitingForMonitor, List<Integer> ownedLocks, OptionalInt waitingForLock,
+                          Thread platformThread, boolean runnable) {
 
-    String name();
-
-    long id();
-
-    long checkPointId();
-
-    int loopCount();
-
-    List<Integer> monitorsOwned();
-
-    Optional<Integer> waitingForMonitor();
-
-    Optional<Integer> objectWait();
-
-    List<Integer> locksOwned();
-
-    Optional<Integer> waitingForLocks();
-
-    Optional<Integer> conditionWait();
-
-    boolean runnable();
-
-    boolean finished();
-
-    Thread nativeThread();
 }

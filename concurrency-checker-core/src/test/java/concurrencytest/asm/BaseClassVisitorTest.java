@@ -13,6 +13,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
@@ -56,7 +57,7 @@ public class BaseClassVisitorTest {
         String newName = target.getName() + "$$Injected_" + idSeed++;
         String oldInternalName = Type.getType(target).getInternalName();
         String newInternalName = newName.replace('.', '/');
-        ClassRemapper map = new ClassRemapper(delegate, new SimpleRemapper(oldInternalName, newInternalName));
+        ClassRemapper map = new ClassRemapper(new CheckClassAdapter(delegate), new SimpleRemapper(oldInternalName, newInternalName));
         ClassVisitor visitor = factory.buildFor(target, map);
         reader.accept(visitor, ClassReader.EXPAND_FRAMES);
         byte[] byteCode = writer.toByteArray();
