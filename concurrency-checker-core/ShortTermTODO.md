@@ -2,3 +2,5 @@
 - CheckpointLocation
 - test for MethodInvocationVisitor
 - change protected members to private
+- thread dependencies:
+  - ex Thread.join, Future.get, etc

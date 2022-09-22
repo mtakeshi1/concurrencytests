@@ -41,7 +41,8 @@ public class MinimalMethodReferenceDump implements Opcodes {
             methodVisitor.visitLineNumber(6, label0);
             methodVisitor.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
             methodVisitor.visitInsn(DUP);
-            methodVisitor.visitInvokeDynamicInsn("run",
+            methodVisitor.visitInvokeDynamicInsn(
+                    "run",
                     "(Ljava/io/PrintStream;)Ljava/lang/Runnable;",
                     new Handle(Opcodes.H_INVOKESTATIC, "java/lang/invoke/LambdaMetafactory", "metafactory", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false),
                     Type.getType("()V"),  //MethodType interfaceMethodType,
