@@ -1,8 +1,9 @@
-package concurrencytest.runtime;
+package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.*;
 import concurrencytest.reflection.ReflectionHelper;
+import concurrencytest.runtime.ParkCheckpoint;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Member;
@@ -85,5 +86,10 @@ public class StandardCheckpointRegister implements CheckpointRegister {
     @Override
     public Checkpoint arrayElementCheckpoint(InjectionPoint injectionPoint, boolean arrayRead, Class<?> arrayType, String sourceName, int latestLineNumber) {
         return registerCheckpoint(new ArrayElementCheckpointDescription(injectionPoint, "", sourceName, latestLineNumber, Object.class, arrayRead));
+    }
+
+    @Override
+    public Checkpoint managedThreadStartedCheckpoint(String classUnderEnhancementName, String methodName, String methodDescriptor, String sourceName, int latestLineNumber) {
+        return registerCheckpoint(new ThreadStartingCheckpoint(classUnderEnhancementName, methodName, sourceName, latestLineNumber));
     }
 }

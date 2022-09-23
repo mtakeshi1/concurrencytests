@@ -1,12 +1,8 @@
 package concurrencytest.config;
 
-import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.asm.BehaviourModifier;
-
+import java.io.File;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 public interface Configuration {
 
@@ -14,31 +10,12 @@ public interface Configuration {
         return ExecutionMode.AUTO;
     }
 
+    default boolean checkClassesBytecode() {
+        return true;
+    }
+
     default int parallelExecutions() {
         return 1;
-    }
-
-    default boolean removeSynchronizedMethodDeclaration() {
-        return true;
-    }
-
-    default Collection<MethodInvocationMatcher> methodsToInstrument() {
-        return Collections.emptyList();
-    }
-
-    default Collection<FieldAccessMatch> fieldsToInstrument() {
-        return List.of(
-                (classUnderEnhancement, fieldOwner, fieldName, fieldType, accessModifier, behaviourModifiers, isFieldRead, injectionPoint) -> isFieldRead && injectionPoint == InjectionPoint.AFTER && behaviourModifiers.contains(BehaviourModifier.VOLATILE) && !behaviourModifiers.contains(BehaviourModifier.FINAL),
-                (classUnderEnhancement, fieldOwner, fieldName, fieldType, accessModifier, behaviourModifiers, isFieldRead, injectionPoint) -> !isFieldRead && injectionPoint == InjectionPoint.BEFORE && behaviourModifiers.contains(BehaviourModifier.VOLATILE) && !behaviourModifiers.contains(BehaviourModifier.FINAL)
-        );
-    }
-
-    default boolean checkpointAfterMonitorAcquire() {
-        return true;
-    }
-
-    default boolean checkpointBeforeMonitorRelease() {
-        return true;
     }
 
     default boolean offHeapTree() {
@@ -47,6 +24,10 @@ public interface Configuration {
 
     default int maxLoopIterations() {
         return 100;
+    }
+
+    default Duration checkpointTimeout() {
+        return Duration.ofMinutes(1);
     }
 
     default Duration maxDurationPerRun() {
@@ -61,7 +42,12 @@ public interface Configuration {
         return false;
     }
 
+    CheckpointConfiguration checkpointConfiguration();
+
     Collection<Class<?>> classesToInstrument();
 
+    Class<?> mainTestClass();
+
+    File outputFolder();
 
 }

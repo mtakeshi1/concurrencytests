@@ -32,7 +32,7 @@ public class TestRuntimeImpl {
     private volatile boolean disabled;
     private final Runnable invariantsCheck;
 
-    private final Collection<ManagedThread> managedThreads = new HashSet<>();
+    private final Collection<ManagedThreadOld> managedThreads = new HashSet<>();
 
     private final OldCheckpointImpl threadFinishedCheckpoint = new OldCheckpointImpl(-3, "thread-finished");
 
@@ -51,7 +51,7 @@ public class TestRuntimeImpl {
     }
 
     public void dumpThreads() {
-        for (ManagedThread thread : this.managedThreads) {
+        for (ManagedThreadOld thread : this.managedThreads) {
             System.err.println("Stack trace for thread: " + thread);
             for (var element : thread.getStackTrace()) {
                 System.err.println(element);
@@ -79,14 +79,14 @@ public class TestRuntimeImpl {
                 } else {
                     lastNode = lastNode.linkTo(path.get(path.size() - 1), new Node(currentThreadStates));
                 }
-                Collection<ManagedThread> alive = managedThreads.stream().filter(Thread::isAlive).collect(Collectors.toList());
+                Collection<ManagedThreadOld> alive = managedThreads.stream().filter(Thread::isAlive).collect(Collectors.toList());
                 if (alive.isEmpty()) {
                     graph.markTerminal(currentThreadStates);
                     invariantsCheck.run();
                     return ExecutionDescription.executionCompleted(pathTaken);
                 }
 
-                Map<String, ManagedThread> canAdvance = new HashMap<>();
+                Map<String, ManagedThreadOld> canAdvance = new HashMap<>();
 
                 alive.stream().filter(mt -> toThreadState(mt).isRunnable()).forEach(mt -> canAdvance.put(mt.getName(), mt));
                 if (canAdvance.isEmpty()) {
@@ -99,7 +99,7 @@ public class TestRuntimeImpl {
                     nextThread = firstNode;
                     firstNode = null;
                 }
-                ManagedThread managedThread = canAdvance.get(nextThread);
+                ManagedThreadOld managedThread = canAdvance.get(nextThread);
                 if (managedThread == null) {
                     lastNode.markTerminal();
                     return null;
@@ -160,14 +160,14 @@ public class TestRuntimeImpl {
                 } else {
                     lastNode = lastNode.linkTo(path.get(path.size() - 1), new Node(currentThreadStates));
                 }
-                Collection<ManagedThread> alive = managedThreads.stream().filter(Thread::isAlive).collect(Collectors.toList());
+                Collection<ManagedThreadOld> alive = managedThreads.stream().filter(Thread::isAlive).collect(Collectors.toList());
                 if (alive.isEmpty()) {
                     graph.markTerminal(currentThreadStates);
                     invariantsCheck.run();
                     return ExecutionDescription.executionCompleted(pathTaken);
                 }
 
-                Map<String, ManagedThread> canAdvance = new HashMap<>();
+                Map<String, ManagedThreadOld> canAdvance = new HashMap<>();
 
                 alive.stream().filter(mt -> toThreadState(mt).isRunnable()).forEach(mt -> canAdvance.put(mt.getName(), mt));
                 if (canAdvance.isEmpty()) {
@@ -179,7 +179,7 @@ public class TestRuntimeImpl {
                 } else {
                     nextThread = pathPreffix.poll();
                 }
-                ManagedThread managedThread = canAdvance.get(nextThread);
+                ManagedThreadOld managedThread = canAdvance.get(nextThread);
                 if (managedThread == null) {
                     lastNode.markTerminal();
                     return null;
@@ -240,21 +240,21 @@ public class TestRuntimeImpl {
                 } else {
                     lastNode = lastNode.linkTo(path.get(path.size() - 1), new Node(currentThreadStates));
                 }
-                Collection<ManagedThread> alive = managedThreads.stream().filter(Thread::isAlive).collect(Collectors.toList());
+                Collection<ManagedThreadOld> alive = managedThreads.stream().filter(Thread::isAlive).collect(Collectors.toList());
                 if (alive.isEmpty()) {
                     graph.markTerminal(currentThreadStates);
                     invariantsCheck.run();
                     return ExecutionDescription.executionCompleted(pathTaken);
                 }
 
-                Map<String, ManagedThread> canAdvance = new HashMap<>();
+                Map<String, ManagedThreadOld> canAdvance = new HashMap<>();
 
                 alive.stream().filter(mt -> toThreadState(mt).isRunnable()).forEach(mt -> canAdvance.put(mt.getName(), mt));
                 if (canAdvance.isEmpty()) {
                     return ExecutionDescription.deadlockFound(alive, pathTaken);
                 }
                 String nextThread = lastNode.findNextThread(canAdvance.keySet(), this.randomPick);
-                ManagedThread managedThread = canAdvance.get(nextThread);
+                ManagedThreadOld managedThread = canAdvance.get(nextThread);
                 if (managedThread == null) {
                     lastNode.markTerminal();
                     return null;
@@ -304,11 +304,11 @@ public class TestRuntimeImpl {
         return this.execute(null);
     }
 
-    private void checkMonitorsOwnedBy(ManagedThread managedThread) {
+    private void checkMonitorsOwnedBy(ManagedThreadOld managedThread) {
         monitorObserver.checkThreadFinished(managedThread);
     }
 
-    private void checkLocksOwnedBy(ManagedThread managedThread) {
+    private void checkLocksOwnedBy(ManagedThreadOld managedThread) {
         lockObserver.checkThreadFinished(managedThread);
     }
 
@@ -327,7 +327,7 @@ public class TestRuntimeImpl {
         return new RuntimeState(threadStates);
     }
 
-    private ThreadState toThreadState(ManagedThread mt) {
+    private ThreadState toThreadState(ManagedThreadOld mt) {
         String blockedInfo;
         if ((blockedInfo = lockObserver.blockedInformation(mt)) != null || ((blockedInfo = monitorObserver.blockedInformation(mt)) != null)) {
             return new ThreadState(mt.getName(), mt.getCheckpoint(), mt.isAlive(), false, blockedInfo, mt.getLoopCount());
@@ -338,7 +338,7 @@ public class TestRuntimeImpl {
 
     private void startManagedThreads() {
         for (TestActor actor : this.tasks) {
-            ManagedThread thread = new ManagedThread(this.group, actor.getTask(), actor.getName(), this);
+            ManagedThreadOld thread = new ManagedThreadOld(this.group, actor.getTask(), actor.getName(), this);
             if (this.classLoader != null) {
                 thread.setContextClassLoader(this.classLoader);
             }
@@ -348,7 +348,7 @@ public class TestRuntimeImpl {
     }
 
     private void rendezvous() throws InterruptedException {
-        for (ManagedThread thread : this.managedThreads) {
+        for (ManagedThreadOld thread : this.managedThreads) {
             thread.waitForCheckpoint(actorTimeoutSeconds);
             if (thread.isAlive() && thread.getCheckpoint() == null) {
                 //
@@ -474,7 +474,7 @@ public class TestRuntimeImpl {
         if (testRuntime == null) {
             return;
         }
-        ManagedThread managedThread = (ManagedThread) Thread.currentThread();
+        ManagedThreadOld managedThread = (ManagedThreadOld) Thread.currentThread();
         OldCheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new OldCheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.monitorObserver.waitingForMonitor(managedThread, monitor, description);
         managedThread.setCheckpointAndWait(checkpoint);
@@ -485,7 +485,7 @@ public class TestRuntimeImpl {
         if (testRuntime == null) {
             return;
         }
-        ManagedThread thread = (ManagedThread) Thread.currentThread();
+        ManagedThreadOld thread = (ManagedThreadOld) Thread.currentThread();
         OldCheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new OldCheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.monitorObserver.monitorReleased(thread, monitor);
         thread.setCheckpointAndWait(checkpoint);
@@ -496,7 +496,7 @@ public class TestRuntimeImpl {
         if (testRuntime == null) {
             return;
         }
-        ManagedThread managedThread = (ManagedThread) Thread.currentThread();
+        ManagedThreadOld managedThread = (ManagedThreadOld) Thread.currentThread();
         OldCheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new OldCheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.lockObserver.waitingForMonitor(managedThread, lock, description);
         managedThread.setCheckpointAndWait(checkpoint);
@@ -507,7 +507,7 @@ public class TestRuntimeImpl {
         if (testRuntime == null) {
             return;
         }
-        ManagedThread thread = (ManagedThread) Thread.currentThread();
+        ManagedThreadOld thread = (ManagedThreadOld) Thread.currentThread();
         OldCheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new OldCheckpointImpl(i, name, description, Collections.emptyMap()));
         testRuntime.lockObserver.monitorReleased(thread, lock);
         thread.setCheckpointAndWait(checkpoint);
@@ -527,7 +527,7 @@ public class TestRuntimeImpl {
         if (testRuntime == null) {
             return;
         }
-        ManagedThread thread = (ManagedThread) Thread.currentThread();
+        ManagedThreadOld thread = (ManagedThreadOld) Thread.currentThread();
         OldCheckpointImpl checkpoint = testRuntime.graph.getExistingCheckpont(id);
         if (checkpoint == null) {
             throw new RuntimeException("Unknown checkpoint with id: " + id);
@@ -541,7 +541,7 @@ public class TestRuntimeImpl {
         if (testRuntime == null) {
             return;
         }
-        ManagedThread thread = (ManagedThread) Thread.currentThread();
+        ManagedThreadOld thread = (ManagedThreadOld) Thread.currentThread();
         OldCheckpointImpl checkpoint = testRuntime.graph.computeCheckpointIfAbsent(id, i -> new OldCheckpointImpl(i, name, description, Collections.emptyMap()));
         thread.setCheckpointAndWait(checkpoint);
     }

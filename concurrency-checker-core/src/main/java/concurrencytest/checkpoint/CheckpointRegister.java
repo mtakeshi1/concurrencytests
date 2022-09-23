@@ -1,12 +1,9 @@
 package concurrencytest.checkpoint;
 
-import com.sun.source.tree.BreakTree;
 import concurrencytest.annotations.InjectionPoint;
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,4 +39,6 @@ public interface CheckpointRegister {
     Checkpoint newParkCheckpoint(String details, String sourceName, int latestLineNumber);
 
     Checkpoint arrayElementCheckpoint(InjectionPoint injectionPoint, boolean arrayRead, Class<?> arrayType, String sourceName, int latestLineNumber);
+
+    Checkpoint managedThreadStartedCheckpoint(String classUnderEnhancementName, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
 }

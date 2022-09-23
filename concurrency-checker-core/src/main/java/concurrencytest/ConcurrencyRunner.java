@@ -522,7 +522,7 @@ public class ConcurrencyRunner extends Runner {
             Runnable task = new Runnable() {
                 @Override
                 public void run() {
-                    ManagedThread currentThread = (ManagedThread) Thread.currentThread();
+                    ManagedThreadOld currentThread = (ManagedThreadOld) Thread.currentThread();
                     try {
                         currentThread.setCheckpointAndWait(initialCheckpoint);
                         if (Modifier.isSynchronized(method.getModifiers())) {

@@ -1,8 +1,8 @@
 package concurrencytest.asm;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.runtime.ManagedThread;
 import concurrencytest.reflection.ClassResolver;
+import concurrencytest.runtime.ManagedThread;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -36,8 +36,13 @@ public class ThreadConstrutorVisitor extends BaseClassVisitor {
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-            if (!isInterface && opcode == Opcodes.INVOKESPECIAL && "<init>".equals(name) && Type.getType(Thread.class).getInternalName().equals(owner)) {
+            String threadInternalName = Type.getType(Thread.class).getInternalName();
+            if (!isInterface && opcode == Opcodes.INVOKESPECIAL && "<init>".equals(name) && threadInternalName.equals(owner)) {
                 super.visitMethodInsn(opcode, Type.getInternalName(ManagedThread.class), name, descriptor, false);
+            } else if (opcode == Opcodes.INVOKEVIRTUAL && name.equals("start") && (threadInternalName.equals(owner) || Type.getInternalName(ManagedThread.class).equals(owner))) {
+                super.visitInsn(Opcodes.DUP);
+                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                invokeGenericCheckpointWithContext(checkpointRegister.managedThreadStartedCheckpoint(classUnderEnhancement.getName(), methodName, methodDescriptor, sourceName, latestLineNumber));
             } else {
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
             }

@@ -5,7 +5,7 @@ import concurrencytest.checkpoint.OldCheckpointImpl;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class ManagedThread extends Thread {
+public class ManagedThreadOld extends Thread {
 
     private final TestRuntimeImpl testRuntime;
     private int loopCount;
@@ -19,7 +19,7 @@ public class ManagedThread extends Thread {
     private String waitingForMonitorOrLock;
     private List<String> ownedLocksAndMonitors;
 
-    public ManagedThread(ThreadGroup group, Runnable task, String threadIdentification, TestRuntimeImpl runtime) {
+    public ManagedThreadOld(ThreadGroup group, Runnable task, String threadIdentification, TestRuntimeImpl runtime) {
         super(group, task, threadIdentification);
         this.threadIdentification = threadIdentification;
         this.testRuntime = runtime;

@@ -7,9 +7,9 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class WaitParkWakupVisitor extends BaseClassVisitor {
+public class WaitParkWakeupVisitor extends BaseClassVisitor {
 
-    public WaitParkWakupVisitor(ClassVisitor delegate, CheckpointRegister register, Class<?> classUnderEnhancement, ClassResolver classResolver) {
+    public WaitParkWakeupVisitor(ClassVisitor delegate, CheckpointRegister register, Class<?> classUnderEnhancement, ClassResolver classResolver) {
         super(delegate, register, classUnderEnhancement, classResolver);
     }
 

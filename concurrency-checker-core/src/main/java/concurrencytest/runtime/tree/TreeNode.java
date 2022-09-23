@@ -1,16 +1,13 @@
 package concurrencytest.runtime.tree;
 
+import concurrencytest.runtime.RuntimeState;
+
 import java.util.List;
 
 public interface TreeNode {
 
     List<ThreadState> threads();
 
-    TreeNode advance(ThreadState selectedToProceed);
-
-    default boolean canAdvance() {
-        return threads().stream().anyMatch(ThreadState::runnable);
-    }
-
+    TreeNode advanced(ThreadState selectedToProceed, RuntimeState next);
 
 }

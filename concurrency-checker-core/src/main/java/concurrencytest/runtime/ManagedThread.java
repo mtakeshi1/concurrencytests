@@ -2,11 +2,16 @@ package concurrencytest.runtime;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * A managed thread is a thread that upon running, will install a CheckpointRuntime if available and invoke checkpoint callbacks.
+ */
 public class ManagedThread extends Thread {
 
     private volatile CheckpointRuntime checkpointRuntime = CheckpointRuntimeAccessor.getCheckpointRuntime();
 
     private volatile String actorName;
+
+    private final Thread parentThread = Thread.currentThread();
 
     private final AtomicInteger childIndex = new AtomicInteger();
 
@@ -49,6 +54,9 @@ public class ManagedThread extends Thread {
 
     @Override
     public void run() {
+        if (actorName == null && parentThread instanceof ManagedThread mt) {
+            actorName = mt.newChildActorName();
+        }
         CheckpointRuntimeAccessor.associateRuntime(this.checkpointRuntime);
         try {
             CheckpointRuntimeAccessor.beforeStartCheckpoint();
@@ -56,6 +64,10 @@ public class ManagedThread extends Thread {
         } finally {
             CheckpointRuntimeAccessor.releaseRuntime();
         }
+    }
+
+    private String newChildActorName() {
+        return this.actorName + "_" + childIndex.getAndIncrement();
     }
 
     public CheckpointRuntime getCheckpointRuntime() {

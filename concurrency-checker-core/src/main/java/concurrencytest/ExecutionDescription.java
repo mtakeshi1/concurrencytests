@@ -27,10 +27,10 @@ public class ExecutionDescription {
         return new ExecutionDescription(pathTaken);
     }
 
-    public static ExecutionDescription deadlockFound(Collection<ManagedThread> alive, List<Map.Entry<String, OldCheckpointImpl>> pathTaken) {
+    public static ExecutionDescription deadlockFound(Collection<ManagedThreadOld> alive, List<Map.Entry<String, OldCheckpointImpl>> pathTaken) {
 //        throw new RuntimeException("TODO");
         //TODO add more information
-        Collection<String> collect = alive.stream().map(ManagedThread::getName).collect(Collectors.toList());
+        Collection<String> collect = alive.stream().map(ManagedThreadOld::getName).collect(Collectors.toList());
         return new ExecutionDescription(new DeadlockFoundException(collect, "deadlock reached. Live threads that are (probably) locked: " + alive), pathTaken);
     }
 

@@ -4,7 +4,7 @@ import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.agent.OpenClassLoader;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
-import concurrencytest.runtime.StandardCheckpointRegister;
+import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.util.ASMUtils;
 import org.junit.Assert;
 import org.objectweb.asm.ClassReader;

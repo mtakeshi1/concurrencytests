@@ -5,6 +5,7 @@ import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.MethodInvocationMatcher;
 import concurrencytest.reflection.ClassResolver;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
@@ -35,6 +36,11 @@ public class MethodInvocationVisitor extends BaseClassVisitor {
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
             Class<?> callTarget = resolveType(null, owner.replace('/', '.'));
+            if (callTarget == CheckpointRuntimeAccessor.class) {
+                //ignore calls to checkpoints
+                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                return;
+            }
             Member method = resolveMethodOrConstructor(callTarget, name, descriptor);
             if (matcher.matches(classUnderEnhancement, callTarget, name, descriptor, method.getModifiers(), opcode, InjectionPoint.BEFORE)) {
                 injectCheckpoint(method, InjectionPoint.BEFORE);
