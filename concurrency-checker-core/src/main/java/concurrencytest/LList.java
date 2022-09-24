@@ -1,15 +1,20 @@
 package concurrencytest;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class LList<E> {
-
 
     public boolean isEmpty() {
         return this == EMPTY;
     }
 
     public E element() {
+        if (this.element == NullMarker.INSTANCE) {
+            throw new NoSuchElementException();
+        }
         return this.element;
     }
 
@@ -57,4 +62,15 @@ public class LList<E> {
         }
         return hashCode;
     }
+
+    public List<E> reverse() {
+        if (isEmpty()) {
+            return new ArrayList<>();
+        } else {
+            var next = this.next.reverse();
+            next.add(this.element);
+            return next;
+        }
+    }
+
 }

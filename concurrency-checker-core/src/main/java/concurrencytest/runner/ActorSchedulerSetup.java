@@ -10,7 +10,6 @@ import concurrencytest.reflection.ClassResolver;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runtime.ManagedThread;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.tree.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.util.ASMUtils;
@@ -31,17 +30,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-public class ActorScheduleRunner {
-
-    private Collection<ActorBuilder> initialActors;
-
-    private Collection<CheckpointReachedCallback> callbacks;
-
-    private Tree explorationTree;
-
-    private Queue<String> initialPathActorNames;
-
-    private ScheduledExecutorService managedExecutorService;
+public class ActorSchedulerSetup {
 
     private Configuration configuration;
 
@@ -59,6 +48,16 @@ public class ActorScheduleRunner {
         ExecutionMode mode = selectMode();
         CheckpointRegister register = createRegister();
         enhanceClasses(mode, folder, register, ReflectionHelper.getInstance());
+        renameMainTestClassIfNecessary(mode, folder);
+    }
+
+    private void renameMainTestClassIfNecessary(ExecutionMode mode, File folder) throws IOException {
+        ClassVisitor visitor = createDelegateFactory(mode, folder).apply(configuration.mainTestClass());
+        ClassReader reader = ASMUtils.readClass(configuration.mainTestClass());
+        if (reader == null) {
+            throw new RuntimeException("Could not find classFile for class: %s".formatted(configuration.mainTestClass().getName()));
+        }
+        reader.accept(visitor, ClassReader.EXPAND_FRAMES);
     }
 
     private CheckpointRegister createRegister() {
@@ -167,44 +166,6 @@ public class ActorScheduleRunner {
             this.remapper = new SimpleRemapper(classRenames);
         }
         return remapper;
-    }
-
-    public void execute() throws Exception {
-        RuntimeState state = initialState();
-        String lastActor = null;
-        TreeNode node = explorationTree.rootNode();
-        long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
-        while (!state.finished()) {
-            detectDeadlock();
-            String nextActorToAdvance = selectNextActor(lastActor, node, state);
-            if (nextActorToAdvance == null) {
-                throw new RuntimeException("bug? no actor was able to proceed");
-            }
-            ManagedThread selected = state.actorNamesToThreads().get(nextActorToAdvance);
-            RuntimeState next = state.advance(selected, configuration.checkpointTimeout());
-            node = node.advanced(state.threadStates().get(selected), next);
-            lastActor = nextActorToAdvance;
-            state = next;
-            if (System.nanoTime() > maxTime) {
-                throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
-            }
-        }
-    }
-
-    private void detectDeadlock() {
-
-    }
-
-    private String selectNextActor(String lastActor, TreeNode node, RuntimeState currentState) {
-        return null;
-    }
-
-    private RuntimeState initialState() {
-        return null;
-    }
-
-    public static void main(String[] args) throws Exception {
-
     }
 
 }

@@ -7,6 +7,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public interface ActorBuilder {
 
-    ManagedThread build(CheckpointRuntime runtime, ScheduledExecutorService managedExecutorService);
+    ManagedThread build(CheckpointRuntime runtime, ScheduledExecutorService managedExecutorService, Object testInstance);
 
 }

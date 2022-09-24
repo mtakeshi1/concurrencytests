@@ -26,20 +26,8 @@ public interface Configuration {
         return 100;
     }
 
-    default Duration checkpointTimeout() {
-        return Duration.ofMinutes(1);
-    }
-
-    default Duration maxDurationPerRun() {
-        return Duration.ofMinutes(10);
-    }
-
-    default Duration maxTotalDuration() {
-        return Duration.ofHours(1);
-    }
-
-    default boolean randomExploration() {
-        return false;
+    default CheckpointDurationConfiguration durationConfiguration() {
+        return new CheckpointDurationConfiguration();
     }
 
     CheckpointConfiguration checkpointConfiguration();

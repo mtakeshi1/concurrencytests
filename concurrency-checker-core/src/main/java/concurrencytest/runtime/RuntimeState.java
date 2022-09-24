@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface RuntimeState {
 
@@ -31,10 +33,16 @@ public interface RuntimeState {
 
     Map<String, ManagedThread> actorNamesToThreads();
 
+    Map<String, ThreadState> actorNamesToThreadStates();
+
     RuntimeState advance(ManagedThread selected, Duration duration) throws InterruptedException, TimeoutException;
 
+    default Stream<? extends ManagedThread> runnableActors() {
+        return threadStates().entrySet().stream().filter(e -> e.getValue().canProceed(this)).map(Map.Entry::getKey);
+    }
+
     default boolean finished() {
-        return threadStates().values().stream().allMatch(ts -> ts.checkpoint() == checkpointRegister().taskFinishedCheckpoint().checkpointId());
+        return threadStates().values().stream().allMatch(ThreadState::finished);
     }
 
 }
