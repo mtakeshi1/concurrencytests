@@ -8,9 +8,9 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Stream;
 
-public record ThreadState(String actorName, int checkpoint, int loopCount, List<Integer> ownedMonitors,
-                          List<Integer> ownedLocks, Optional<Integer> waitingForMonitor,
-                          Optional<Integer> waitingForLock, Optional<String> waitingForThread, boolean finished) {
+public record ThreadState(String actorName, int checkpoint, int loopCount, List<Integer> ownedMonitors, List<Integer> ownedLocks,
+                          Optional<Integer> waitingForMonitor, Optional<Integer> waitingForLock, Optional<String> waitingForThread,
+                          boolean finished) {
 
     public static final int MAX_ACTOR_NAME_LENGTH = 255;
     public static final int MAX_OWNED_MONITOR_LIST = 16;
@@ -33,6 +33,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         Objects.requireNonNull(waitingForMonitor, "waiting for monitor cannot be null");
         Objects.requireNonNull(waitingForThread, "waiting for threads cannot be null");
     }
+
     private static final int WAITING_FOR_MONITOR_FLAG = 1;
     private static final int WAITING_FOR_LOCK_FLAG = 2;
     private static final int WAITING_FOR_THREAD = 4;
@@ -43,7 +44,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         return !finished();
     }
 
-    public Collection<ManagedThread> dependencies(RuntimeState state) {
+    public Collection<ThreadState> dependencies(RuntimeState state) {
         Stream<ManagedThread> monitor = waitingForMonitor.filter(monId -> !state.ownedMonitors().containsKey(monId)).map(mon -> state.ownedMonitors().get(mon)).stream();
         Stream<ManagedThread> locks = waitingForLock.filter(monId -> !state.lockedLocks().containsKey(monId)).map(mon -> state.lockedLocks().get(mon)).stream();
         Stream<ManagedThread> conditionalWait = waitingForThread.map(actor -> state.actorNamesToThreads().get(actor)).stream();

@@ -8,31 +8,22 @@ import concurrencytest.config.Configuration;
 import concurrencytest.config.ExecutionMode;
 import concurrencytest.reflection.ClassResolver;
 import concurrencytest.reflection.ReflectionHelper;
-import concurrencytest.runtime.ManagedThread;
-import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.tree.HeapTree;
 import concurrencytest.runtime.tree.Tree;
-import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.util.ASMUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.util.CheckClassAdapter;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Queue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public class ActorSchedulerSetup {
 
-    private Configuration configuration;
+    private final Configuration configuration;
 
     private final String suffix = "$$" + System.currentTimeMillis();
 
@@ -40,15 +31,42 @@ public class ActorSchedulerSetup {
 
     private CheckpointRegister checkpointRegister = new StandardCheckpointRegister();
 
+    public ActorSchedulerSetup(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
     public void initialize() throws IOException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
         }
+        saveConfiguration();
         ExecutionMode mode = selectMode();
         CheckpointRegister register = createRegister();
         enhanceClasses(mode, folder, register, ReflectionHelper.getInstance());
         renameMainTestClassIfNecessary(mode, folder);
+        saveCheckpointInformation(register);
+        Tree tree;
+        if (mode == ExecutionMode.FORK) {
+            tree = createFileTree();
+            throw new RuntimeException("not yet implemented");
+        } else {
+            tree = new HeapTree();
+        }
+    }
+
+    private void saveCheckpointInformation(CheckpointRegister register) {
+
+    }
+
+    private Tree createFileTree() throws IOException {
+        throw new RuntimeException("not yet implemented");
+    }
+
+    private void saveConfiguration() throws IOException {
+        try (var oout = new ObjectOutputStream(new FileOutputStream(new File(configuration.outputFolder(), "configuration.ser")))) {
+            oout.writeObject(this.configuration);
+        }
     }
 
     private void renameMainTestClassIfNecessary(ExecutionMode mode, File folder) throws IOException {

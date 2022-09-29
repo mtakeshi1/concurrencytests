@@ -7,20 +7,23 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public interface TreeNode {
+
+    Supplier<TreeNode> parentNode();
+
     Map<String, ThreadState> threads();
 
-    Map<String, Supplier<TreeNode>> materializedChildNodes();
+    Map<String, Supplier<TreeNode>> childNodes();
 
     default Stream<String> unexploredPaths() {
-        Map<String, Supplier<TreeNode>> nodes = this.materializedChildNodes();
+        Map<String, Supplier<TreeNode>> nodes = this.childNodes();
         return threads().keySet().stream().filter(actor -> !nodes.containsKey(actor) || !nodes.get(actor).get().isFullyExplored());
     }
 
     default boolean hasUnexploredChildren() {
-        return !isFullyExplored() && unexploredPaths().count() != 0;
+        return !isFullyExplored() && unexploredPaths().findAny().isPresent();
     }
 
-    TreeNode advanced(ThreadState selectedToProceed, RuntimeState next);
+    TreeNode advance(ThreadState selectedToProceed, RuntimeState next);
 
     boolean isFullyExplored();
 

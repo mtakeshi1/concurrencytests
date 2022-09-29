@@ -1,5 +1,7 @@
 package concurrencytest.runtime;
 
+import concurrencytest.runner.CheckpointReachedCallback;
+
 public interface CheckpointRuntime {
 //
 //    boolean checkActualDispatchForMonitor(Object callTarget, String methodName, String methodDescription, long checkpointId, Supplier<Checkpoint> checkpointSupplier);
@@ -24,4 +26,7 @@ public interface CheckpointRuntime {
 
     void fieldAccessCheckpoint(int checkpointId, Object owner, Object value);
 
+    void addCheckpointCallback(CheckpointReachedCallback basicRuntimeState);
+
+    void removeCheckpointCallback(CheckpointReachedCallback basicRuntimeState);
 }

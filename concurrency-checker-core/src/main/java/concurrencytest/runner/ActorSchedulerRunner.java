@@ -1,90 +1,57 @@
 package concurrencytest.runner;
 
-import concurrencytest.LList;
-import concurrencytest.config.CheckpointDurationConfiguration;
-import concurrencytest.runtime.ManagedThread;
-import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.tree.Tree;
-import concurrencytest.runtime.tree.TreeNode;
+import concurrencytest.annotations.Actor;
+import concurrencytest.config.BasicConfiguration;
+import concurrencytest.config.Configuration;
+import org.junit.runner.Description;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunNotifier;
 
-import java.net.URL;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public class ActorSchedulerRunner {
+public class ActorSchedulerRunner extends Runner {
+    private final Class<?> testClass;
+    private final String testName;
 
-    private final Tree explorationTree;
-    private final CheckpointDurationConfiguration configuration;
-    private final Queue<String> initialPathActorNames;
-    private final int maxLoopCount;
-
-    public ActorSchedulerRunner(Tree explorationTree, CheckpointDurationConfiguration configuration, Queue<String> initialPathActorNames, String mainTestClassName, URL[] classpath, int maxLoopCount) {
-        this.explorationTree = explorationTree;
-        this.configuration = configuration;
-        this.initialPathActorNames = initialPathActorNames;
-        this.maxLoopCount = maxLoopCount;
+    public ActorSchedulerRunner(Class<?> testClass) {
+        this.testClass = testClass;
+        this.testName = Arrays.stream(testClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(Method::getName).collect(Collectors.joining("_"));
     }
 
-    private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
+    @Override
+    public Description getDescription() {
+        Description suiteDescription = Description.createSuiteDescription(this.testClass);
+        Description childDescription = childDescription();
+        suiteDescription.addChild(childDescription);
+        return suiteDescription;
+    }
 
-    private Collection<ActorBuilder> initialActors;
-    private ScheduledExecutorService managedExecutorService;
+    private Description childDescription() {
+        return Description.createTestDescription(testClass.getName(), testName, testClass.getAnnotations());
+    }
 
-    public void executeOnce() throws Exception {
-        Object mainTestObject = instantiateMainTestClass();
-        RuntimeState state = initialState(mainTestObject);
-        LList<String> path = LList.empty();
-        String lastActor = null;
-        TreeNode node = explorationTree.rootNode();
-        long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
-        while (!state.finished()) {
-            detectDeadlock(path);
-            Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, state);
-            if (nextActorToAdvance.isEmpty()) {
-                throwNoPathError(path, lastActor, node, state);
-            }
-            ManagedThread selected = state.actorNamesToThreads().get(nextActorToAdvance);
-            RuntimeState next = state.advance(selected, configuration.checkpointTimeout());
-            node = node.advanced(state.threadStates().get(selected), next);
-            lastActor = nextActorToAdvance.get();
-            state = next;
-            if (System.nanoTime() > maxTime) {
-                throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
-            }
+
+    @Override
+    public void run(RunNotifier notifier) {
+        try {
+            Configuration configuration = parseConfiguration();
+            ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
+            setup.initialize();
+        } catch (IOException e) {
+            notifier.fireTestFailure(new Failure(childDescription(), e.getCause()));
         }
     }
 
-    private void throwNoPathError(LList<String> path, String lastActor, TreeNode node, RuntimeState state) {
-        //TODO
-        throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
+    protected Configuration parseConfiguration() throws IOException {
+        //TODO implement properly
+        String folderPref = testClass.getName().substring(testClass.getName().lastIndexOf('.') + 1);
+        return new BasicConfiguration(List.of(testClass), testClass, Files.createTempDirectory(folderPref).toFile());
     }
-
-    private Object instantiateMainTestClass() {
-        return null;
-    }
-
-    private void detectDeadlock(LList<String> path) {
-
-    }
-
-    private Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState) {
-        Collection<String> paths = node.unexploredPaths().collect(Collectors.toSet());
-        return currentState.runnableActors().filter(actor -> paths.contains(actor.getActorName()))
-                .filter(actor -> actor.equals(lastActor) || currentState.actorNamesToThreadStates().get(actor).loopCount() < maxLoopCount)
-                .findFirst().map(ManagedThread::getActorName);
-    }
-
-    private RuntimeState initialState(Object mainTestObject) {
-        return null;
-    }
-
-    public static void main(String[] args) throws Exception {
-
-    }
-
 }

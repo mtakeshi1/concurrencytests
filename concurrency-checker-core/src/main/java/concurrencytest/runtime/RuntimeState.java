@@ -4,7 +4,9 @@ import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.tree.ThreadState;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
@@ -19,30 +21,65 @@ public interface RuntimeState {
 
     int lockIdFor(Lock lock);
 
-    Collection<? extends ManagedThread> allActors();
+    Collection<? extends ThreadState> allActors();
 
-    Map<Integer, ManagedThread> ownedMonitors();
+    RuntimeState advance(ThreadState selected, Duration waitTime, CheckpointRuntime runtime) throws InterruptedException, TimeoutException;
 
-    Map<Integer, Collection<ManagedThread>> threadsWaitingForMonitor();
+    default Map<Integer, ThreadState> ownedMonitors() {
+        Map<Integer, ThreadState> monitors = new HashMap<>();
+        allActors().forEach(ts -> ts.ownedMonitors().forEach(mon -> monitors.put(mon, ts)));
+        return monitors;
+    }
 
-    Map<Integer, ManagedThread> lockedLocks();
+    default Map<Integer, ThreadState> lockedLocks() {
+        Map<Integer, ThreadState> monitors = new HashMap<>();
+        allActors().forEach(ts -> ts.ownedLocks().forEach(lock -> monitors.put(lock, ts)));
+        return monitors;
 
-    Map<Integer, Collection<ManagedThread>> threadsWaitingForLocks();
+    }
 
-    Map<ManagedThread, ThreadState> threadStates();
+    default Map<Integer, Collection<ThreadState>> threadsWaitingForMonitor() {
+        return allActors().stream().filter(ts -> ts.waitingForMonitor().isPresent()).collect(Collectors.toMap(
+                ts1 -> ts1.waitingForMonitor().get(),
+                RuntimeState::singleton,
+                (a, b) -> {
+                    a.addAll(b);
+                    return a;
+                }
+        ));
+    }
 
-    Map<String, ManagedThread> actorNamesToThreads();
+    static <E> ArrayList<E> singleton(E element) {
+        ArrayList<E> list = new ArrayList<>();
+        list.add(element);
+        return list;
+    }
 
-    Map<String, ThreadState> actorNamesToThreadStates();
+    default Map<Integer, Collection<ThreadState>> threadsWaitingForLocks() {
+        return allActors().stream().filter(ts -> ts.waitingForLock().isPresent()).collect(Collectors.toMap(
+                ts1 -> ts1.waitingForLock().get(),
+                RuntimeState::singleton,
+                (a, b) -> {
+                    a.addAll(b);
+                    return a;
+                }
+        ));
+    }
 
-    RuntimeState advance(ManagedThread selected, Duration duration) throws InterruptedException, TimeoutException;
+    default Map<String, ThreadState> actorNamesToThreadStates() {
+        Map<String, ThreadState> map = new HashMap<>();
+        for (ThreadState state : allActors()) {
+            map.put(state.actorName(), state);
+        }
+        return map;
+    }
 
-    default Stream<? extends ManagedThread> runnableActors() {
-        return threadStates().entrySet().stream().filter(e -> e.getValue().canProceed(this)).map(Map.Entry::getKey);
+    default Stream<? extends ThreadState> runnableActors() {
+        return allActors().stream().filter(e -> e.canProceed(this));
     }
 
     default boolean finished() {
-        return threadStates().values().stream().allMatch(ThreadState::finished);
+        return allActors().stream().allMatch(ts -> ts.checkpoint() == checkpointRegister().taskFinishedCheckpoint().checkpointId());
     }
 
 }
