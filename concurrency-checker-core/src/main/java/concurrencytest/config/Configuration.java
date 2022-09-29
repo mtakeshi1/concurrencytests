@@ -1,7 +1,6 @@
 package concurrencytest.config;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.Collection;
 
 public interface Configuration {
@@ -30,7 +29,10 @@ public interface Configuration {
         return new CheckpointDurationConfiguration();
     }
 
-    CheckpointConfiguration checkpointConfiguration();
+    default CheckpointConfiguration checkpointConfiguration() {
+        return new CheckpointConfiguration() {
+        };
+    }
 
     Collection<Class<?>> classesToInstrument();
 

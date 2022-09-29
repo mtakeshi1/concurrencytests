@@ -4,7 +4,7 @@ import concurrencytest.annotations.InjectionPoint;
 
 public record FieldAccessCheckpointImpl(InjectionPoint injectionPoint, String details,
                                         String sourceFile, int lineNumber,
-                                        Class<?> declaringClass, String fieldName, Class<?> fieldType,
+                                        String declaringClass, String fieldName, String fieldType,
                                         boolean fieldRead) implements FieldAccessCheckpoint {
 
 }

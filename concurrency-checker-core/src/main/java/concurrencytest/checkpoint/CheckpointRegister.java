@@ -9,7 +9,7 @@ import java.util.Map;
 
 public interface CheckpointRegister {
 
-    Checkpoint newFieldCheckpoint(InjectionPoint injectionPoint, Class<?> declaringClass, String fieldName, Class<?> fieldType, boolean read, String details, String sourceFile, int lineNumber);
+    Checkpoint newFieldCheckpoint(InjectionPoint injectionPoint,Type declaringClass, String fieldName, Type fieldType, boolean read, String details, String sourceFile, int lineNumber);
 
     Map<CheckpointDescription, Checkpoint> allCheckpoints();
 

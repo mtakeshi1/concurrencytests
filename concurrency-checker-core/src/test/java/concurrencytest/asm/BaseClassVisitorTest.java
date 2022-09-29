@@ -47,7 +47,7 @@ public class BaseClassVisitorTest {
     public Class<?> prepare(Class<?> target, VisitorBuilderFunction factory, boolean dump) throws Exception {
         ClassReader reader = ASMUtils.readClass(target);
         Assert.assertNotNull(reader);
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor delegate;
         if (dump) {
             delegate = new TraceClassVisitor(writer, new PrintWriter(System.out));

@@ -2,11 +2,11 @@ package concurrencytest.checkpoint;
 
 public interface FieldAccessCheckpoint extends CheckpointDescription {
 
-    Class<?> declaringClass();
+    String declaringClass();
 
     String fieldName();
 
-    Class<?> fieldType();
+    String fieldType();
 
     boolean fieldRead();
 

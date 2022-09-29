@@ -22,8 +22,8 @@ public class StandardCheckpointRegister implements CheckpointRegister {
     private final Checkpoint taskFinishedCheckpoint;// = new Checkpoint(idGenerator.incrementAndGet(), new FixedCheckpoint(InjectionPoint.AFTER, "ACTOR_FINISHING"));
 
     @Override
-    public Checkpoint newFieldCheckpoint(InjectionPoint injectionPoint, Class<?> declaringClass, String fieldName, Class<?> fieldType, boolean read, String details, String sourceFile, int lineNumber) {
-        return registerCheckpoint(new FieldAccessCheckpointImpl(injectionPoint, details, sourceFile, lineNumber, declaringClass, fieldName, fieldType, read));
+    public Checkpoint newFieldCheckpoint(InjectionPoint injectionPoint, Type declaringClass, String fieldName, Type fieldType, boolean read, String details, String sourceFile, int lineNumber) {
+        return registerCheckpoint(new FieldAccessCheckpointImpl(injectionPoint, details, sourceFile, lineNumber, declaringClass.getClassName(), fieldName, fieldType.getClassName(), read));
     }
 
     public StandardCheckpointRegister() {
@@ -57,7 +57,7 @@ public class StandardCheckpointRegister implements CheckpointRegister {
 
     @Override
     public Checkpoint newMonitorEnterCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
-        return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, resolveType(monitorOwnerType), true));
+        return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, monitorOwnerType.getClassName(), true));
     }
 
     private Class<?> resolveType(Type monitorOwnerType) {
@@ -70,7 +70,7 @@ public class StandardCheckpointRegister implements CheckpointRegister {
 
     @Override
     public Checkpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
-        return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, resolveType(monitorOwnerType), false));
+        return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, monitorOwnerType.getClassName(), false));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class StandardCheckpointRegister implements CheckpointRegister {
 
     @Override
     public Checkpoint arrayElementCheckpoint(InjectionPoint injectionPoint, boolean arrayRead, Class<?> arrayType, String sourceName, int latestLineNumber) {
-        return registerCheckpoint(new ArrayElementCheckpointDescription(injectionPoint, "", sourceName, latestLineNumber, Object.class, arrayRead));
+        return registerCheckpoint(new ArrayElementCheckpointDescription(injectionPoint, "", sourceName, latestLineNumber, Object.class.getName(), arrayRead));
     }
 
     @Override

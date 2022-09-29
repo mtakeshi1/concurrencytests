@@ -38,25 +38,25 @@ public class FieldCheckpointVisitor extends BaseClassVisitor {
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
             String ownerClassName = owner.replace('/', '.');
-            String fieldTypeName = Type.getType(descriptor).getClassName();
+            String fieldTypeClassName = Type.getType(descriptor).getClassName();
             Class<?> ownerType = classResolver.resolveName(ownerClassName);
             Field field = classResolver.lookupField(ownerType, name);
-            Class<?> fieldType = classResolver.resolveName(fieldTypeName);
+            Class<?> fieldType = classResolver.resolveName(fieldTypeClassName);
             if (FieldCheckpointVisitor.this.checkpointMatchConfiguration.matches(classUnderEnhancement,
                     ownerType, name, fieldType, field.getModifiers(), opcode, InjectionPoint.BEFORE)) {
-                injectCheckpoint(opcode, ownerClassName, fieldTypeName, name, true);
+                injectCheckpoint(opcode, ownerClassName, fieldTypeClassName, name, true);
             }
             super.visitFieldInsn(opcode, owner, name, descriptor);
             if (FieldCheckpointVisitor.this.checkpointMatchConfiguration.matches(classUnderEnhancement,
-                    ownerType, name, classResolver.resolveName(fieldTypeName), field.getModifiers(), opcode, InjectionPoint.AFTER)) {
-                injectCheckpoint(opcode, ownerClassName, fieldTypeName, name, false);
+                    ownerType, name, classResolver.resolveName(fieldTypeClassName), field.getModifiers(), opcode, InjectionPoint.AFTER)) {
+                injectCheckpoint(opcode, ownerClassName, fieldTypeClassName, name, false);
             }
         }
 
         private void injectCheckpoint(int opcode, String owner, String fieldClassName, String name, boolean before) {
             String details = String.format("%s %s %s.%s", before ? "BEFORE" : "AFTER", ReflectionHelper.renderOpcode(opcode), owner, name);
-            Checkpoint checkpoint = checkpointRegister.newFieldCheckpoint(before ? InjectionPoint.BEFORE : InjectionPoint.AFTER, resolveType(null, owner), name,
-                    resolveType(null, fieldClassName), opcode == Opcodes.GETSTATIC || opcode == Opcodes.GETFIELD, details, sourceName, latestLineNumber);
+            Checkpoint checkpoint = checkpointRegister.newFieldCheckpoint(before ? InjectionPoint.BEFORE : InjectionPoint.AFTER, Type.getObjectType(owner), name,
+                    Type.getObjectType(fieldClassName), opcode == Opcodes.GETSTATIC || opcode == Opcodes.GETFIELD, details, sourceName, latestLineNumber);
             super.invokeEmptyCheckpoint(checkpoint);
         }
 

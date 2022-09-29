@@ -4,7 +4,7 @@ import concurrencytest.annotations.InjectionPoint;
 
 public interface MonitorCheckpoint extends CheckpointDescription {
 
-    Class<?> monitorType();
+    String monitorType();
 
     InjectionPoint injectionPoint();
 

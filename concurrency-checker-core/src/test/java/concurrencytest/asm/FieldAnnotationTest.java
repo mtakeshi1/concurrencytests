@@ -96,7 +96,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());
         Assert.assertTrue(after.fieldRead());
         Assert.assertFalse(after.fieldWrite());
-        Assert.assertEquals(Integer.class, after.fieldType());
+        Assert.assertEquals(Integer.class.getName(), after.fieldType());
         Assert.assertTrue(after.lineNumber() > 0);
     }
 
@@ -128,7 +128,7 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         Assert.assertEquals(InjectionPoint.BEFORE, after.injectionPoint());
         Assert.assertTrue(after.fieldRead());
         Assert.assertFalse(after.fieldWrite());
-        Assert.assertEquals(PrintStream.class, after.fieldType());
+        Assert.assertEquals(PrintStream.class.getName(), after.fieldType());
         Assert.assertTrue(after.lineNumber() > 0);
     }
 
@@ -149,14 +149,14 @@ public class FieldAnnotationTest extends BaseClassVisitorTest {
         Assert.assertEquals(InjectionPoint.BEFORE, before.injectionPoint());
         Assert.assertTrue(before.fieldRead());
         Assert.assertFalse(before.fieldWrite());
-        Assert.assertEquals(Integer.class, before.fieldType());
+        Assert.assertEquals(Integer.class.getName(), before.fieldType());
         FieldAccessCheckpoint after = (FieldAccessCheckpoint) managedRuntime.getCheckpoints().get(1).checkpoint();
         Assert.assertNotEquals(before, after);
         Assert.assertEquals("intPublicField", after.fieldName());
         Assert.assertEquals(InjectionPoint.AFTER, after.injectionPoint());
         Assert.assertTrue(after.fieldRead());
         Assert.assertFalse(after.fieldWrite());
-        Assert.assertEquals(Integer.class, before.fieldType());
+        Assert.assertEquals(Integer.class.getName(), before.fieldType());
         Assert.assertTrue(after.lineNumber() > 0);
         Assert.assertTrue(before.lineNumber() > 0);
     }
