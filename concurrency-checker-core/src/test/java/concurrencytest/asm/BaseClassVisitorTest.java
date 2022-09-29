@@ -1,10 +1,10 @@
 package concurrencytest.asm;
 
-import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.agent.OpenClassLoader;
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
+import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.util.ASMUtils;
 import org.junit.Assert;
 import org.objectweb.asm.ClassReader;
@@ -57,7 +57,7 @@ public class BaseClassVisitorTest {
         String newName = target.getName() + "$$Injected_" + idSeed++;
         String oldInternalName = Type.getType(target).getInternalName();
         String newInternalName = newName.replace('.', '/');
-        ClassRemapper map = new ClassRemapper(new CheckClassAdapter(delegate), new SimpleRemapper(oldInternalName, newInternalName));
+        ClassRemapper map = new ClassRemapper(new CheckClassAdapter(delegate, false), new SimpleRemapper(oldInternalName, newInternalName));
         ClassVisitor visitor = factory.buildFor(target, map);
         reader.accept(visitor, ClassReader.EXPAND_FRAMES);
         byte[] byteCode = writer.toByteArray();

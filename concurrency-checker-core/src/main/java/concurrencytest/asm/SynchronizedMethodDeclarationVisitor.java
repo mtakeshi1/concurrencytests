@@ -15,7 +15,6 @@ public class SynchronizedMethodDeclarationVisitor extends BaseClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         Collection<BehaviourModifier> mods = BehaviourModifier.unreflect(access);
-        //TODO maybe define a new methodOrConstructor, wrap try...finally around it and sync on it
         if (!mods.contains(BehaviourModifier.SYNCHRONIZED)) {
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         }

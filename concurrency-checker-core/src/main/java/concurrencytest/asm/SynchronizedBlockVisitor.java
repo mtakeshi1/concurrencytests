@@ -21,7 +21,7 @@ public class SynchronizedBlockVisitor extends BaseClassVisitor {
         return new SynchronizedBlockMethodVisitor(sourceName, delegate, access, name, descriptor);
     }
 
-    private class SynchronizedBlockMethodVisitor extends BaseMethodVisitor {
+    private class SynchronizedBlockMethodVisitor extends StackTrackingMethodVisitor {
         public SynchronizedBlockMethodVisitor(String sourceName, MethodVisitor delegate, int accessModifiers, String methodName, String descriptor) {
             super(classUnderEnhancement, delegate, SynchronizedBlockVisitor.this.checkpointRegister, sourceName, accessModifiers, methodName, descriptor, SynchronizedBlockVisitor.this.classResolver);
         }

@@ -2,6 +2,8 @@ package concurrencytest.asm;
 
 import concurrencytest.asm.testClasses.InjectionTarget;
 import concurrencytest.asm.testClasses.SyncCallableMonitor;
+import concurrencytest.checkpoint.StandardCheckpointRegister;
+import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.MethodVisitor;
@@ -20,7 +22,7 @@ public class BasicTest extends BaseClassVisitorTest {
 
     @Test
     public void testRemoveSyncModifier() throws Exception {
-        Class<?> aClass = prepare(SyncCallableMonitor.class, ((targetClass, delegate) -> new BaseClassVisitor(delegate, null, null, null) {
+        Class<?> aClass = prepare(SyncCallableMonitor.class, ((targetClass, delegate) -> new BaseClassVisitor(delegate, new StandardCheckpointRegister(), SyncCallableMonitor.class, ReflectionHelper.getInstance()) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                 if (name.equals("call")) {
@@ -32,7 +34,7 @@ public class BasicTest extends BaseClassVisitorTest {
         }));
         Object instance = aClass.getConstructor().newInstance();
         try {
-            ((Callable) instance).call();
+            ((Callable<?>) instance).call();
             Assert.fail("should've thrown IllegalMonitorStateException");
         } catch (IllegalMonitorStateException e) {
             // should have
