@@ -15,7 +15,7 @@ public class StandardCheckpointRegister implements CheckpointRegister {
 
     private final Map<CheckpointDescription, Checkpoint> allCheckpoints = new HashMap<>();
 
-    private final AtomicInteger idGenerator = new AtomicInteger();
+    private final AtomicInteger idGenerator = new AtomicInteger(1);
 
     private final Checkpoint taskStartCheckpoint;
 

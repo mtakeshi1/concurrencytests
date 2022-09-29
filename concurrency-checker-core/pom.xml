@@ -24,6 +24,16 @@
             <version>4.13.2</version>
         </dependency>
         <dependency>
+            <groupId>com.pholser</groupId>
+            <artifactId>junit-quickcheck-core</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.pholser</groupId>
+            <artifactId>junit-quickcheck-generators</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-tree</artifactId>
             <version>9.2</version>
