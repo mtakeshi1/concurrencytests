@@ -2,13 +2,12 @@ package concurrencytest.runtime;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.checkpoint.ThreadStartingCheckpoint;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
 import concurrencytest.checkpoint.description.LockReleaseCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runner.CheckpointReachedCallback;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpoint;
+import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
 import concurrencytest.runtime.tree.ThreadState;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 public class MutableRuntimeState implements RuntimeState {
 
     private final CheckpointRegister register;
-    private final RecordingCheckpointRuntime checkpointRuntime;
+    private final StandardCheckpointRuntime checkpointRuntime;
 
     private final Map<Object, Integer> monitorIds;
     private final Map<Lock, Integer> lockIds;
@@ -41,14 +40,14 @@ public class MutableRuntimeState implements RuntimeState {
         this.monitorLockSeed = new AtomicInteger();
         this.allActors = managedThreadMap.keySet().stream().map(ThreadState::new).collect(Collectors.toMap(ThreadState::actorName, t -> t));
         this.threads = managedThreadMap;
-        this.checkpointRuntime = new RecordingCheckpointRuntime(register);
+        this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override
-            public void checkpointReached(ManagedThread managedThread, CheckpointReached checkpointReached, RuntimeState currentState) throws Exception {
+            public void checkpointReached(CheckpointReached checkpointReached) {
                 if (checkpointReached instanceof MonitorCheckpointReached mon) {
                     registerMonitorCheckpoint(mon);
-                } else if (checkpointReached instanceof LockAcquireReleaseCheckpoint cp) {
+                } else if (checkpointReached instanceof LockAcquireReleaseCheckpointReached cp) {
                     registerLockAcquireRelease(cp);
                 }
             }
@@ -56,7 +55,7 @@ public class MutableRuntimeState implements RuntimeState {
         });
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override
-            public void checkpointReached(ManagedThread managedThread, CheckpointReached checkpointReached, RuntimeState currentState) throws Exception {
+            public void checkpointReached(CheckpointReached checkpointReached) {
                 if (checkpointReached instanceof ThreadStartCheckpointReached cp) {
                     registerNewActor(cp);
                 }
@@ -65,7 +64,7 @@ public class MutableRuntimeState implements RuntimeState {
         this.checkpointRuntime.addCheckpointCallback(rendezvouCallback);
     }
 
-    private void registerLockAcquireRelease(LockAcquireReleaseCheckpoint checkpointReached) {
+    private void registerLockAcquireRelease(LockAcquireReleaseCheckpointReached checkpointReached) {
         int lockId = lockIdFor(checkpointReached.theLock());
         String actorName = checkpointReached.actorName();
         ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));

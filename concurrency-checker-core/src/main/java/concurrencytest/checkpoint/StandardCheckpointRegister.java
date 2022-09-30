@@ -6,12 +6,13 @@ import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runtime.ParkCheckpoint;
 import org.objectweb.asm.Type;
 
+import java.io.Serializable;
 import java.lang.reflect.Member;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StandardCheckpointRegister implements CheckpointRegister {
+public class StandardCheckpointRegister implements CheckpointRegister, Serializable {
 
     private final Map<CheckpointDescription, Checkpoint> allCheckpoints = new HashMap<>();
 

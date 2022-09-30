@@ -4,7 +4,7 @@ import concurrencytest.asm.testClasses.InjectionTarget;
 import concurrencytest.asm.testClasses.InjectionTarget2;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.description.ManualCheckpointImpl;
-import concurrencytest.runtime.RecordingCheckpointRuntime;
+import concurrencytest.runner.RecordingCheckpointRuntime;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public class ManualCheckpointTest extends BaseClassVisitorTest {
         Assert.assertEquals(3, register.allCheckpoints().size());
         Assert.assertTrue(checkpoint.lineNumber() > 0);
         for (var state : runtime.getCheckpoints()) {
-            Assert.assertEquals(checkpoint.description(), state.checkpoint());
+            Assert.assertEquals(checkpoint.description(), state.checkpoint().description());
             Assert.assertEquals("", state.details());
         }
     }
@@ -47,7 +47,7 @@ public class ManualCheckpointTest extends BaseClassVisitorTest {
         RecordingCheckpointRuntime runtime = execute(instance, c -> ((Runnable) c).run());
         Assert.assertEquals(1, runtime.getCheckpoints().size());
         var state = runtime.getCheckpoints().get(0);
-        Assert.assertEquals(checkpoint.description(), state.checkpoint());
+        Assert.assertEquals(checkpoint.description(), state.checkpoint().description());
         Assert.assertEquals(value, state.details());
 
     }

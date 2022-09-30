@@ -1,9 +1,10 @@
 package concurrencytest.config;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Collection;
 
-public interface Configuration {
+public interface Configuration extends Serializable {
 
     default ExecutionMode executionMode() {
         return ExecutionMode.AUTO;

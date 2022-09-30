@@ -4,5 +4,5 @@
 - change protected members to private
 - thread dependencies:
   - ex Thread.join, Future.get, etc
-- remove Checkpoint and merge with CheckpointDescription
-- make a factory method for Checkpoints inside CheckpointDescription (double dispatch)
+- better serialization for Configuration 
+- better serialization for CheckpointRegister

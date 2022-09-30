@@ -24,10 +24,10 @@ public class ThreadRendezvouCheckpointCallback implements CheckpointReachedCallb
     }
 
     @Override
-    public synchronized void checkpointReached(ManagedThread managedThread, CheckpointReached checkpointReached, RuntimeState currentState) throws Exception {
-        CheckpointWithSemaphore old = threadCheckpoints.put(managedThread.getActorName(), new CheckpointWithSemaphore(checkpointReached, managedThread));
+    public synchronized void checkpointReached(CheckpointReached checkpointReached) throws Exception {
+        CheckpointWithSemaphore old = threadCheckpoints.put(checkpointReached.actorName(), new CheckpointWithSemaphore(checkpointReached, checkpointReached.thread()));
         if (old != null) {
-            throw new IllegalStateException("actor %s was already at a checkpoint? Previous checkpoint: %s, current checkpoint: %s".formatted(managedThread.getActorName(), old.getCheckpointReached().checkpoint(), checkpointReached.checkpoint()));
+            throw new IllegalStateException("actor %s was already at a checkpoint? Previous checkpoint: %s, current checkpoint: %s".formatted(checkpointReached.actorName(), old.getCheckpointReached().checkpoint(), checkpointReached.checkpoint()));
         }
         notifyAll();
     }

@@ -3,6 +3,7 @@ package concurrencytest.runtime.tree;
 import concurrencytest.runtime.RuntimeState;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -13,6 +14,8 @@ public interface TreeNode {
     Map<String, ThreadState> threads();
 
     Map<String, Supplier<TreeNode>> childNodes();
+
+
 
     default Stream<String> unexploredPaths() {
         Map<String, Supplier<TreeNode>> nodes = this.childNodes();
@@ -29,4 +32,7 @@ public interface TreeNode {
 
     void markFullyExplored();
 
+    default boolean allFinished() {
+        return threads().values().stream().allMatch(ThreadState::finished);
+    }
 }

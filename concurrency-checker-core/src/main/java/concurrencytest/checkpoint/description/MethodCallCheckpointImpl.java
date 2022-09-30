@@ -1,7 +1,7 @@
 package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.checkpoint.MethodCallCheckpoint;
+import concurrencytest.checkpoint.MethodCallCheckpointDescription;
 import concurrencytest.reflection.StaticInitializer;
 
 import java.lang.reflect.Constructor;
@@ -9,7 +9,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
-                                       int lineNumber, Member methodOrConstructor) implements MethodCallCheckpoint {
+                                       int lineNumber, Member methodOrConstructor) implements MethodCallCheckpointDescription {
     @Override
     public String details() {
         return null;

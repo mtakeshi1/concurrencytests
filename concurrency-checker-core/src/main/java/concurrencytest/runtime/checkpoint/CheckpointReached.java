@@ -3,6 +3,9 @@ package concurrencytest.runtime.checkpoint;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.runtime.ManagedThread;
 
+/**
+ * Adds context information to a Checkpoint
+ */
 public interface CheckpointReached {
     Checkpoint checkpoint();
 

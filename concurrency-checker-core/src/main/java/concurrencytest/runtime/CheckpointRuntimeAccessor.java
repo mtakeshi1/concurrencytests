@@ -6,13 +6,6 @@ public class CheckpointRuntimeAccessor {
 
     private static final ThreadLocal<CheckpointRuntime> runtimeThreadLocal = new ThreadLocal<>();
 
-    public static void fieldAccessCheckpoint(int checkpointId, Object owner, Object value) {
-        CheckpointRuntime runtime = runtimeThreadLocal.get();
-        if (runtime != null) {
-            runtime.fieldAccessCheckpoint(checkpointId, owner, value);
-        }
-    }
-
     public static void manualCheckpoint() {
     }
 

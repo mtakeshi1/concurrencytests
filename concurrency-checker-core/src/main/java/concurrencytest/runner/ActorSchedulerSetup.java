@@ -14,11 +14,15 @@ import concurrencytest.util.ASMUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
-import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public class ActorSchedulerSetup {
@@ -35,7 +39,7 @@ public class ActorSchedulerSetup {
         this.configuration = configuration;
     }
 
-    public void initialize() throws IOException {
+    public void run() throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException, ClassNotFoundException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
@@ -46,17 +50,33 @@ public class ActorSchedulerSetup {
         enhanceClasses(mode, folder, register, ReflectionHelper.getInstance());
         renameMainTestClassIfNecessary(mode, folder);
         saveCheckpointInformation(register);
-        Tree tree;
         if (mode == ExecutionMode.FORK) {
-            tree = createFileTree();
             throw new RuntimeException("not yet implemented");
         } else {
-            tree = new HeapTree();
+            runInVm(configuration, register);
         }
     }
 
-    private void saveCheckpointInformation(CheckpointRegister register) {
+    private void runInVm(Configuration configuration, CheckpointRegister register) throws ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException, IOException, ClassNotFoundException {
+        Tree tree = new HeapTree();
+        Class<?> mainTestClass = loadMainTestClass();
+        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass);
+        entryPoint.exploreAll();
+    }
 
+    private Class<?> loadMainTestClass() throws MalformedURLException, ClassNotFoundException {
+        URLClassLoader classLoader = new URLClassLoader(new URL[]{this.configuration.outputFolder().toURI().toURL()});
+        String renamedTestClass = remapper.map(Type.getInternalName(configuration.mainTestClass()));
+        if (renamedTestClass == null) {
+            renamedTestClass = configuration.mainTestClass().getName();
+        }
+        return Class.forName(Type.getObjectType(renamedTestClass).getClassName(), false, classLoader);
+    }
+
+    private void saveCheckpointInformation(CheckpointRegister register) throws IOException {
+        try (var oout = new ObjectOutputStream(new FileOutputStream(new File(configuration.outputFolder(), "checkpoints.ser")))) {
+            oout.writeObject(register);
+        }
     }
 
     private Tree createFileTree() throws IOException {
@@ -86,13 +106,16 @@ public class ActorSchedulerSetup {
         if (configuration.executionMode() != ExecutionMode.AUTO) {
             return configuration.executionMode();
         }
+        if (configuration.classesToInstrument().size() == 1 && configuration.classesToInstrument().contains(configuration.mainTestClass())) {
+            return ExecutionMode.RENAMING;
+        }
         return ExecutionMode.FORK;
     }
 
     private ClassVisitor createCheckpointsVisitor(ClassVisitor delegate, CheckpointRegister checkpointRegister, ClassResolver classResolver, Class<?> classUnderEnhancement) {
-        if (configuration.checkClassesBytecode()) {
-            delegate = new CheckClassAdapter(delegate, true);
-        }
+//        if (configuration.checkClassesBytecode()) {
+//            delegate = new CheckClassAdapter(delegate, true);
+//        }
         CheckpointConfiguration checkpointConfiguration = configuration.checkpointConfiguration();
         if (checkpointConfiguration.manualCheckpointsEnabled()) {
             delegate = new ManualCheckpointVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
@@ -148,7 +171,7 @@ public class ActorSchedulerSetup {
                 return new ClassRemapper(fileWritingVisitor(rootFolder, classFileName), remapper);
             };
         } else {
-            return c -> new ClassRemapper(fileWritingVisitor(rootFolder, Type.getInternalName(c) + ".class"), remapper);
+            return c -> fileWritingVisitor(rootFolder, Type.getInternalName(c) + ".class");
         }
     }
 
@@ -181,6 +204,8 @@ public class ActorSchedulerSetup {
                 String iName = Type.getInternalName(c);
                 classRenames.put(iName, iName + suffix);
             }
+            String iName = Type.getInternalName(configuration.mainTestClass());
+            classRenames.put(iName, iName + suffix);
             this.remapper = new SimpleRemapper(classRenames);
         }
         return remapper;

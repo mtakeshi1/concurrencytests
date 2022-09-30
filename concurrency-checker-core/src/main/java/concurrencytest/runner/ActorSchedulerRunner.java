@@ -1,6 +1,7 @@
 package concurrencytest.runner;
 
 import concurrencytest.annotations.Actor;
+import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
 import org.junit.runner.Description;
@@ -8,12 +9,12 @@ import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
 
-import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public class ActorSchedulerRunner extends Runner {
@@ -43,15 +44,29 @@ public class ActorSchedulerRunner extends Runner {
         try {
             Configuration configuration = parseConfiguration();
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
-            setup.initialize();
-        } catch (IOException e) {
-            notifier.fireTestFailure(new Failure(childDescription(), e.getCause()));
+            setup.run();
+        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException e) {
+            // infrastructure error =(
+            notifier.fireTestFailure(new Failure(childDescription(), e));
+        } catch (InvocationTargetException e) {
+            notifier.fireTestFailure(new Failure(childDescription(), e.getTargetException()));
+        } catch (ActorSchedulingException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            notifier.fireTestFailure(new Failure(childDescription(), e));
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    protected Configuration parseConfiguration() throws IOException {
-        //TODO implement properly
+    protected Configuration parseConfiguration() throws IOException, InvocationTargetException, IllegalAccessException {
+        for (Method m : testClass.getMethods()) {
+            if (m.isAnnotationPresent(ConfigurationSource.class) && Modifier.isStatic(m.getModifiers())) {
+                return (Configuration) m.invoke(null);
+            }
+        }
         String folderPref = testClass.getName().substring(testClass.getName().lastIndexOf('.') + 1);
-        return new BasicConfiguration(List.of(testClass), testClass, Files.createTempDirectory(folderPref).toFile());
+        return new BasicConfiguration(testClass);
     }
 }

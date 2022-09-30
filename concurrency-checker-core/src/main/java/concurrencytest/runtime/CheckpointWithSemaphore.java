@@ -6,20 +6,20 @@ import java.util.concurrent.Semaphore;
 
 public class CheckpointWithSemaphore {
     private final CheckpointReached checkpointReached;
-    private final ManagedThread managedThread;
+    private final Thread thread;
     private final Semaphore semaphore = new Semaphore(0);
 
-    public CheckpointWithSemaphore(CheckpointReached checkpointReached, ManagedThread managedThread) {
+    public CheckpointWithSemaphore(CheckpointReached checkpointReached, Thread thread) {
         this.checkpointReached = checkpointReached;
-        this.managedThread = managedThread;
+        this.thread = thread;
     }
 
     public CheckpointReached getCheckpointReached() {
         return checkpointReached;
     }
 
-    public ManagedThread getManagedThread() {
-        return managedThread;
+    public Thread getThread() {
+        return thread;
     }
 
     public Semaphore getSemaphore() {

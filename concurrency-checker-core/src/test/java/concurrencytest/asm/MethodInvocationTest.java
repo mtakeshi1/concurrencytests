@@ -3,11 +3,11 @@ package concurrencytest.asm;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.asm.testClasses.Example;
 import concurrencytest.asm.testClasses.MethodInvTestsTarget;
-import concurrencytest.checkpoint.MethodCallCheckpoint;
+import concurrencytest.checkpoint.MethodCallCheckpointDescription;
 import concurrencytest.config.MethodInvocationMatcher;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.reflection.ReflectionHelper;
+import concurrencytest.runner.RecordingCheckpointRuntime;
+import concurrencytest.runtime.checkpoint.CheckpointReached;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class MethodInvocationTest extends BaseClassVisitorTest {
 
     private void assertMethodCheckpoint(CheckpointReached before, Method method, InjectionPoint expectedInjectionPoint) {
         Assert.assertEquals(expectedInjectionPoint, before.checkpoint().injectionPoint());
-        MethodCallCheckpoint methodCallCheckpoint = (MethodCallCheckpoint) before.checkpoint();
+        MethodCallCheckpointDescription methodCallCheckpoint = (MethodCallCheckpointDescription) before.checkpoint().description();
         Assert.assertEquals(method.getName(), methodCallCheckpoint.methodName());
         Assert.assertEquals(method.getReturnType(), methodCallCheckpoint.returnType());
         Assert.assertArrayEquals(method.getParameterTypes(), methodCallCheckpoint.parameterTypes());

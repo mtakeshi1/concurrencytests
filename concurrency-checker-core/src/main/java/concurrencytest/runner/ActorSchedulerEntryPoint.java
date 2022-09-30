@@ -4,7 +4,7 @@ import concurrencytest.LList;
 import concurrencytest.annotations.Actor;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
-import concurrencytest.reflection.ReflectionHelper;
+import concurrencytest.config.Configuration;
 import concurrencytest.runtime.CheckpointRuntime;
 import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
@@ -24,13 +24,17 @@ public class ActorSchedulerEntryPoint {
 
     private final Tree explorationTree;
     private final CheckpointDurationConfiguration configuration;
-    private final Queue<String> initialPathActorNames;
+    private final List<String> initialPathActorNames;
     private final int maxLoopCount;
-    private final String mainTestClass;
+    private final Class<?> mainTestClass;
     private final CheckpointRegister checkpoingRegister;
     private volatile Throwable actorError;
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, Queue<String> initialPathActorNames, String mainTestClassName, int maxLoopCount) {
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass) {
+        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations());
+    }
+
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount) {
         this.explorationTree = explorationTree;
         this.checkpoingRegister = register;
         this.configuration = configuration;
@@ -45,7 +49,28 @@ public class ActorSchedulerEntryPoint {
 
     private ScheduledExecutorService managedExecutorService;
 
-    public void executeOnce() throws Exception {
+    public void exploreAll() throws ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException {
+        while (hasMorePathsToExplore()) {
+            executeOnce();
+        }
+    }
+
+    private boolean hasMorePathsToExplore() {
+        TreeNode node = walk(explorationTree.rootNode(), new LinkedList<>(initialPathActorNames));
+        if (node.allFinished() || !node.hasUnexploredChildren()) {
+            return false;
+        }
+        return true;
+    }
+
+    private TreeNode walk(TreeNode treeNode, Queue<String> initialPathActorNames) {
+        if (initialPathActorNames.isEmpty()) {
+            return treeNode;
+        }
+        throw new RuntimeException("not yet implemented");
+    }
+
+    public void executeOnce() throws InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ActorSchedulingException, TimeoutException {
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(mainTestObject, checkpoingRegister, initialActorNames);
@@ -56,31 +81,25 @@ public class ActorSchedulerEntryPoint {
         Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
         while (!runtime.finished()) {
             detectDeadlock(path);
-            try {
-                Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
-                if (nextActorToAdvance.isEmpty()) {
-                    // we are done with this path
-                    return;
-                }
-                ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
-                RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
-                node = node.advance(runtime.actorNamesToThreadStates().get(selected.actorName()), next);
-                lastActor = nextActorToAdvance.get();
-                runtime = next;
-                if (System.nanoTime() > maxTime) {
-                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
-                }
-            } catch (ActorSchedulingException e) {
-                e.printStackTrace();
-            } catch (TimeoutException e) {
-                e.printStackTrace();
+            Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
+            if (nextActorToAdvance.isEmpty()) {
+                // we are done with this path
+                return;
+            }
+            ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
+            RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
+            node = node.advance(runtime.actorNamesToThreadStates().get(selected.actorName()), next);
+            lastActor = nextActorToAdvance.get();
+            runtime = next;
+            if (System.nanoTime() > maxTime) {
+                throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
             }
         }
     }
 
     private Map<String, Method> parseActorNames() {
         Map<String, Method> map = new HashMap<>();
-        for (var m : ReflectionHelper.getInstance().resolveName(this.mainTestClass).getMethods()) {
+        for (var m : mainTestClass.getMethods()) {
             Actor actor = m.getAnnotation(Actor.class);
             if (actor == null) {
                 continue;
@@ -108,8 +127,8 @@ public class ActorSchedulerEntryPoint {
         throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
     }
 
-    private Object instantiateMainTestClass() throws Exception {
-        return ReflectionHelper.getInstance().resolveName(this.mainTestClass).getConstructor().newInstance();
+    private Object instantiateMainTestClass() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        return mainTestClass.getConstructor().newInstance();
     }
 
     private void detectDeadlock(LList<String> path) {
@@ -170,7 +189,7 @@ public class ActorSchedulerEntryPoint {
         return new Object[]{mainTestObject};
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
     }
 

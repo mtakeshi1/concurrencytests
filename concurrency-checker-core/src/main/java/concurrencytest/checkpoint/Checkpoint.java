@@ -2,9 +2,13 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.description.CheckpointDescription;
+import concurrencytest.runtime.checkpoint.CheckpointReached;
 
 import java.io.Serializable;
 
+/**
+ * Associates a CheckpointDescription with an id (int)
+ */
 public record Checkpoint(int checkpointId, CheckpointDescription description) implements Serializable {
 
     public InjectionPoint injectionPoint() {
@@ -21,6 +25,10 @@ public record Checkpoint(int checkpointId, CheckpointDescription description) im
 
     public int lineNumber() {
         return description().lineNumber();
+    }
+
+    public CheckpointReached newCheckpointReached(Object context, Thread triggeredThread) {
+        return description.newCheckpointReached(this, context, triggeredThread);
     }
 
 }
