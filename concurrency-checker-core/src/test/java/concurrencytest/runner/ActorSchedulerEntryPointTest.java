@@ -5,8 +5,6 @@ import org.junit.Test;
 
 import java.util.ArrayDeque;
 
-import static org.junit.Assert.*;
-
 public class ActorSchedulerEntryPointTest {
 
     @Test

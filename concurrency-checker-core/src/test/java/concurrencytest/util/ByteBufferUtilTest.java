@@ -1,12 +1,18 @@
 package concurrencytest.util;
 
 
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.generator.InRange;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+
+@RunWith(JUnitQuickcheck.class)
 public class ByteBufferUtilTest {
 
     @Test
@@ -56,6 +62,28 @@ public class ByteBufferUtilTest {
             int r = ByteBufferUtil.readVarInt(bb);
             Assert.assertEquals("error for value: " + v, v, r);
         }
+    }
+
+    @Property
+    public void encodeDecodeInt(@InRange(min = "0") int val) {
+        ByteBuffer bb = ByteBuffer.allocate(5);
+        bb.clear();
+        int written = ByteBufferUtil.writeVarInt(bb, val);
+        Assert.assertTrue(written <= 5);
+        bb.flip();
+        int r = ByteBufferUtil.readVarInt(bb);
+        Assert.assertEquals("error for value: " + val, val, r);
+    }
+
+    @Property
+    public void encodeDecodeLong(@InRange(min = "0") long val) {
+        ByteBuffer bb = ByteBuffer.allocate(10);
+        bb.clear();
+        int written = ByteBufferUtil.writeVarLong(bb, val);
+        Assert.assertTrue(written <= 9);
+        bb.flip();
+        long r = ByteBufferUtil.readVarLong(bb);
+        Assert.assertEquals("error for value: " + val, val, r);
     }
 
 }

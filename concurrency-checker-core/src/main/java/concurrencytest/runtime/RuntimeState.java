@@ -1,7 +1,6 @@
 package concurrencytest.runtime;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.runtime.tree.ThreadState;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,19 +37,19 @@ public interface RuntimeState {
 
     default Map<Integer, ThreadState> ownedMonitors() {
         Map<Integer, ThreadState> monitors = new HashMap<>();
-        allActors().forEach(ts -> ts.ownedMonitors().forEach(mon -> monitors.put(mon, ts)));
+        allActors().forEach(ts -> ts.ownedMonitors().forEach(mon -> monitors.put(mon.lockOrMonitorId(), ts)));
         return monitors;
     }
 
     default Map<Integer, ThreadState> lockedLocks() {
         Map<Integer, ThreadState> monitors = new HashMap<>();
-        allActors().forEach(ts -> ts.ownedLocks().forEach(lock -> monitors.put(lock, ts)));
+        allActors().forEach(ts -> ts.ownedLocks().forEach(lock -> monitors.put(lock.lockOrMonitorId(), ts)));
         return monitors;
     }
 
     default Map<Integer, Collection<ThreadState>> threadsWaitingForMonitor() {
         return allActors().stream().filter(ts -> ts.waitingForMonitor().isPresent()).collect(Collectors.toMap(
-                ts1 -> ts1.waitingForMonitor().get(),
+                ts1 -> ts1.waitingForMonitor().get().lockOrMonitorId(),
                 RuntimeState::singleton,
                 (a, b) -> {
                     a.addAll(b);
@@ -67,7 +66,7 @@ public interface RuntimeState {
 
     default Map<Integer, Collection<ThreadState>> threadsWaitingForLocks() {
         return allActors().stream().filter(ts -> ts.waitingForLock().isPresent()).collect(Collectors.toMap(
-                ts1 -> ts1.waitingForLock().get(),
+                ts1 -> ts1.waitingForLock().get().lockOrMonitorId(),
                 RuntimeState::singleton,
                 (a, b) -> {
                     a.addAll(b);

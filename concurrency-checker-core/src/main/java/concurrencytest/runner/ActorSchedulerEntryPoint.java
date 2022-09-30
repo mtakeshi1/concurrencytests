@@ -8,7 +8,7 @@ import concurrencytest.config.Configuration;
 import concurrencytest.runtime.CheckpointRuntime;
 import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.tree.ThreadState;
+import concurrencytest.runtime.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 

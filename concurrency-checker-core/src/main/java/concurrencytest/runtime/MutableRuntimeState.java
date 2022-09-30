@@ -10,7 +10,6 @@ import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
-import concurrencytest.runtime.tree.ThreadState;
 
 import java.time.Duration;
 import java.util.*;
@@ -70,7 +69,7 @@ public class MutableRuntimeState implements RuntimeState {
         ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));
         if (checkpointReached.checkpoint().description() instanceof LockAcquireCheckpointDescription lacq) {
             if (lacq.injectionPoint() == InjectionPoint.BEFORE) {
-                allActors.put(actorName, state.beforeLockAcquisition(lockId));
+                allActors.put(actorName, state.beforeLockAcquisition(lockId, lacq));
             } else {
                 allActors.put(actorName, state.lockAcquired(lockId));
             }
@@ -94,7 +93,7 @@ public class MutableRuntimeState implements RuntimeState {
         MonitorCheckpointDescription description = (MonitorCheckpointDescription) mon.checkpoint().description();
         if (description.monitorAcquire()) {
             if (mon.checkpoint().injectionPoint() == InjectionPoint.BEFORE) {
-                allActors.put(actorName, state.beforeMonitorAcquire(monitorId));
+                allActors.put(actorName, state.beforeMonitorAcquire(monitorId, description));
             } else {
                 allActors.put(actorName, state.monitorAcquired(monitorId));
             }

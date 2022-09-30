@@ -36,7 +36,7 @@ public class MonitorInformation {
 
     @Override
     public String toString() {
-        return "MonitorInformation{" +
+        return "LockOrMonitorInformation{" +
                 "identity=" + identity +
                 ", type=" + type +
                 ", details='" + details + '\'' +
