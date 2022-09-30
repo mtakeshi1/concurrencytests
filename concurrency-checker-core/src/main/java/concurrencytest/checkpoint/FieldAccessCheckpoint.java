@@ -1,5 +1,7 @@
 package concurrencytest.checkpoint;
 
+import concurrencytest.checkpoint.description.CheckpointDescription;
+
 public interface FieldAccessCheckpoint extends CheckpointDescription {
 
     String declaringClass();

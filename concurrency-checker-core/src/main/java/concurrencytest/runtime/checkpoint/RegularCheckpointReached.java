@@ -1,6 +1,6 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.checkpoint;
 
-import concurrencytest.checkpoint.CheckpointDescription;
+import concurrencytest.checkpoint.description.CheckpointDescription;
 
 public record RegularCheckpointReached(CheckpointDescription checkpoint, String details, Thread thread) implements CheckpointReached {
 }

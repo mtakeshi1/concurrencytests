@@ -1,8 +1,8 @@
 package concurrencytest.asm;
 
 import concurrencytest.asm.testClasses.SyncBlockTarget;
-import concurrencytest.runtime.CheckpointReached;
-import concurrencytest.runtime.MonitorCheckpointReached;
+import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;

@@ -1,6 +1,6 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.checkpoint;
 
-import concurrencytest.checkpoint.CheckpointDescription;
+import concurrencytest.checkpoint.description.CheckpointDescription;
 
 public interface CheckpointReached {
     CheckpointDescription checkpoint();

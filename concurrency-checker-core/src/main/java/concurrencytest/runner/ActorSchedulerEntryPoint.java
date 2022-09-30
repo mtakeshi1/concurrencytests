@@ -1,7 +1,11 @@
 package concurrencytest.runner;
 
 import concurrencytest.LList;
+import concurrencytest.annotations.Actor;
+import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
+import concurrencytest.reflection.ReflectionHelper;
+import concurrencytest.runtime.BasicRuntimeState;
 import concurrencytest.runtime.CheckpointRuntime;
 import concurrencytest.runtime.ManagedThread;
 import concurrencytest.runtime.RuntimeState;
@@ -9,7 +13,8 @@ import concurrencytest.runtime.tree.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 
-import java.net.URL;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,12 +27,17 @@ public class ActorSchedulerEntryPoint {
     private final CheckpointDurationConfiguration configuration;
     private final Queue<String> initialPathActorNames;
     private final int maxLoopCount;
+    private final String mainTestClass;
+    private final CheckpointRegister checkpoingRegister;
+    private volatile Throwable actorError;
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointDurationConfiguration configuration, Queue<String> initialPathActorNames, String mainTestClassName, URL[] classpath, int maxLoopCount) {
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, Queue<String> initialPathActorNames, String mainTestClassName, int maxLoopCount) {
         this.explorationTree = explorationTree;
+        this.checkpoingRegister = register;
         this.configuration = configuration;
         this.initialPathActorNames = initialPathActorNames;
         this.maxLoopCount = maxLoopCount;
+        this.mainTestClass = mainTestClassName;
     }
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
@@ -38,8 +48,8 @@ public class ActorSchedulerEntryPoint {
 
     public void executeOnce() throws Exception {
         Object mainTestObject = instantiateMainTestClass();
-        CheckpointRuntime checkpointRuntime = checkpointRuntime();
-        RuntimeState runtime = initialState(mainTestObject, checkpointRuntime);
+        var initialActorNames = parseActorNames();
+        RuntimeState runtime = initialState(mainTestObject, checkpoingRegister, initialActorNames);
         LList<String> path = LList.empty();
         String lastActor = null;
         TreeNode node = explorationTree.rootNode();
@@ -47,20 +57,47 @@ public class ActorSchedulerEntryPoint {
         Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
         while (!runtime.finished()) {
             detectDeadlock(path);
-            Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
-            if (nextActorToAdvance.isEmpty()) {
-                // we are done with this path
-                return;
-            }
-            ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
-            RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout(), checkpointRuntime);
-            node = node.advance(runtime.actorNamesToThreadStates().get(selected.actorName()), next);
-            lastActor = nextActorToAdvance.get();
-            runtime = next;
-            if (System.nanoTime() > maxTime) {
-                throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+            try {
+                Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
+                if (nextActorToAdvance.isEmpty()) {
+                    // we are done with this path
+                    return;
+                }
+                ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
+                RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
+                node = node.advance(runtime.actorNamesToThreadStates().get(selected.actorName()), next);
+                lastActor = nextActorToAdvance.get();
+                runtime = next;
+                if (System.nanoTime() > maxTime) {
+                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+                }
+            } catch (ActorSchedulingException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
             }
         }
+    }
+
+    private Map<String, Method> parseActorNames() {
+        Map<String, Method> map = new HashMap<>();
+        for (var m : ReflectionHelper.getInstance().resolveName(this.mainTestClass).getMethods()) {
+            Actor actor = m.getAnnotation(Actor.class);
+            if (actor == null) {
+                continue;
+            }
+            String actorName;
+            if (actor.actorName().isEmpty()) {
+                actorName = m.getName();
+            } else {
+                actorName = actor.actorName();
+            }
+            Method old = map.put(actorName, m);
+            if (old != null) {
+                throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
+            }
+        }
+        return map;
     }
 
     private CheckpointRuntime checkpointRuntime() {
@@ -72,12 +109,12 @@ public class ActorSchedulerEntryPoint {
         throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
     }
 
-    private Object instantiateMainTestClass() {
-        return null;
+    private Object instantiateMainTestClass() throws Exception {
+        return ReflectionHelper.getInstance().resolveName(this.mainTestClass).getConstructor().newInstance();
     }
 
     private void detectDeadlock(LList<String> path) {
-
+        throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
     }
 
     public static Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
@@ -102,8 +139,33 @@ public class ActorSchedulerEntryPoint {
         return runnableActors.stream().findAny();
     }
 
-    private RuntimeState initialState(Object mainTestObject, CheckpointRuntime checkpointRuntime) {
-        return null;
+    protected void reportActorError(Throwable t) {
+        t.printStackTrace();
+        this.actorError = t;
+    }
+
+    private RuntimeState initialState(Object mainTestObject, CheckpointRegister checkpointRegister, Map<String, Method> initialActorNames) {
+        Map<String, Runnable> managedThreadRunnables = new HashMap<>();
+        initialActorNames.forEach((actor, method) -> {
+            Object[] params = collectParametersForActorRun(mainTestObject);
+            Runnable wrapped = () -> {
+                try {
+                    method.invoke(params);
+                } catch (IllegalAccessException e) {
+                    actorError = e;
+                } catch (InvocationTargetException e) {
+                    actorError = e.getTargetException();
+                }
+            };
+            managedThreadRunnables.put(actor, wrapped);
+        });
+        return new BasicRuntimeState(checkpointRegister, managedThreadRunnables);
+
+    }
+
+    private Object[] collectParametersForActorRun(Object mainTestObject) {
+
+        return new Object[]{mainTestObject};
     }
 
     public static void main(String[] args) throws Exception {

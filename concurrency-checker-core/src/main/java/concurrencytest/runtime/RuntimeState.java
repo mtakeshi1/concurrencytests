@@ -23,7 +23,9 @@ public interface RuntimeState {
 
     Collection<? extends ThreadState> allActors();
 
-    RuntimeState advance(ThreadState selected, Duration waitTime, CheckpointRuntime runtime) throws InterruptedException, TimeoutException;
+    Collection<ManagedThread> start();
+
+    RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException;
 
     default Map<Integer, ThreadState> ownedMonitors() {
         Map<Integer, ThreadState> monitors = new HashMap<>();

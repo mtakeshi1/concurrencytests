@@ -1,8 +1,8 @@
-package concurrencytest.checkpoint;
+package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
 
-public interface MonitorCheckpoint extends CheckpointDescription {
+public interface MonitorCheckpointDescription extends CheckpointDescription {
 
     String monitorType();
 

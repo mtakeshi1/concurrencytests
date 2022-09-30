@@ -1,12 +1,13 @@
-package concurrencytest.runtime;
+package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.description.CheckpointDescription;
 
-public record ParkCheckpoint(String details, String sourceFile, int lineNumber) implements CheckpointDescription {
-
-    @Override
+public record ManualCheckpointImpl(String details, String sourceFile, int lineNumber) implements CheckpointDescription {
     public InjectionPoint injectionPoint() {
         return InjectionPoint.AFTER;
     }
 }
+
+
+

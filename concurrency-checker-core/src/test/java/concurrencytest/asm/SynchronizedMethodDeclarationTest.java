@@ -2,7 +2,7 @@ package concurrencytest.asm;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.asm.testClasses.SyncCallable;
-import concurrencytest.checkpoint.MonitorCheckpoint;
+import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,15 +45,15 @@ public class SynchronizedMethodDeclarationTest extends BaseClassVisitorTest {
         Assert.assertTrue(newInstance instanceof Callable<?>);
         Assert.assertEquals(6, register.allCheckpoints().size());
         Assert.assertTrue(monitorCheckpoints().allMatch(s -> s.lineNumber() == -1));
-        Assert.assertTrue("should have BEFORE monitor acquire", monitorCheckpoints().filter(MonitorCheckpoint::monitorAcquire).collect(Collectors.toList()).stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
-        Assert.assertTrue("should have AFTER monitor acquire", monitorCheckpoints().filter(MonitorCheckpoint::monitorAcquire).collect(Collectors.toList()).stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.AFTER));
-        Assert.assertTrue("should have BEFORE monitor release", monitorCheckpoints().filter(MonitorCheckpoint::isMonitorRelease).collect(Collectors.toList()).stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
-        Assert.assertTrue("should have AFTER monitor release", monitorCheckpoints().filter(MonitorCheckpoint::isMonitorRelease).collect(Collectors.toList()).stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.AFTER));
+        Assert.assertTrue("should have BEFORE monitor acquire", monitorCheckpoints().filter(MonitorCheckpointDescription::monitorAcquire).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
+        Assert.assertTrue("should have AFTER monitor acquire", monitorCheckpoints().filter(MonitorCheckpointDescription::monitorAcquire).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.AFTER));
+        Assert.assertTrue("should have BEFORE monitor release", monitorCheckpoints().filter(MonitorCheckpointDescription::isMonitorRelease).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
+        Assert.assertTrue("should have AFTER monitor release", monitorCheckpoints().filter(MonitorCheckpointDescription::isMonitorRelease).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.AFTER));
 //        Assert.assertTrue("monitor type should be SyncCallable but was: " + monitorCheckpoints().map(CheckpointDescription::details).filter(s -> !s.equals(SyncCallable.class.getName())).collect(Collectors.toList()), monitorCheckpoints().allMatch(s -> s.details().equals(SyncCallable.class.getName())));
     }
 
-    private Stream<MonitorCheckpoint> monitorCheckpoints() {
-        return register.allCheckpoints().values().stream().filter(s -> s.checkpointDescription() instanceof MonitorCheckpoint).map(s -> (MonitorCheckpoint) s.checkpointDescription());
+    private Stream<MonitorCheckpointDescription> monitorCheckpoints() {
+        return register.allCheckpoints().values().stream().filter(s -> s.checkpointDescription() instanceof MonitorCheckpointDescription).map(s -> (MonitorCheckpointDescription) s.checkpointDescription());
     }
 
 }

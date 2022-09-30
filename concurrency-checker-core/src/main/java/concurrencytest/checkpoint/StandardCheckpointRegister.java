@@ -1,7 +1,7 @@
 package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.checkpoint.*;
+import concurrencytest.checkpoint.description.*;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runtime.ParkCheckpoint;
 import org.objectweb.asm.Type;

@@ -1,6 +1,7 @@
-package concurrencytest.checkpoint;
+package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.checkpoint.MethodCallCheckpoint;
 import concurrencytest.reflection.StaticInitializer;
 
 import java.lang.reflect.Constructor;

@@ -1,6 +1,7 @@
 package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.checkpoint.description.CheckpointDescription;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Member;

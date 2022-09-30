@@ -3,7 +3,7 @@ package concurrencytest.asm;
 import concurrencytest.asm.testClasses.InjectionTarget;
 import concurrencytest.asm.testClasses.InjectionTarget2;
 import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.checkpoint.ManualCheckpointImpl;
+import concurrencytest.checkpoint.description.ManualCheckpointImpl;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;

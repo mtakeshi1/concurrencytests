@@ -5,7 +5,7 @@ import concurrencytest.asm.testClasses.Example;
 import concurrencytest.asm.testClasses.MethodInvTestsTarget;
 import concurrencytest.checkpoint.MethodCallCheckpoint;
 import concurrencytest.config.MethodInvocationMatcher;
-import concurrencytest.runtime.CheckpointReached;
+import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.RecordingCheckpointRuntime;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;

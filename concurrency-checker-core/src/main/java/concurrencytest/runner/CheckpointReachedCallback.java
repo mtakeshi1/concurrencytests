@@ -1,6 +1,6 @@
 package concurrencytest.runner;
 
-import concurrencytest.runtime.CheckpointReached;
+import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.ManagedThread;
 import concurrencytest.runtime.RuntimeState;
 
