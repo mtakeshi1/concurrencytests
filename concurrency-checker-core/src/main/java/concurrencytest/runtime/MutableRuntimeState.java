@@ -1,8 +1,11 @@
 package concurrencytest.runtime;
 
+import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.checkpoint.description.CheckpointDescription;
+import concurrencytest.checkpoint.ThreadStartingCheckpoint;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
+import concurrencytest.checkpoint.description.LockReleaseCheckpointDescription;
+import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runner.CheckpointReachedCallback;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpoint;
@@ -11,31 +14,31 @@ import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
 import concurrencytest.runtime.tree.ThreadState;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
-public class BasicRuntimeState implements RuntimeState {
+public class MutableRuntimeState implements RuntimeState {
 
     private final CheckpointRegister register;
-
-    private final Map<Object, Integer> monitorIds = new ConcurrentHashMap<>();
-    private final Map<Lock, Integer> lockIds = new ConcurrentHashMap<>();
-
-    private final AtomicInteger monitorLockSeed = new AtomicInteger();
-    private final Map<String, ThreadState> allActors;
     private final RecordingCheckpointRuntime checkpointRuntime;
+
+    private final Map<Object, Integer> monitorIds;
+    private final Map<Lock, Integer> lockIds;
+
+    private final AtomicInteger monitorLockSeed;
+    private final Map<String, ThreadState> allActors;
     private final Map<String, Runnable> threads;
     private final ThreadRendezvouCheckpointCallback rendezvouCallback;
 
-
-    public BasicRuntimeState(CheckpointRegister register, Map<String, Runnable> managedThreadMap) {
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Runnable> managedThreadMap) {
         this.register = register;
+        this.monitorIds = new ConcurrentHashMap<>();
+        this.lockIds = new ConcurrentHashMap<>();
+        this.monitorLockSeed = new AtomicInteger();
         this.allActors = managedThreadMap.keySet().stream().map(ThreadState::new).collect(Collectors.toMap(ThreadState::actorName, t -> t));
         this.threads = managedThreadMap;
         this.checkpointRuntime = new RecordingCheckpointRuntime(register);
@@ -63,15 +66,42 @@ public class BasicRuntimeState implements RuntimeState {
     }
 
     private void registerLockAcquireRelease(LockAcquireReleaseCheckpoint checkpointReached) {
-        throw new RuntimeException("not yet implemented");
+        int lockId = lockIdFor(checkpointReached.theLock());
+        String actorName = checkpointReached.actorName();
+        ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));
+        if (checkpointReached.checkpoint().description() instanceof LockAcquireCheckpointDescription lacq) {
+            if (lacq.injectionPoint() == InjectionPoint.BEFORE) {
+                allActors.put(actorName, state.beforeLockAcquisition(lockId));
+            } else {
+                allActors.put(actorName, state.lockAcquired(lockId));
+            }
+        } else if (checkpointReached.checkpoint().description() instanceof LockReleaseCheckpointDescription lr && lr.injectionPoint() == InjectionPoint.AFTER) {
+            allActors.put(actorName, state.lockReleased(lockId));
+        }
     }
 
     private void registerNewActor(ThreadStartCheckpointReached checkpointReached) {
-        throw new RuntimeException("not yet implemented");
+        String brandNewActor = checkpointReached.newActorName();
+        ThreadState old = allActors.putIfAbsent(brandNewActor, new ThreadState(brandNewActor));
+        if (old != null) {
+            throw new IllegalArgumentException("actor named %s was already registered? ".formatted(brandNewActor));
+        }
     }
 
     private void registerMonitorCheckpoint(MonitorCheckpointReached mon) {
-        throw new RuntimeException("not yet implemented");
+        int monitorId = monitorIdFor(mon.monitorOwner());
+        String actorName = mon.actorName();
+        ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));
+        MonitorCheckpointDescription description = (MonitorCheckpointDescription) mon.checkpoint().description();
+        if (description.monitorAcquire()) {
+            if (mon.checkpoint().injectionPoint() == InjectionPoint.BEFORE) {
+                allActors.put(actorName, state.beforeMonitorAcquire(monitorId));
+            } else {
+                allActors.put(actorName, state.monitorAcquired(monitorId));
+            }
+        } else if (mon.checkpoint().injectionPoint() == InjectionPoint.AFTER) {
+            allActors.put(actorName, state.monitorReleased(monitorId));
+        }
     }
 
     @Override
@@ -107,7 +137,16 @@ public class BasicRuntimeState implements RuntimeState {
 
     @Override
     public RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException {
-        // we need to install and them uninstall ourselves as a callback
-        throw new RuntimeException("not yet implemented");
+        Set<String> before = new HashSet<>(this.allActors.keySet());
+        rendezvouCallback.resumeActor(selected.actorName());
+        rendezvouCallback.waitForActors(maxWaitTime, before);
+        CheckpointReached lastCheckpoint = rendezvouCallback.lastKnownCheckpoint(selected.actorName());
+        if (lastCheckpoint instanceof ThreadStartCheckpointReached ts) {
+            before.add(ts.newActorName());
+            rendezvouCallback.waitForActors(maxWaitTime, before);
+        }
+        ThreadState newActorState = Objects.requireNonNull(allActors.remove(selected.actorName()), "actor state for %s not found".formatted(selected.actorName())).newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
+        allActors.put(selected.actorName(), newActorState);
+        return this;
     }
 }

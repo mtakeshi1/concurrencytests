@@ -33,32 +33,32 @@ public class RecordingCheckpointRuntime implements CheckpointRuntime {
     @Override
     public void beforeActorStartCheckpoint() {
         Checkpoint checkpoint = checkpointRegister.taskStartingCheckpoint();
-        checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), "", Thread.currentThread()));
+        checkpoints.add(new RegularCheckpointReached(checkpoint.description(), "", Thread.currentThread()));
     }
 
     @Override
     public void actorFinishedCheckpoint() {
         Checkpoint checkpoint = checkpointRegister.taskFinishedCheckpoint();
-        checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), "", Thread.currentThread()));
+        checkpoints.add(new RegularCheckpointReached(checkpoint.description(), "", Thread.currentThread()));
     }
 
     @Override
     public void checkpointReached(int id) {
         Checkpoint checkpoint = checkpointRegister.checkpointById(id);
         Assert.assertNotNull("checkpoint not found: " + id, checkpoint);
-        checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), "", Thread.currentThread()));
+        checkpoints.add(new RegularCheckpointReached(checkpoint.description(), "", Thread.currentThread()));
     }
 
     @Override
     public void checkpointReached(int id, Object details) {
         Checkpoint checkpoint = checkpointRegister.checkpointById(id);
         Assert.assertNotNull("checkpoint not found: " + id, checkpoint);
-        if (checkpoint.checkpointDescription() instanceof MonitorCheckpointDescription monitorCheckpoint) {
+        if (checkpoint.description() instanceof MonitorCheckpointDescription monitorCheckpoint) {
             checkpoints.add(new MonitorCheckpointReached(monitorCheckpoint, details, Thread.currentThread()));
-        } else if (details instanceof ManagedThread mn && checkpoint.checkpointDescription() instanceof ThreadStartingCheckpoint) {
-            checkpoints.add(new ThreadStartCheckpointReached(checkpoint.checkpointDescription(), mn, Thread.currentThread()));
+        } else if (details instanceof ManagedThread mn && checkpoint.description() instanceof ThreadStartingCheckpoint) {
+            checkpoints.add(new ThreadStartCheckpointReached(checkpoint.description(), mn, Thread.currentThread()));
         } else {
-            checkpoints.add(new RegularCheckpointReached(checkpoint.checkpointDescription(), String.valueOf(details), Thread.currentThread()));
+            checkpoints.add(new RegularCheckpointReached(checkpoint.description(), String.valueOf(details), Thread.currentThread()));
         }
     }
 

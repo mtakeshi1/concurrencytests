@@ -25,6 +25,15 @@ public interface RuntimeState {
 
     Collection<ManagedThread> start();
 
+    /**
+     * Signal the given actor to advance tot he next checkpoint. The current thread waits for rendezvous for the given maxWaitTime.
+     * This methos can either mutate the current instance of create a copy.
+     *
+     * @param selected the actor selected to resume
+     * @param maxWaitTime max wait time for the rendezvous
+     * @return the new state or 'this' with a mutated state
+     * @throws TimeoutException if maxWaitTime passed without the threads reaching their destination
+     */
     RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException;
 
     default Map<Integer, ThreadState> ownedMonitors() {
@@ -37,7 +46,6 @@ public interface RuntimeState {
         Map<Integer, ThreadState> monitors = new HashMap<>();
         allActors().forEach(ts -> ts.ownedLocks().forEach(lock -> monitors.put(lock, ts)));
         return monitors;
-
     }
 
     default Map<Integer, Collection<ThreadState>> threadsWaitingForMonitor() {

@@ -6,6 +6,7 @@ import concurrencytest.runtime.checkpoint.CheckpointReached;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,5 +44,12 @@ public class ThreadRendezvouCheckpointCallback implements CheckpointReachedCallb
 
     }
 
+    public CheckpointReached lastKnownCheckpoint(String actorName) {
+        return Objects.requireNonNull(threadCheckpoints.get(actorName), "actor %s did not register a checkpoint".formatted(actorName)).getCheckpointReached();
+    }
 
+    public void resumeActor(String actorName) {
+        CheckpointWithSemaphore semaphore = threadCheckpoints.remove(actorName);
+        Objects.requireNonNull(semaphore).getSemaphore().release();
+    }
 }

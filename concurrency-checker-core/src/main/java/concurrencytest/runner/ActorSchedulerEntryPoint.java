@@ -5,9 +5,8 @@ import concurrencytest.annotations.Actor;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.reflection.ReflectionHelper;
-import concurrencytest.runtime.BasicRuntimeState;
 import concurrencytest.runtime.CheckpointRuntime;
-import concurrencytest.runtime.ManagedThread;
+import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.tree.ThreadState;
 import concurrencytest.runtime.tree.Tree;
@@ -152,14 +151,17 @@ public class ActorSchedulerEntryPoint {
                 try {
                     method.invoke(params);
                 } catch (IllegalAccessException e) {
-                    actorError = e;
+                    reportActorError(e);
                 } catch (InvocationTargetException e) {
-                    actorError = e.getTargetException();
+                    reportActorError(e.getTargetException());
+                } catch (RuntimeException | Error e) {
+                    reportActorError(e);
+                    throw e;
                 }
             };
             managedThreadRunnables.put(actor, wrapped);
         });
-        return new BasicRuntimeState(checkpointRegister, managedThreadRunnables);
+        return new MutableRuntimeState(checkpointRegister, managedThreadRunnables);
 
     }
 

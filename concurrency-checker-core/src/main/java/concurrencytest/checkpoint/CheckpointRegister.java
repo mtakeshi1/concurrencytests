@@ -42,4 +42,8 @@ public interface CheckpointRegister {
     Checkpoint arrayElementCheckpoint(InjectionPoint injectionPoint, boolean arrayRead, Class<?> arrayType, String sourceName, int latestLineNumber);
 
     Checkpoint managedThreadStartedCheckpoint(String classUnderEnhancementName, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
+
+    default boolean isFinishedCheckpoint(int checkpointId) {
+        return checkpointId == taskFinishedCheckpoint().checkpointId();
+    }
 }

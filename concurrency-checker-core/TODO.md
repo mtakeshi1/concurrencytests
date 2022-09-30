@@ -1,13 +1,11 @@
 # Before I consider 'usable':
-- @ManualCheckpoints
 - off-heap graph - allows forking
 - Fork to another jvm 
-- Fork agent attacher to another jvm (unless allowSel)
+  - we could export the classes to the other jvm via standard classpath mechanism
 - Random execution with max time 
 - Better error output (thread monitor / lock status)
 - Better lock / monitor information
 - Recoded output and re-run with recorded output
-- Polymorphic checkpoints - OK
 - better checkpoint names and details 
 - wait / notify / lock.condition coordination
 - random / sleep detection

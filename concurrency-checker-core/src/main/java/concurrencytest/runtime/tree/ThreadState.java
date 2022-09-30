@@ -1,8 +1,10 @@
 package concurrencytest.runtime.tree;
 
 import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.util.ByteBufferUtil;
 
+import javax.swing.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Stream;
@@ -105,4 +107,68 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         return waitingForMonitor.map(checkpointId -> state.ownedMonitors().get(checkpointId) == null || state.ownedMonitors().get(checkpointId).actorName().equals(this.actorName())).orElse(true);
     }
 
+    private void assertNotFinished() {
+        if (finished()) {
+            throw new IllegalStateException("tried operation on finished actor: %s".formatted(this.actorName));
+        }
+    }
+
+    public ThreadState beforeLockAcquisition(int lockId) {
+        assertNotFinished();
+        if (this.waitingForLock().isPresent()) {
+            throw new IllegalStateException("actor %s is already waiting for lock %s but its requesting another lock: %d".formatted(actorName, waitingForLock, lockId));
+        }
+        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, ownedLocks, waitingForMonitor, Optional.of(lockId), waitingForThread, false);
+    }
+
+    public ThreadState lockAcquired(int lockId) {
+        assertNotFinished();
+        if (!this.waitingForLock().equals(Optional.of(lockId))) {
+            throw new IllegalStateException("actor %s was not waiting for lock %d but tried to acquire (was waiting for %s)".formatted(actorName, lockId, waitingForLock));
+        }
+        List<Integer> newLocks = new ArrayList<>(this.ownedLocks);
+        newLocks.add(lockId);
+        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, newLocks, waitingForMonitor, Optional.empty(), waitingForThread, false);
+    }
+
+    public ThreadState lockReleased(int lockId) {
+        assertNotFinished();
+        List<Integer> newLocks = new ArrayList<>(this.ownedLocks);
+        if (!newLocks.remove(Integer.valueOf(lockId))) {
+            throw new IllegalStateException("actor %s tried to release a lock (%d) that it did not held (%s)".formatted(actorName, lockId, ownedLocks));
+        }
+        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, newLocks, waitingForMonitor, waitingForLock, waitingForThread, false);
+    }
+
+    public ThreadState beforeMonitorAcquire(int monitorId) {
+        assertNotFinished();
+        if (this.waitingForLock().isPresent()) {
+            throw new IllegalStateException("actor %s is already waiting for monitor %s but its requesting another monitor: %d".formatted(actorName, waitingForMonitor, monitorId));
+        }
+        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, ownedLocks, Optional.of(monitorId), waitingForLock, waitingForThread, false);
+    }
+
+    public ThreadState monitorAcquired(int monitorId) {
+        assertNotFinished();
+        if (!this.waitingForMonitor().equals(Optional.of(monitorId))) {
+            throw new IllegalStateException("actor %s was not waiting for monitor %d but tried to acquire (was waiting for %s)".formatted(actorName, monitorId, waitingForMonitor));
+        }
+        List<Integer> newMonitors = new ArrayList<>(this.ownedMonitors);
+        newMonitors.add(monitorId);
+        return new ThreadState(actorName, checkpoint, loopCount, newMonitors, ownedLocks, waitingForMonitor, waitingForLock, waitingForThread, false);
+    }
+
+    public ThreadState monitorReleased(int monitorId) {
+        assertNotFinished();
+        if (!this.waitingForMonitor().equals(Optional.of(monitorId))) {
+            throw new IllegalStateException("actor %s was not waiting for monitor %d but tried to acquire (was waiting for %s)".formatted(actorName, monitorId, waitingForLock));
+        }
+        List<Integer> newMonitors = new ArrayList<>(this.ownedMonitors);
+        newMonitors.add(monitorId);
+        return new ThreadState(actorName, checkpoint, loopCount, newMonitors, ownedLocks, waitingForMonitor, Optional.empty(), waitingForThread, false);
+    }
+
+    public ThreadState newCheckpointReached(CheckpointReached newCheckpoint, boolean lastCheckpoint) {
+        return new ThreadState(actorName, newCheckpoint.checkpointId(), newCheckpoint.checkpointId() == this.checkpoint() ? loopCount + 1 : 0, ownedMonitors, ownedLocks, waitingForMonitor, waitingForLock, waitingForThread, lastCheckpoint);
+    }
 }

@@ -5,22 +5,22 @@ import concurrencytest.checkpoint.description.CheckpointDescription;
 
 import java.io.Serializable;
 
-public record Checkpoint(int checkpointId, CheckpointDescription checkpointDescription) implements Serializable {
+public record Checkpoint(int checkpointId, CheckpointDescription description) implements Serializable {
 
     public InjectionPoint injectionPoint() {
-        return checkpointDescription().injectionPoint();
+        return description().injectionPoint();
     }
 
     public String details() {
-        return checkpointDescription().details();
+        return description().details();
     }
 
     public String sourceFile() {
-        return checkpointDescription().sourceFile();
+        return description().sourceFile();
     }
 
     public int lineNumber() {
-        return checkpointDescription().lineNumber();
+        return description().lineNumber();
     }
 
 }

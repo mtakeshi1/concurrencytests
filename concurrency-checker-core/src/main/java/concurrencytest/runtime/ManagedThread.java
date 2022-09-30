@@ -54,9 +54,7 @@ public class ManagedThread extends Thread {
 
     @Override
     public void run() {
-        if (actorName == null && parentThread instanceof ManagedThread mt) {
-            actorName = mt.newChildActorName();
-        }
+        getActorName();
         CheckpointRuntimeAccessor.associateRuntime(this.checkpointRuntime);
         try {
             CheckpointRuntimeAccessor.beforeStartCheckpoint();
@@ -78,7 +76,10 @@ public class ManagedThread extends Thread {
         this.checkpointRuntime = checkpointRuntime;
     }
 
-    public String getActorName() {
+    public synchronized String getActorName() {
+        if (actorName == null && parentThread instanceof ManagedThread mt) {
+            actorName = mt.newChildActorName();
+        }
         return actorName;
     }
 

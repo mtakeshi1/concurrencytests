@@ -1,8 +1,8 @@
 package concurrencytest.runtime.checkpoint;
 
-import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
+import concurrencytest.checkpoint.Checkpoint;
 
-public record MonitorCheckpointReached(MonitorCheckpointDescription checkpoint, Object monitorOwner,
+public record MonitorCheckpointReached(Checkpoint checkpoint, Object monitorOwner,
                                        Thread thread) implements CheckpointReached {
 
     @Override

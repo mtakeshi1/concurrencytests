@@ -57,10 +57,12 @@ public class BaseClassVisitorTest {
         String newName = target.getName() + "$$Injected_" + idSeed++;
         String oldInternalName = Type.getType(target).getInternalName();
         String newInternalName = newName.replace('.', '/');
-        ClassRemapper map = new ClassRemapper(new CheckClassAdapter(delegate, false), new SimpleRemapper(oldInternalName, newInternalName));
+        ClassRemapper map = new ClassRemapper(delegate, new SimpleRemapper(oldInternalName, newInternalName));
         ClassVisitor visitor = factory.buildFor(target, map);
         reader.accept(visitor, ClassReader.EXPAND_FRAMES);
         byte[] byteCode = writer.toByteArray();
+        reader = new ClassReader(byteCode);
+        reader.accept(new CheckClassAdapter(null, true), ClassReader.EXPAND_FRAMES);
         OpenClassLoader loader = new OpenClassLoader();
         loader.addClass(newName, byteCode);
         Class<?> name = Class.forName(newName, true, loader);

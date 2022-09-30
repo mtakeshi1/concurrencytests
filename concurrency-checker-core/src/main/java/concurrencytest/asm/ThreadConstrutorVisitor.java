@@ -41,8 +41,8 @@ public class ThreadConstrutorVisitor extends BaseClassVisitor {
                 super.visitMethodInsn(opcode, Type.getInternalName(ManagedThread.class), name, descriptor, false);
             } else if (opcode == Opcodes.INVOKEVIRTUAL && name.equals("start") && (threadInternalName.equals(owner) || Type.getInternalName(ManagedThread.class).equals(owner))) {
                 super.visitInsn(Opcodes.DUP);
-                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 invokeGenericCheckpointWithContext(checkpointRegister.managedThreadStartedCheckpoint(classUnderEnhancement.getName(), methodName, methodDescriptor, sourceName, latestLineNumber));
+                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
             } else {
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
             }

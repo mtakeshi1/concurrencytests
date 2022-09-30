@@ -10,7 +10,6 @@ import org.junit.Test;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SynchronizedMethodDeclarationTest extends BaseClassVisitorTest {
@@ -53,7 +52,7 @@ public class SynchronizedMethodDeclarationTest extends BaseClassVisitorTest {
     }
 
     private Stream<MonitorCheckpointDescription> monitorCheckpoints() {
-        return register.allCheckpoints().values().stream().filter(s -> s.checkpointDescription() instanceof MonitorCheckpointDescription).map(s -> (MonitorCheckpointDescription) s.checkpointDescription());
+        return register.allCheckpoints().values().stream().filter(s -> s.description() instanceof MonitorCheckpointDescription).map(s -> (MonitorCheckpointDescription) s.description());
     }
 
 }
