@@ -82,8 +82,24 @@ public class ByteBufferUtilTest {
         int written = ByteBufferUtil.writeVarLong(bb, val);
         Assert.assertTrue(written <= 9);
         bb.flip();
+        Assert.assertEquals(written, bb.remaining());
         long r = ByteBufferUtil.readVarLong(bb);
         Assert.assertEquals("error for value: " + val, val, r);
     }
 
+    @Test
+    public void simpleTest() {
+        testReadLong6Bytes(1);
+    }
+
+    @Property
+    public void testReadLong6Bytes(@InRange(min = "0", max = "281474976710655") long val) {
+        ByteBuffer bb = ByteBuffer.allocate(6);
+        bb.clear();
+        ByteBufferUtil.writeLong6Bytes(bb, val);
+        bb.flip();
+        Assert.assertEquals(6, bb.remaining());
+        long r = ByteBufferUtil.readLong6Bytes(bb);
+        Assert.assertEquals("error for value: " + val, val, r);
+    }
 }

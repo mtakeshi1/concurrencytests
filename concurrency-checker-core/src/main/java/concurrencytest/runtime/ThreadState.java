@@ -11,10 +11,9 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public record ThreadState(String actorName, int checkpoint, int loopCount, List<LockMonitorAcquisition> ownedMonitors,
-                          List<LockMonitorAcquisition> ownedLocks,
-                          Optional<LockMonitorAcquisition> waitingForMonitor, Optional<LockMonitorAcquisition> waitingForLock,
-                          Optional<String> waitingForThread,
-                          boolean finished) {
+                          List<LockMonitorAcquisition> ownedLocks, Optional<LockMonitorAcquisition> waitingForMonitor,
+                          Optional<LockMonitorAcquisition> waitingForLock,
+                          Optional<String> waitingForThread, boolean finished) {
 
     public static final int MAX_ACTOR_NAME_LENGTH = 255;
     public static final int MAX_OWNED_MONITOR_LIST = 16;

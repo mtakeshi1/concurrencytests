@@ -27,7 +27,7 @@ public class ActorSchedulerEntryPoint {
     private final List<String> initialPathActorNames;
     private final int maxLoopCount;
     private final Class<?> mainTestClass;
-    private final CheckpointRegister checkpoingRegister;
+    private final CheckpointRegister checkpointRegister;
     private volatile Throwable actorError;
 
     public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass) {
@@ -36,7 +36,7 @@ public class ActorSchedulerEntryPoint {
 
     public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount) {
         this.explorationTree = explorationTree;
-        this.checkpoingRegister = register;
+        this.checkpointRegister = register;
         this.configuration = configuration;
         this.initialPathActorNames = initialPathActorNames;
         this.maxLoopCount = maxLoopCount;
@@ -56,14 +56,12 @@ public class ActorSchedulerEntryPoint {
     }
 
     private boolean hasMorePathsToExplore() {
-        TreeNode node = walk(explorationTree.rootNode(), new LinkedList<>(initialPathActorNames));
-        if (node.allFinished() || !node.hasUnexploredChildren()) {
-            return false;
-        }
-        return true;
+        Optional<TreeNode> node = walk(explorationTree.getRootNode(), new LinkedList<>(initialPathActorNames));
+        //TODO probably not enough
+        return node.map(TreeNode::allFinished).orElse(false);
     }
 
-    private TreeNode walk(TreeNode treeNode, Queue<String> initialPathActorNames) {
+    private Optional<TreeNode> walk(Optional<TreeNode> treeNode, Queue<String> initialPathActorNames) {
         if (initialPathActorNames.isEmpty()) {
             return treeNode;
         }
@@ -73,10 +71,11 @@ public class ActorSchedulerEntryPoint {
     public void executeOnce() throws InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ActorSchedulingException, TimeoutException {
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
-        RuntimeState runtime = initialState(mainTestObject, checkpoingRegister, initialActorNames);
+        RuntimeState runtime = initialState(initialActorNames);
+        RuntimeState initialRuntime = runtime;
         LList<String> path = LList.empty();
         String lastActor = null;
-        TreeNode node = explorationTree.rootNode();
+        TreeNode node = explorationTree.getOrInitializeRootNode(() -> initialRuntime);
         long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
         Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
         while (!runtime.finished()) {
@@ -86,6 +85,7 @@ public class ActorSchedulerEntryPoint {
                 // we are done with this path
                 return;
             }
+            path = path.prepend(nextActorToAdvance.get());
             ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
             RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
             node = node.advance(runtime.actorNamesToThreadStates().get(selected.actorName()), next);
@@ -162,10 +162,10 @@ public class ActorSchedulerEntryPoint {
         this.actorError = t;
     }
 
-    private RuntimeState initialState(Object mainTestObject, CheckpointRegister checkpointRegister, Map<String, Method> initialActorNames) {
+    private RuntimeState initialState(Map<String, Method> initialActorNames) {
         Map<String, Runnable> managedThreadRunnables = new HashMap<>();
         initialActorNames.forEach((actor, method) -> {
-            Object[] params = collectParametersForActorRun(mainTestObject);
+            Object[] params = collectParametersForActorRun();
             Runnable wrapped = () -> {
                 try {
                     method.invoke(params);
@@ -180,13 +180,12 @@ public class ActorSchedulerEntryPoint {
             };
             managedThreadRunnables.put(actor, wrapped);
         });
-        return new MutableRuntimeState(checkpointRegister, managedThreadRunnables);
+        return new MutableRuntimeState(this.checkpointRegister, managedThreadRunnables);
 
     }
 
-    private Object[] collectParametersForActorRun(Object mainTestObject) {
-
-        return new Object[]{mainTestObject};
+    private Object[] collectParametersForActorRun() {
+        return new Object[]{};
     }
 
     public static void main(String[] args) {

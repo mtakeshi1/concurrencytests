@@ -3,10 +3,10 @@ package concurrencytest.util;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.ToIntBiFunction;
-import java.util.function.ToIntFunction;
 
 public class ByteBufferUtil {
 
@@ -94,7 +94,7 @@ public class ByteBufferUtil {
         return new String(data, StandardCharsets.UTF_8);
     }
 
-    public static <E> int writeList(ByteBuffer buffer, List<E> list, ToIntBiFunction<ByteBuffer, E> function) {
+    public static <E> int writeCollection(ByteBuffer buffer, Collection<? extends E> list, ToIntBiFunction<ByteBuffer, E> function) {
         int c = writeVarInt(buffer, list.size());
         for (var e : list) {
             c += function.applyAsInt(buffer, e);
@@ -109,5 +109,27 @@ public class ByteBufferUtil {
             list.add(mapper.apply(buffer));
         }
         return list;
+    }
+
+    public static void writeLong6Bytes(ByteBuffer buffer, long parentOffset) {
+        if (parentOffset < 0) {
+            throw new RuntimeException("number cannot be negative: %d".formatted(parentOffset));
+        }
+        for (int i = 0; i < 6; i++) {
+            buffer.put((byte) (parentOffset & 0xff));
+            parentOffset >>= 8;
+        }
+    }
+
+    public static long readLong6Bytes(ByteBuffer buffer) {
+        return readLong6Bytes(buffer,0);
+    }
+
+    public static long readLong6Bytes(ByteBuffer buffer, int offset) {
+        long c = 0;
+        for (int i = 0; i < 6; i++) {
+            c += (buffer.get(offset + i) & 0xffL) << 8 * i;
+        }
+        return c;
     }
 }
