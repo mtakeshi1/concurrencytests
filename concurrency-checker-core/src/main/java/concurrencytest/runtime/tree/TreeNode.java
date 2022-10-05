@@ -11,7 +11,6 @@ import java.util.stream.Stream;
 
 public interface TreeNode {
 
-
     default boolean isRootNode() {
         return this == parentNode();
     }
@@ -21,6 +20,14 @@ public interface TreeNode {
     Map<String, ActorInformation> threads();
 
     Map<String, Optional<Supplier<TreeNode>>> childNodes();
+
+    /**
+     * If the returned Optional is not empty, it will generate the TreeNode corresponding to selecting the given actorName to run.
+     * If it's empty(), it corresponds to an unexplored node.
+     *
+     * @param nodeName String
+     */
+    Optional<Supplier<TreeNode>> childNode(String nodeName);
 
     default Stream<String> unexploredPaths() {
 //        Map<String, Supplier<TreeNode>> nodes = this.childNodes();

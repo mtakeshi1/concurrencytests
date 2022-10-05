@@ -44,8 +44,10 @@ public class ActorSchedulerRunner extends Runner {
         try {
             Configuration configuration = parseConfiguration();
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
+            notifier.fireTestStarted(childDescription());
             setup.run();
-        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException e) {
+            notifier.fireTestFinished(childDescription());
+        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException e) {
             // infrastructure error =(
             notifier.fireTestFailure(new Failure(childDescription(), e));
         } catch (InvocationTargetException e) {

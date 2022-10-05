@@ -1,5 +1,6 @@
 package concurrencytest.runtime.tree;
 
+import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.LockMonitorAcquisition;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.ThreadState;
@@ -21,6 +22,9 @@ import java.util.stream.Collectors;
  * - actorname,threadInfo,offset (6 bytes)
  * <p>
  * if offset is 0, it is an unitialized node that will be initialized later
+ *
+ * TODO make NodeLink have the size of the child node so it can be fetched in one go (and not require two)
+ *
  */
 public class ByteBufferBackedTreeNode implements TreeNode {
 
@@ -33,7 +37,6 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     public static final int HEADER_SIZE = 11;
 
     public static final short END_OF_RECORD_MARKER = (short) 0xfeea;
-
 
     private final ByteBufferManager byteBufferManager;
     private final ByteBuffer buffer;
@@ -49,6 +52,18 @@ public class ByteBufferBackedTreeNode implements TreeNode {
         return ByteBufferUtil.readLong6Bytes(buffer, 0);
     }
 
+    public static ByteBufferBackedTreeNode rootNode(long parentOffset, Collection<? extends String> actorNames, CheckpointRegister register, ByteBufferManager byteBufferManager) {
+        ByteBuffer tempBuffer = initializeStates(parentOffset, byteBufferManager, actorNames.stream().map(actor -> new ActorInformation(actor, register.taskStartingCheckpoint().checkpointId())).toList());
+        try {
+            int size = tempBuffer.remaining();
+            long offset = byteBufferManager.allocateNewSlice(size);
+            byteBufferManager.executeLocked(offset, size, bb -> bb.put(tempBuffer));
+            return new ByteBufferBackedTreeNode(byteBufferManager, offset, size);
+        } finally {
+            byteBufferManager.returnBuffer(tempBuffer);
+        }
+    }
+
     public static ByteBufferBackedTreeNode initializeNode(long parentOffset, Collection<? extends ThreadState> threadStates, ByteBufferManager byteBufferManager) {
         ByteBuffer tempBuffer = initializeTemporary(parentOffset, threadStates, byteBufferManager);
         try {
@@ -62,12 +77,16 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     }
 
     public static ByteBuffer initializeTemporary(long parentOffset, Collection<? extends ThreadState> threadStates, ByteBufferManager byteBufferManager) {
+        Collection<ActorInformation> information = toActorInformation(threadStates);
+        return initializeStates(parentOffset, byteBufferManager, information);
+    }
+
+    private static ByteBuffer initializeStates(long parentOffset, ByteBufferManager byteBufferManager, Collection<ActorInformation> information) {
         ByteBuffer tempBuffer = byteBufferManager.allocateTemporaryBuffer(MAX_TREE_NODE_SIZE);
         ByteBufferUtil.writeLong6Bytes(tempBuffer, parentOffset);
         tempBuffer.putInt(0); // temporary
         tempBuffer.put((byte) 0); // flags
         int count = 11;
-        Collection<ActorInformation> information = toActorInformation(threadStates);
         count += ByteBufferUtil.writeCollection(tempBuffer, information, (b, ai) -> {
             ByteBufferUtil.writeLong6Bytes(b, 0);
             return 6 + ai.writeToByteBuffer(tempBuffer);
@@ -79,7 +98,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
         return tempBuffer;
     }
 
-    public static record NodeLink(long currentOffset, long childOffset, ActorInformation information) {
+    public record NodeLink(long currentOffset, long childOffset, ActorInformation information) {
 
         public static NodeLink readFromBuffer(ByteBuffer buffer) {
             long offset = ByteBufferUtil.readLong6Bytes(buffer);
@@ -87,7 +106,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
         }
     }
 
-    public static record RecordHeader(long parentOffset, int size, int flags) {
+    public record RecordHeader(long parentOffset, int size, int flags) {
         public static RecordHeader read(ByteBuffer buffer) {
             long parent = ByteBufferUtil.readLong6Bytes(buffer);
             int size = buffer.getInt();
@@ -108,7 +127,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
                 lockOwners.put(lock.lockOrMonitorId(), state.actorName());
             }
         }
-        return threadStates.stream().map(ts -> new ActorInformation(ts.actorName(), toMonitorInformations(ts.ownedMonitors(), monitorOwners), toMonitorInformations(ts.ownedLocks(), lockOwners),
+        return threadStates.stream().map(ts -> new ActorInformation(ts.actorName(), ts.checkpoint(), ts.loopCount(), toMonitorInformations(ts.ownedMonitors(), monitorOwners), toMonitorInformations(ts.ownedLocks(), lockOwners),
                 ts.waitingForMonitor().map(lma -> toMonitorLockInformation(monitorOwners, lma)), ts.waitingForLock().map(lma1 -> toMonitorLockInformation(lockOwners, lma1)), ts.finished())
         ).toList();
     }
@@ -159,6 +178,11 @@ public class ByteBufferBackedTreeNode implements TreeNode {
             }
         }
         return map;
+    }
+
+    @Override
+    public Optional<Supplier<TreeNode>> childNode(String nodeName) {
+        throw new RuntimeException("not yet implemented");
     }
 
     @Override

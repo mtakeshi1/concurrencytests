@@ -1,9 +1,9 @@
 package concurrencytest.runtime.tree;
 
-import concurrencytest.runtime.RuntimeState;
+import concurrencytest.checkpoint.CheckpointRegister;
 
+import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public class HeapTree implements Tree {
 
@@ -20,11 +20,12 @@ public class HeapTree implements Tree {
     }
 
     @Override
-    public synchronized TreeNode getOrInitializeRootNode(Supplier<RuntimeState> runtimeState) {
+    public synchronized TreeNode getOrInitializeRootNode(Collection<? extends String> actorNames, CheckpointRegister register) {
         if (root != null) {
             return root;
         }
-        this.root = ByteBufferBackedTreeNode.initializeNode(0, runtimeState.get().actorNamesToThreadStates().values(), byteBufferManager);
+        this.root = ByteBufferBackedTreeNode.rootNode(0, actorNames, register, byteBufferManager);
         return root;
     }
+
 }

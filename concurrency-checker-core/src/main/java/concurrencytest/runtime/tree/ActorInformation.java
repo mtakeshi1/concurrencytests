@@ -3,12 +3,18 @@ package concurrencytest.runtime.tree;
 import concurrencytest.util.ByteBufferUtil;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public record ActorInformation(String actorName, List<LockOrMonitorInformation> monitorsOwned, List<LockOrMonitorInformation> locksLocked,
+public record ActorInformation(String actorName, int checkpointId, int loopCount,
+                               List<LockOrMonitorInformation> monitorsOwned, List<LockOrMonitorInformation> locksLocked,
                                Optional<LockOrMonitorInformation> waitingForMonitor, Optional<LockOrMonitorInformation> waitingForLock,
                                boolean finished) {
+
+    public ActorInformation(String actorName, int initialCheckpointId) {
+        this(actorName, initialCheckpointId, 0, Collections.emptyList(), Collections.emptyList(), Optional.empty(), Optional.empty(), false);
+    }
 
     public static final int WAITING_FOR_MONITOR_FLAG = 1;
     public static final int WAITING_FOR_LOCK_FLAG = 2;
@@ -16,6 +22,8 @@ public record ActorInformation(String actorName, List<LockOrMonitorInformation> 
 
     public int writeToByteBuffer(ByteBuffer buffer) {
         int c = ByteBufferUtil.writeString(buffer, actorName);
+        c += ByteBufferUtil.writeVarInt(buffer, checkpointId);
+        c += ByteBufferUtil.writeVarInt(buffer, loopCount);
         c += ByteBufferUtil.writeCollection(buffer, monitorsOwned, (a, b) -> b.writeToByteBuffer(a));
         c += ByteBufferUtil.writeCollection(buffer, locksLocked, (a, b) -> b.writeToByteBuffer(a));
         byte flags = (byte) ((waitingForMonitor.isPresent() ? WAITING_FOR_MONITOR_FLAG : 0) + (waitingForLock.isPresent() ? WAITING_FOR_LOCK_FLAG : 0) + (finished ? FINISHED_FLAG : 0));
@@ -29,6 +37,8 @@ public record ActorInformation(String actorName, List<LockOrMonitorInformation> 
     public static ActorInformation readFromBuffer(ByteBuffer byteBuffer) {
         byteBuffer.mark();
         String actorName = ByteBufferUtil.readString(byteBuffer);
+        int checkpoint = ByteBufferUtil.readVarInt(byteBuffer);
+        int loop = ByteBufferUtil.readVarInt(byteBuffer);
         List<LockOrMonitorInformation> monitors = ByteBufferUtil.readList(byteBuffer, LockOrMonitorInformation::readFromBuffer);
         List<LockOrMonitorInformation> locks = ByteBufferUtil.readList(byteBuffer, LockOrMonitorInformation::readFromBuffer);
         int flags = byteBuffer.get() & 0xff;
@@ -41,7 +51,7 @@ public record ActorInformation(String actorName, List<LockOrMonitorInformation> 
             lockWaiting = Optional.of(LockOrMonitorInformation.readFromBuffer(byteBuffer));
         }
         byteBuffer.reset();
-        return new ActorInformation(actorName, monitors, locks, monitorWaiting, lockWaiting, (flags & FINISHED_FLAG) != 0);
+        return new ActorInformation(actorName, checkpoint, loop, monitors, locks, monitorWaiting, lockWaiting, (flags & FINISHED_FLAG) != 0);
     }
 
 }

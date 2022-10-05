@@ -4,11 +4,9 @@ import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.ManagedThread;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.ThreadState;
-import concurrencytest.runtime.tree.HeapTree;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
@@ -50,10 +48,7 @@ public class ActorSchedulerEntryPointTest {
     }
 
     @Test
-    public void testScheduler() throws Exception {
-        ActorSchedulerEntryPoint.selectNextActor(
-                "", new HeapTree().getOrInitializeRootNode(ActorSchedulerEntryPointTest::emptyRuntimeState), null, new ArrayDeque<>(), 50
-        );
+    public void testScheduler() {
     }
 
 }

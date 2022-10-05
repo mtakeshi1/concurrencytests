@@ -56,14 +56,14 @@ public class ActorSchedulerEntryPoint {
     }
 
     private boolean hasMorePathsToExplore() {
-        Optional<TreeNode> node = walk(explorationTree.getRootNode(), new LinkedList<>(initialPathActorNames));
+        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
         //TODO probably not enough
         return node.map(TreeNode::allFinished).orElse(false);
     }
 
-    private Optional<TreeNode> walk(Optional<TreeNode> treeNode, Queue<String> initialPathActorNames) {
+    private Optional<TreeNode> walk(TreeNode treeNode, Queue<String> initialPathActorNames) {
         if (initialPathActorNames.isEmpty()) {
-            return treeNode;
+            return Optional.of(treeNode);
         }
         throw new RuntimeException("not yet implemented");
     }
@@ -72,10 +72,9 @@ public class ActorSchedulerEntryPoint {
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(initialActorNames);
-        RuntimeState initialRuntime = runtime;
         LList<String> path = LList.empty();
         String lastActor = null;
-        TreeNode node = explorationTree.getOrInitializeRootNode(() -> initialRuntime);
+        TreeNode node = explorationTree.getOrInitializeRootNode(initialPathActorNames, checkpointRegister);
         long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
         Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
         while (!runtime.finished()) {
