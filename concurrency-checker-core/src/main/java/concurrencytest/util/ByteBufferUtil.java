@@ -111,18 +111,18 @@ public class ByteBufferUtil {
         return list;
     }
 
-    public static void writeLong6Bytes(ByteBuffer buffer, long parentOffset) {
-        if (parentOffset < 0) {
-            throw new RuntimeException("number cannot be negative: %d".formatted(parentOffset));
-        }
-        for (int i = 0; i < 6; i++) {
-            buffer.put((byte) (parentOffset & 0xff));
-            parentOffset >>= 8;
-        }
-    }
-
     public static long readLong6Bytes(ByteBuffer buffer) {
         return readLong6Bytes(buffer,0);
+    }
+
+    public static void writeLong6Bytes(ByteBuffer buffer, long offset) {
+        if (offset < 0) {
+            throw new RuntimeException("number cannot be negative: %d".formatted(offset));
+        }
+        for (int i = 0; i < 6; i++) {
+            buffer.put((byte) (offset & 0xff));
+            offset >>= 8;
+        }
     }
 
     public static long readLong6Bytes(ByteBuffer buffer, int offset) {

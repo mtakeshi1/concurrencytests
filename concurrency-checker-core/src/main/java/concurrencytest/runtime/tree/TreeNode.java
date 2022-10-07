@@ -29,11 +29,7 @@ public interface TreeNode {
      */
     Optional<Supplier<TreeNode>> childNode(String nodeName);
 
-    default Stream<String> unexploredPaths() {
-//        Map<String, Supplier<TreeNode>> nodes = this.childNodes();
-//        return threads().keySet().stream().filter(actor -> !nodes.containsKey(actor) || !nodes.get(actor).get().isFullyExplored());
-        throw new RuntimeException("not yet implemented");
-    }
+    Stream<String> unexploredPaths();
 
     default boolean hasUnexploredChildren() {
         return !isFullyExplored() && unexploredPaths().findAny().isPresent();
