@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ActorSchedulerEntryPoint {
@@ -58,7 +59,7 @@ public class ActorSchedulerEntryPoint {
     private boolean hasMorePathsToExplore() {
         Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
         //TODO probably not enough
-        return node.map(TreeNode::allFinished).orElse(false);
+        return !node.map(TreeNode::allFinished).orElse(false);
     }
 
     private Optional<TreeNode> walk(TreeNode treeNode, Queue<String> initialPathActorNames) {
@@ -72,6 +73,7 @@ public class ActorSchedulerEntryPoint {
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(initialActorNames);
+        runtime.start(mainTestObject, configuration.checkpointTimeout());
         LList<String> path = LList.empty();
         String lastActor = null;
         TreeNode node = explorationTree.getOrInitializeRootNode(initialPathActorNames, checkpointRegister);
@@ -95,6 +97,7 @@ public class ActorSchedulerEntryPoint {
             }
         }
     }
+
 
     private Map<String, Method> parseActorNames() {
         Map<String, Method> map = new HashMap<>();
@@ -131,7 +134,7 @@ public class ActorSchedulerEntryPoint {
     }
 
     private void detectDeadlock(LList<String> path) {
-        throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
+//        throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
     }
 
     public static Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
@@ -162,12 +165,12 @@ public class ActorSchedulerEntryPoint {
     }
 
     private RuntimeState initialState(Map<String, Method> initialActorNames) {
-        Map<String, Runnable> managedThreadRunnables = new HashMap<>();
+        Map<String, Consumer<Object>> managedThreadRunnables = new HashMap<>();
         initialActorNames.forEach((actor, method) -> {
             Object[] params = collectParametersForActorRun();
-            Runnable wrapped = () -> {
+            Consumer<Object> wrapped = callTarget -> {
                 try {
-                    method.invoke(params);
+                    method.invoke(callTarget, params);
                 } catch (IllegalAccessException e) {
                     reportActorError(e);
                 } catch (InvocationTargetException e) {

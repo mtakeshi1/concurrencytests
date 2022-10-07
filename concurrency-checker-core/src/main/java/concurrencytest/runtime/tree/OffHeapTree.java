@@ -5,10 +5,14 @@ import concurrencytest.checkpoint.CheckpointRegister;
 import java.util.Collection;
 import java.util.Optional;
 
-public class HeapTree implements Tree {
+public class OffHeapTree implements Tree {
+
+    private ByteBufferManager byteBufferManager;
 
     private volatile TreeNode root;
 
+    public OffHeapTree() {
+    }
 
     @Override
     public Optional<TreeNode> getRootNode() {
@@ -17,9 +21,11 @@ public class HeapTree implements Tree {
 
     @Override
     public synchronized TreeNode getOrInitializeRootNode(Collection<? extends String> actorNames, CheckpointRegister register) {
-        if (root == null) {
-            root = PlainTreeNode.rootNode(actorNames, register);
+        if (root != null) {
+            return root;
         }
+        this.root = ByteBufferBackedTreeNode.rootNode(0, actorNames, register, byteBufferManager);
         return root;
     }
+
 }

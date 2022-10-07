@@ -36,9 +36,10 @@ public class ActorSchedulerEntryPointTest {
             }
 
             @Override
-            public Collection<ManagedThread> start() {
+            public Collection<ManagedThread> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException {
                 return null;
             }
+
 
             @Override
             public RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException {

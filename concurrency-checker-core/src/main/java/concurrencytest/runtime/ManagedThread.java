@@ -16,7 +16,7 @@ public class ManagedThread extends Thread {
     private final AtomicInteger childIndex = new AtomicInteger();
 
     public ManagedThread(Runnable target, CheckpointRuntime runtime, String actorName) {
-        super(target);
+        super(null, target, "actor_thread_for_" + actorName);
         this.checkpointRuntime = runtime;
         this.actorName = actorName;
     }

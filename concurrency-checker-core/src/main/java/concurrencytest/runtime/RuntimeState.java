@@ -3,10 +3,7 @@ package concurrencytest.runtime;
 import concurrencytest.checkpoint.CheckpointRegister;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
@@ -22,7 +19,7 @@ public interface RuntimeState {
 
     Collection<? extends ThreadState> allActors();
 
-    Collection<ManagedThread> start();
+    Collection<ManagedThread> start(Object testInstance, Duration timeout)throws InterruptedException, TimeoutException;
 
     /**
      * Signal the given actor to advance tot he next checkpoint. The current thread waits for rendezvous for the given maxWaitTime.

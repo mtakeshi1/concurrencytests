@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class MutableRuntimeState implements RuntimeState {
@@ -29,10 +30,10 @@ public class MutableRuntimeState implements RuntimeState {
 
     private final AtomicInteger monitorLockSeed;
     private final Map<String, ThreadState> allActors;
-    private final Map<String, Runnable> threads;
+    private final Map<String, Consumer<Object>> threads;
     private final ThreadRendezvouCheckpointCallback rendezvouCallback;
 
-    public MutableRuntimeState(CheckpointRegister register, Map<String, Runnable> managedThreadMap) {
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Consumer<Object>> managedThreadMap) {
         this.register = register;
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
@@ -123,13 +124,16 @@ public class MutableRuntimeState implements RuntimeState {
     }
 
     @Override
-    public Collection<ManagedThread> start() {
+    public Collection<ManagedThread> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException {
         Collection<ManagedThread> list = new ArrayList<>(this.threads.size());
+        Set<String> actorsStarted = new HashSet<>();
         threads.forEach((actor, task) -> {
-            ManagedThread m = new ManagedThread(task, checkpointRuntime, actor);
+            ManagedThread m = new ManagedThread(() -> task.accept(testInstance), checkpointRuntime, actor);
             m.start();
             list.add(m);
+            actorsStarted.add(actor);
         });
+        rendezvouCallback.waitForActors(timeout, actorsStarted);
         return list;
     }
 
@@ -144,7 +148,9 @@ public class MutableRuntimeState implements RuntimeState {
             rendezvouCallback.waitForActors(maxWaitTime, before);
         }
         ThreadState newActorState = Objects.requireNonNull(allActors.remove(selected.actorName()), "actor state for %s not found".formatted(selected.actorName())).newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
-        allActors.put(selected.actorName(), newActorState);
+        if (!newActorState.finished()) {
+            allActors.put(selected.actorName(), newActorState);
+        }
         return this;
     }
 }
