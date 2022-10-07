@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Format should be something like this:
@@ -33,8 +34,6 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     public static final int ALL_VISITED_FLAG = 1;
 
     public static final int MAX_TREE_NODE_SIZE = 10 * 1024;
-
-    public static final int HEADER_SIZE = 11;
 
     public static final short END_OF_RECORD_MARKER = (short) 0xfeea;
 
@@ -104,9 +103,21 @@ public class ByteBufferBackedTreeNode implements TreeNode {
             long offset = ByteBufferUtil.readLong6Bytes(buffer);
             return new NodeLink(0, offset, ActorInformation.readFromBuffer(buffer));
         }
+
+        public boolean canAdvance() {
+            return !information.isBlocked();
+        }
+
+        public boolean isFullyExplored(ByteBufferManager byteBufferManager) {
+            return (childOffset != 0 && !allocate(childOffset, byteBufferManager).isFullyExplored());
+        }
+
     }
 
     public record RecordHeader(long parentOffset, int size, int flags) {
+
+        public static final int SIZE = 11;
+
         public static RecordHeader read(ByteBuffer buffer) {
             long parent = ByteBufferUtil.readLong6Bytes(buffer);
             int size = buffer.getInt();
@@ -152,13 +163,17 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     }
 
     private TreeNode allocate(long offset) {
-        ByteBuffer buffer = byteBufferManager.getExisting(offset, HEADER_SIZE);
+        return allocate(offset, byteBufferManager);
+    }
+
+    private static TreeNode allocate(long offset, ByteBufferManager byteBufferManager) {
+        ByteBuffer buffer = byteBufferManager.getExisting(offset, RecordHeader.SIZE);
         RecordHeader header = RecordHeader.read(buffer);
         return new ByteBufferBackedTreeNode(byteBufferManager, offset, header.size);
     }
 
     protected synchronized List<NodeLink> childNodeLinks() {
-        buffer.position(HEADER_SIZE);
+        buffer.position(RecordHeader.SIZE);
         return ByteBufferUtil.readList(buffer, NodeLink::readFromBuffer);
     }
 
@@ -178,6 +193,11 @@ public class ByteBufferBackedTreeNode implements TreeNode {
             }
         }
         return map;
+    }
+
+    @Override
+    public Stream<String> unexploredPaths() {
+        return childNodeLinks().stream().filter(NodeLink::canAdvance).map(nl -> nl.information.actorName());
     }
 
     @Override

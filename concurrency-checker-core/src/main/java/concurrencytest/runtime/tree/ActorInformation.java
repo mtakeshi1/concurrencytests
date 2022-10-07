@@ -16,6 +16,10 @@ public record ActorInformation(String actorName, int checkpointId, int loopCount
         this(actorName, initialCheckpointId, 0, Collections.emptyList(), Collections.emptyList(), Optional.empty(), Optional.empty(), false);
     }
 
+    public boolean isBlocked() {
+        return waitingForMonitor.map(mon -> mon.isBlocked(actorName)).orElse(false) || waitingForLock().map(lock -> lock.isBlocked(actorName)).orElse(false);
+    }
+
     public static final int WAITING_FOR_MONITOR_FLAG = 1;
     public static final int WAITING_FOR_LOCK_FLAG = 2;
     public static final int FINISHED_FLAG = 2;

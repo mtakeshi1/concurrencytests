@@ -8,6 +8,9 @@ import java.util.Optional;
 public record LockOrMonitorInformation(String monitorType, Optional<String> ownerActorName, String source, int lineNumber) {
     public static final int OWNER_PRESENT_FLAG = 1;
 
+    public boolean isBlocked(String selfName) {
+        return ownerActorName().isEmpty() || ownerActorName.get().equals(selfName);
+    }
 
     public int writeToByteBuffer(ByteBuffer buffer) {
         int c = ByteBufferUtil.writeString(buffer, monitorType);
