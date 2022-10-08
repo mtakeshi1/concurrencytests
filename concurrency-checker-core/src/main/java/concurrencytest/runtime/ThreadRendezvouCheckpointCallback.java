@@ -57,4 +57,10 @@ public class ThreadRendezvouCheckpointCallback implements CheckpointReachedCallb
         CheckpointWithSemaphore semaphore = threadCheckpoints.remove(actorName);
         Objects.requireNonNull(semaphore).getSemaphore().release();
     }
+
+    public void actorFinished(String actorName, Duration maxWait) throws InterruptedException {
+        CheckpointWithSemaphore semaphore = threadCheckpoints.remove(actorName);
+        Objects.requireNonNull(semaphore).getSemaphore().release();
+        semaphore.getThread().join(maxWait.toMillis());
+    }
 }

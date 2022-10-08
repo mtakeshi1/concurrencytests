@@ -42,6 +42,8 @@ public class MutableRuntimeState implements RuntimeState {
         this.threads = managedThreadMap;
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
+        checkpointRuntime.addCheckpointCallback(checkpointReached ->
+                System.out.printf("[%s] reached checkpoint %d - %s%n", checkpointReached.actorName(), checkpointReached.checkpointId(), checkpointReached.checkpoint().description()));
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override
             public void checkpointReached(CheckpointReached checkpointReached) {
@@ -150,6 +152,8 @@ public class MutableRuntimeState implements RuntimeState {
         ThreadState newActorState = Objects.requireNonNull(allActors.remove(selected.actorName()), "actor state for %s not found".formatted(selected.actorName())).newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
         if (!newActorState.finished()) {
             allActors.put(selected.actorName(), newActorState);
+        } else {
+            rendezvouCallback.actorFinished(selected.actorName(), maxWaitTime);
         }
         return this;
     }

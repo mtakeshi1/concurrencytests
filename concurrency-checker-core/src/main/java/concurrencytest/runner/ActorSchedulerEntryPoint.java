@@ -89,7 +89,7 @@ public class ActorSchedulerEntryPoint {
             path = path.prepend(nextActorToAdvance.get());
             ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
             RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
-            node = node.advance(runtime.actorNamesToThreadStates().get(selected.actorName()), next);
+            node = node.advance(selected, next);
             lastActor = nextActorToAdvance.get();
             runtime = next;
             if (System.nanoTime() > maxTime) {
