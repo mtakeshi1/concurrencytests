@@ -14,4 +14,9 @@ public record FixedCheckpoint(InjectionPoint injectionPoint, String details) imp
     public int lineNumber() {
         return -1;
     }
+
+    @Override
+    public String toString() {
+        return details;
+    }
 }

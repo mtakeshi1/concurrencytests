@@ -7,5 +7,10 @@ public record FieldAccessCheckpointImpl(InjectionPoint injectionPoint, String de
                                         String sourceFile, int lineNumber,
                                         String declaringClass, String fieldName, String fieldType,
                                         boolean fieldRead) implements FieldAccessCheckpoint {
-
+    @Override
+    public String toString() {
+        String staticField = details.contains("static") ? "static" : "";
+        String readWrite = fieldRead ? "read" : "write";
+        return "%s %s %s %s.%s (%s:%d)".formatted(injectionPoint, staticField, readWrite, declaringClass, fieldName, sourceFile, lineNumber);
+    }
 }

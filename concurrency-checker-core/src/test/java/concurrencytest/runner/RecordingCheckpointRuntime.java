@@ -1,13 +1,9 @@
 package concurrencytest.runner;
 
-import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.CheckpointRuntime;
-import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.StandardCheckpointRuntime;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.RegularCheckpointReached;
-import org.junit.Assert;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

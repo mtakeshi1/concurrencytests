@@ -46,8 +46,6 @@ public class ActorSchedulerEntryPoint {
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
 
-    private Collection<ActorBuilder> initialActors;
-
     private ScheduledExecutorService managedExecutorService;
 
     public void exploreAll() throws ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException {
@@ -76,7 +74,7 @@ public class ActorSchedulerEntryPoint {
         runtime.start(mainTestObject, configuration.checkpointTimeout());
         LList<String> path = LList.empty();
         String lastActor = null;
-        TreeNode node = explorationTree.getOrInitializeRootNode(initialPathActorNames, checkpointRegister);
+        TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
         long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
         Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
         while (!runtime.finished()) {
@@ -190,8 +188,15 @@ public class ActorSchedulerEntryPoint {
         return new Object[]{};
     }
 
-    public static void main(String[] args) {
-
+    public Tree getExplorationTree() {
+        return explorationTree;
     }
 
+    public CheckpointDurationConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public CheckpointRegister getCheckpointRegister() {
+        return checkpointRegister;
+    }
 }

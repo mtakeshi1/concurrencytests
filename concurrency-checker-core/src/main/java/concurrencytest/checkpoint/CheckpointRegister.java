@@ -7,6 +7,7 @@ import org.objectweb.asm.Type;
 import java.lang.reflect.Member;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public interface CheckpointRegister {
 
@@ -15,7 +16,7 @@ public interface CheckpointRegister {
     Map<CheckpointDescription, Checkpoint> allCheckpoints();
 
     default Map<Integer, Checkpoint> checkpointsById() {
-        Map<Integer, Checkpoint> map = new HashMap<>();
+        Map<Integer, Checkpoint> map = new TreeMap<>();
         allCheckpoints().forEach((ignored, v) -> map.put(v.checkpointId(), v));
         return map;
     }

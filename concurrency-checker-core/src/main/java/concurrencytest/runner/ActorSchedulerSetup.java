@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -33,7 +34,7 @@ public class ActorSchedulerSetup {
 
     private SimpleRemapper remapper;
 
-    private CheckpointRegister checkpointRegister = new StandardCheckpointRegister();
+    private final CheckpointRegister checkpointRegister = new StandardCheckpointRegister();
 
     public ActorSchedulerSetup(Configuration configuration) {
         this.configuration = configuration;
@@ -46,7 +47,7 @@ public class ActorSchedulerSetup {
         }
         saveConfiguration();
         ExecutionMode mode = selectMode();
-        CheckpointRegister register = createRegister();
+        CheckpointRegister register = getRegister();
         enhanceClasses(mode, folder, register, ReflectionHelper.getInstance());
         renameMainTestClassIfNecessary(mode, folder);
         saveCheckpointInformation(register);
@@ -98,7 +99,7 @@ public class ActorSchedulerSetup {
         reader.accept(visitor, ClassReader.EXPAND_FRAMES);
     }
 
-    private CheckpointRegister createRegister() {
+    private CheckpointRegister getRegister() {
         return checkpointRegister;
     }
 
@@ -112,7 +113,7 @@ public class ActorSchedulerSetup {
         return ExecutionMode.FORK;
     }
 
-    private ClassVisitor createCheckpointsVisitor(ClassVisitor delegate, CheckpointRegister checkpointRegister, ClassResolver classResolver, Class<?> classUnderEnhancement) {
+    public static ClassVisitor createCheckpointsVisitor(Configuration configuration, ClassVisitor delegate, CheckpointRegister checkpointRegister, ClassResolver classResolver, Class<?> classUnderEnhancement) {
 //        if (configuration.checkClassesBytecode()) {
 //            delegate = new CheckClassAdapter(delegate, true);
 //        }
@@ -147,9 +148,10 @@ public class ActorSchedulerSetup {
     }
 
     private void enhanceClasses(ExecutionMode mode, File folder, CheckpointRegister register, ClassResolver classResolver) throws IOException {
+        Collection<Class<?>> classes = configuration.classesToInstrument();
         Function<Class<?>, ClassVisitor> delegateFactory = createDelegateFactory(mode, folder);
-        for (Class<?> cue : configuration.classesToInstrument()) {
-            ClassVisitor classVisitor = createCheckpointsVisitor(delegateFactory.apply(cue), register, classResolver, cue);
+        for (Class<?> cue : classes) {
+            ClassVisitor classVisitor = createCheckpointsVisitor(this.configuration, delegateFactory.apply(cue), register, classResolver, cue);
             ClassReader reader = ASMUtils.readClass(cue);
             if (reader == null) {
                 throw new RuntimeException("Could not find classFile for class: %s".formatted(cue.getName()));
