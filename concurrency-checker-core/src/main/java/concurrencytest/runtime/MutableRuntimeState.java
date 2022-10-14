@@ -141,7 +141,7 @@ public class MutableRuntimeState implements RuntimeState {
 
     @Override
     public RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException {
-        Set<String> before = new HashSet<>(this.allActors.keySet());
+        Set<String> before = allActors.entrySet().stream().filter(e -> !e.getValue().finished()).map(Map.Entry::getKey).collect(Collectors.toSet());
         rendezvouCallback.resumeActor(selected.actorName());
         rendezvouCallback.waitForActors(maxWaitTime, before);
         CheckpointReached lastCheckpoint = rendezvouCallback.lastKnownCheckpoint(selected.actorName());

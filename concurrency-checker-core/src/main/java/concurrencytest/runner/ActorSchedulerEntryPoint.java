@@ -103,8 +103,7 @@ public class ActorSchedulerEntryPoint {
 
     private boolean hasMorePathsToExplore() {
         Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
-        //TODO probably not enough
-        return !node.map(TreeNode::allFinished).orElse(false);
+        return node.map(TreeNode::isFullyExplored).orElse(false);
     }
 
     private Optional<TreeNode> walk(TreeNode treeNode, Queue<String> initialPathActorNames) {
