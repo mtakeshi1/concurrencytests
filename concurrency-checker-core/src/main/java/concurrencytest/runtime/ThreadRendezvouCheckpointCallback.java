@@ -28,7 +28,7 @@ public class ThreadRendezvouCheckpointCallback implements CheckpointReachedCallb
         CheckpointWithSemaphore sem;
         synchronized (this) {
             sem = new CheckpointWithSemaphore(checkpointReached, checkpointReached.thread());
-            CheckpointWithSemaphore old = threadCheckpoints.put(checkpointReached.actorName(), sem);
+            CheckpointWithSemaphore old = threadCheckpoints.putIfAbsent(checkpointReached.actorName(), sem);
             if (old != null) {
                 throw new IllegalStateException("actor %s was already at a checkpoint? Previous checkpoint: %s, current checkpoint: %s".formatted(checkpointReached.actorName(), old.getCheckpointReached().checkpoint(), checkpointReached.checkpoint()));
             }
@@ -55,7 +55,7 @@ public class ThreadRendezvouCheckpointCallback implements CheckpointReachedCallb
 
     public void resumeActor(String actorName) {
         CheckpointWithSemaphore semaphore = threadCheckpoints.remove(actorName);
-        Objects.requireNonNull(semaphore).getSemaphore().release();
+        Objects.requireNonNull(semaphore, "semaphore to control flow of actor '%s' was not found. Existing semaphores: %s".formatted(actorName, threadCheckpoints.keySet())).getSemaphore().release();
     }
 
     public void actorFinished(String actorName, Duration maxWait) throws InterruptedException {

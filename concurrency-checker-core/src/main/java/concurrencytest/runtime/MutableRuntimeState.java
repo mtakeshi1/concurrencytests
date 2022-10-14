@@ -149,12 +149,15 @@ public class MutableRuntimeState implements RuntimeState {
             before.add(ts.newActorName());
             rendezvouCallback.waitForActors(maxWaitTime, before);
         }
-        ThreadState newActorState = Objects.requireNonNull(allActors.remove(selected.actorName()), "actor state for %s not found".formatted(selected.actorName())).newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
-        if (!newActorState.finished()) {
-            allActors.put(selected.actorName(), newActorState);
-        } else {
+        ThreadState oldActorState = Objects.requireNonNull(allActors.remove(selected.actorName()), "actor state for %s not found".formatted(selected.actorName()));
+        ThreadState newActorState = oldActorState.newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
+        allActors.put(selected.actorName(), newActorState);
+        if (newActorState.finished()) {
             rendezvouCallback.actorFinished(selected.actorName(), maxWaitTime);
         }
+//        } else {
+//            allActors.put(selected.actorName(), newActorState);
+//        }
         return this;
     }
 }

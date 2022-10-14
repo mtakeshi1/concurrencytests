@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
 
     @Test
-    public void testSchedulerSingleActor() throws ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException {
+    public void testSchedulerSingleActor() throws ActorSchedulingException, InterruptedException, TimeoutException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SingularActorTest.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 6, checkpointRegister.allCheckpoints().size());
@@ -33,6 +33,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         Assert.assertEquals(checkpointRegister.taskStartingCheckpoint().checkpointId(), information.checkpointId());
         Assert.assertEquals(0, information.loopCount());
         assertNotBlockedNoLocks(information);
+        Assert.assertTrue(treeNode.isFullyExplored());
 
         //level 1
         maybeNode = treeNode.childNode(actorName).map(Supplier::get);
@@ -46,6 +47,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         Assert.assertEquals(4, information.checkpointId());
         Assert.assertEquals(0, information.loopCount());
         assertNotBlockedNoLocks(information);
+        Assert.assertTrue(treeNode.isFullyExplored());
 
         //level 2
         maybeNode = treeNode.childNode(actorName).map(Supplier::get);
@@ -59,6 +61,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         Assert.assertEquals(5, information.checkpointId());
         Assert.assertEquals(0, information.loopCount());
         assertNotBlockedNoLocks(information);
+        Assert.assertTrue(treeNode.isFullyExplored());
 
         //level 3
         maybeNode = treeNode.childNode(actorName).map(Supplier::get);
@@ -69,9 +72,11 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         information = treeNode.threads().values().iterator().next();
 
         Assert.assertEquals(actorName, information.actorName());
-        Assert.assertEquals(4, information.checkpointId());
+        Assert.assertEquals(3, information.checkpointId());
         Assert.assertEquals(0, information.loopCount());
         assertNotBlockedNoLocks(information);
+        Assert.assertTrue(treeNode.allFinished());
+        Assert.assertTrue(treeNode.isFullyExplored());
     }
 
 

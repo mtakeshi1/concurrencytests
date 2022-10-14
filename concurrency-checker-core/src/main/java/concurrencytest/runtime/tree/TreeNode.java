@@ -41,6 +41,8 @@ public interface TreeNode {
 
     void markFullyExplored();
 
+    void checkAllChildrenExplored();
+
     default boolean allFinished() {
         return threads().values().stream().allMatch(ActorInformation::finished);
     }

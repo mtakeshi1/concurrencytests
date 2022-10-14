@@ -2,6 +2,8 @@ package concurrencytest.runner;
 
 import concurrencytest.LList;
 import concurrencytest.annotations.Actor;
+import concurrencytest.annotations.Invariant;
+import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.config.Configuration;
@@ -11,9 +13,13 @@ import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,9 +54,50 @@ public class ActorSchedulerEntryPoint {
 
     private ScheduledExecutorService managedExecutorService;
 
-    public void exploreAll() throws ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException {
-        while (hasMorePathsToExplore()) {
-            executeOnce();
+    public void exploreAll() throws ActorSchedulingException, InterruptedException, TimeoutException {
+        try {
+            invokeBeforeClass();
+            while (hasMorePathsToExplore()) {
+                executeOnce();
+            }
+        } finally {
+            invokeCleanup();
+        }
+    }
+
+    private void invokeBeforeClass() {
+        for (Method m : mainTestClass.getMethods()) {
+            if (m.isAnnotationPresent(BeforeClass.class)) {
+                if (!Modifier.isStatic(m.getModifiers())) {
+                    reportActorError(new IllegalArgumentException("@BeforeClass method should be public and static - " + m));
+                    break;
+                }
+                try {
+                    m.invoke(null);
+                } catch (IllegalAccessException e) {
+                    reportActorError(new IllegalStateException("Security error trying to invoke @BeforeClass method: " + m + ". Is it public and static?", e));
+                } catch (InvocationTargetException e) {
+                    reportActorError(e.getTargetException());
+                }
+            }
+        }
+    }
+
+    private void invokeCleanup() {
+        for (Method m : mainTestClass.getMethods()) {
+            if (m.isAnnotationPresent(AfterClass.class)) {
+                if (!Modifier.isStatic(m.getModifiers())) {
+                    reportActorError(new IllegalArgumentException("@AfterClass method should be public and static - " + m));
+                    break;
+                }
+                try {
+                    m.invoke(null);
+                } catch (IllegalAccessException e) {
+                    reportActorError(new IllegalStateException("Security error trying to invoke @AfterClass method: " + m + ". Is it public and static?", e));
+                } catch (InvocationTargetException e) {
+                    reportActorError(e.getTargetException());
+                }
+            }
         }
     }
 
@@ -67,7 +114,7 @@ public class ActorSchedulerEntryPoint {
         throw new RuntimeException("not yet implemented");
     }
 
-    public void executeOnce() throws InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ActorSchedulingException, TimeoutException {
+    public void executeOnce() throws InterruptedException, ActorSchedulingException, TimeoutException {
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(initialActorNames);
@@ -75,9 +122,11 @@ public class ActorSchedulerEntryPoint {
         LList<String> path = LList.empty();
         String lastActor = null;
         TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
+        invokeBefore(mainTestObject);
         long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
         Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
-        while (!runtime.finished()) {
+        while (!runtime.finished() && actorError == null) {
+            callInvariants(mainTestObject);
             detectDeadlock(path);
             Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
             if (nextActorToAdvance.isEmpty()) {
@@ -92,6 +141,52 @@ public class ActorSchedulerEntryPoint {
             runtime = next;
             if (System.nanoTime() > maxTime) {
                 throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+            }
+        }
+        if (actorError == null) {
+            callEndOfActors(mainTestObject);
+            node.markFullyExplored();
+        }
+    }
+
+    private void invokeBefore(Object mainTestObject) {
+        for (Method m : mainTestClass.getMethods()) {
+            if (m.isAnnotationPresent(Before.class)) {
+                try {
+                    m.invoke(mainTestObject);
+                } catch (IllegalAccessException e) {
+                    reportActorError(new IllegalStateException("Security error trying to invoke @Before method: " + m + ". Is it public?", e));
+                } catch (InvocationTargetException e) {
+                    reportActorError(e.getTargetException());
+                }
+            }
+        }
+    }
+
+    private void callEndOfActors(Object mainTestObject) {
+        for (Method m : mainTestClass.getMethods()) {
+            if (m.isAnnotationPresent(AfterActorsCompleted.class)) {
+                try {
+                    m.invoke(mainTestObject);
+                } catch (IllegalAccessException e) {
+                    reportActorError(new IllegalStateException("Security error trying to invoke @AfterActorsCompleted method: " + m + ". Is it public?", e));
+                } catch (InvocationTargetException e) {
+                    reportActorError(e.getTargetException());
+                }
+            }
+        }
+    }
+
+    private void callInvariants(Object mainTestObject) {
+        for (Method m : mainTestClass.getMethods()) {
+            if (m.isAnnotationPresent(Invariant.class)) {
+                try {
+                    m.invoke(mainTestObject);
+                } catch (IllegalAccessException e) {
+                    reportActorError(new IllegalStateException("Security error trying to invoke @Invariant method: " + m + ". Is it public?", e));
+                } catch (InvocationTargetException e) {
+                    reportActorError(e.getTargetException());
+                }
             }
         }
     }
@@ -127,8 +222,18 @@ public class ActorSchedulerEntryPoint {
         throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
     }
 
-    private Object instantiateMainTestClass() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        return mainTestClass.getConstructor().newInstance();
+    private Object instantiateMainTestClass() {
+        try {
+            return mainTestClass.getConstructor().newInstance();
+        } catch (InstantiationException e) {
+            throw new IllegalArgumentException("%s threw InstantiationException. Is it a non-abstract class? Does it have a public constructor?".formatted(mainTestClass), e);
+        } catch (IllegalAccessException | SecurityException | NoSuchMethodException e) {
+            throw new IllegalArgumentException("%s threw %s. Is it public? Does it have a public constructor?".formatted(mainTestClass, e.getClass()), e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalArgumentException("constructor for %s threw InvocationTargetException".formatted(mainTestClass), e.getTargetException());
+        }
     }
 
     private void detectDeadlock(LList<String> path) {
@@ -144,6 +249,7 @@ public class ActorSchedulerEntryPoint {
         }
         var runnableActors = currentState.runnableActors()
                 .filter(actor -> !actor.actorName().equals(lastActor) || currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() < maxLoopCount)
+                .filter(ts -> !ts.finished())
                 .map(ThreadState::actorName).collect(Collectors.toSet());
         var unexploredNodes = node.unexploredPaths().collect(Collectors.toSet());
         if (runnableActors.isEmpty()) {
@@ -159,7 +265,11 @@ public class ActorSchedulerEntryPoint {
 
     protected void reportActorError(Throwable t) {
         t.printStackTrace();
-        this.actorError = t;
+        if (actorError == null) {
+            this.actorError = t;
+        } else {
+            actorError.addSuppressed(t);
+        }
     }
 
     private RuntimeState initialState(Map<String, Method> initialActorNames) {

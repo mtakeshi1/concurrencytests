@@ -82,7 +82,17 @@ public class PlainTreeNode implements TreeNode {
     }
 
     @Override
+    public void checkAllChildrenExplored() {
+        if (nodes.values().stream().allMatch(PlainTreeNode::isFullyExplored)) {
+            this.markFullyExplored();
+        }
+    }
+
+    @Override
     public void markFullyExplored() {
         fullyExplored = true;
+        if (parent != null && parent != this) {
+            parent.checkAllChildrenExplored();
+        }
     }
 }

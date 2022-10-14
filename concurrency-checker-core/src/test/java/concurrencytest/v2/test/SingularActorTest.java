@@ -3,11 +3,8 @@ package concurrencytest.v2.test;
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
-import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
-import org.junit.runner.RunWith;
 
-@RunWith(ActorSchedulerRunner.class)
 public class SingularActorTest {
 
     private volatile int counter;

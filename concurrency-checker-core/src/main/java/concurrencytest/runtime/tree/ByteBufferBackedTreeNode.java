@@ -238,4 +238,9 @@ public class ByteBufferBackedTreeNode implements TreeNode {
 
         });
     }
+
+    @Override
+    public void checkAllChildrenExplored() {
+        throw new RuntimeException("not yet implemented");
+    }
 }
