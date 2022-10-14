@@ -46,7 +46,8 @@ public class ActorSchedulerRunner extends Runner {
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
             notifier.fireTestStarted(childDescription());
             Optional<Throwable> error = setup.run();
-            error.ifPresentOrElse(t -> notifier.fireTestFailure(new Failure(childDescription(), t)), () -> notifier.fireTestFinished(childDescription()));
+            error.ifPresent(t -> notifier.fireTestFailure(new Failure(childDescription(), t)));
+            notifier.fireTestFinished(childDescription());
         } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException e) {
             // infrastructure error =(
             notifier.fireTestFailure(new Failure(childDescription(), e));

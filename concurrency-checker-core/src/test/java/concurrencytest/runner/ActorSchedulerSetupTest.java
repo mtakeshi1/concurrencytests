@@ -8,8 +8,13 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.*;
 
-import java.io.*;
-import java.nio.file.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,6 +72,6 @@ public class ActorSchedulerSetupTest {
                 }
             }, ClassReader.EXPAND_FRAMES);
         }
-        Assert.assertTrue(checkpointCount.get() > 0);
+        Assert.assertEquals(8, checkpointCount.get());
     }
 }

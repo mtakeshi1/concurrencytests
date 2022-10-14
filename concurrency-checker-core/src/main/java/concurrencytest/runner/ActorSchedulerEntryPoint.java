@@ -283,7 +283,9 @@ public class ActorSchedulerEntryPoint {
     }
 
     protected void reportActorError(Throwable t) {
-        LOGGER.debug("Error thrown", t);
+        if (!(t instanceof AssertionError)) {
+            LOGGER.debug("Error thrown", t);
+        }
         if (actorError == null) {
             this.actorError = t;
         } else {

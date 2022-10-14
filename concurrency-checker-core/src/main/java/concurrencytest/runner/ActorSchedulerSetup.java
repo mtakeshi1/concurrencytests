@@ -96,12 +96,14 @@ public class ActorSchedulerSetup {
     }
 
     private void renameMainTestClassIfNecessary(ExecutionMode mode, File folder) throws IOException {
-        ClassVisitor visitor = createDelegateFactory(mode, folder).apply(configuration.mainTestClass());
-        ClassReader reader = ASMUtils.readClass(configuration.mainTestClass());
-        if (reader == null) {
-            throw new RuntimeException("Could not find classFile for class: %s".formatted(configuration.mainTestClass().getName()));
+        if(!configuration.classesToInstrument().contains(configuration.mainTestClass())) {
+            ClassVisitor visitor = createCheckpointsVisitor(this.configuration, createDelegateFactory(mode, folder).apply(configuration.mainTestClass()), checkpointRegister, ReflectionHelper.getInstance(), configuration.mainTestClass());
+            ClassReader reader = ASMUtils.readClass(configuration.mainTestClass());
+            if (reader == null) {
+                throw new RuntimeException("Could not find classFile for class: %s".formatted(configuration.mainTestClass().getName()));
+            }
+            reader.accept(visitor, ClassReader.EXPAND_FRAMES);
         }
-        reader.accept(visitor, ClassReader.EXPAND_FRAMES);
     }
 
     private CheckpointRegister getRegister() {
