@@ -33,7 +33,7 @@ public class MutableRuntimeState implements RuntimeState {
     private final Map<String, Consumer<Object>> threads;
     private final ThreadRendezvouCheckpointCallback rendezvouCallback;
 
-    public MutableRuntimeState(CheckpointRegister register, Map<String, Consumer<Object>> managedThreadMap) {
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Consumer<Object>> managedThreadMap, boolean traceCheckpoints) {
         this.register = register;
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
@@ -42,8 +42,10 @@ public class MutableRuntimeState implements RuntimeState {
         this.threads = managedThreadMap;
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
-        checkpointRuntime.addCheckpointCallback(checkpointReached ->
-                System.out.printf("[%s] reached checkpoint %d - %s%n", checkpointReached.actorName(), checkpointReached.checkpointId(), checkpointReached.checkpoint().description()));
+        if (traceCheckpoints) {
+            checkpointRuntime.addCheckpointCallback(checkpointReached ->
+                    System.out.printf("[%s] reached checkpoint %d - %s%n", checkpointReached.actorName(), checkpointReached.checkpointId(), checkpointReached.checkpoint().description()));
+        }
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override
             public void checkpointReached(CheckpointReached checkpointReached) {

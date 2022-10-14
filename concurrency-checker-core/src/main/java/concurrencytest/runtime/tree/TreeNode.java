@@ -29,7 +29,16 @@ public interface TreeNode {
      */
     Optional<Supplier<TreeNode>> childNode(String nodeName);
 
+    default boolean isInitialized(String nodeName) {
+        return childNode(nodeName).isPresent();
+    }
+
     Stream<String> unexploredPaths();
+
+
+    default long maxKnownDepth() {
+        return childNodes().values().stream().filter(Optional::isPresent).map(Optional::get).map(Supplier::get).mapToLong(tn -> 1 + tn.maxKnownDepth()).max().orElse(0);
+    }
 
     default boolean hasUnexploredChildren() {
         return !isFullyExplored() && unexploredPaths().findAny().isPresent();

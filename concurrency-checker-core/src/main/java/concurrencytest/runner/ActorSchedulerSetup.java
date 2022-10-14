@@ -58,10 +58,10 @@ public class ActorSchedulerSetup {
         }
     }
 
-    private void runInVm(Configuration configuration, CheckpointRegister register) throws ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException, IOException, ClassNotFoundException {
+    private void runInVm(Configuration configuration, CheckpointRegister register) throws ActorSchedulingException, InterruptedException, TimeoutException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
         Class<?> mainTestClass = loadMainTestClass();
-        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass);
+        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass, configuration.traceCheckpoints());
         entryPoint.exploreAll();
     }
 

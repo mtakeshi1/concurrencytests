@@ -5,10 +5,10 @@ import concurrencytest.config.BasicConfiguration;
 import concurrencytest.runtime.tree.ActorInformation;
 import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.v2.test.SingularActorTest;
+import concurrencytest.v2.test.TwoActorsVolatileRead;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -79,5 +79,35 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         Assert.assertTrue(treeNode.isFullyExplored());
     }
 
+    @Test
+    public void testSchedulerTwoActorsVolatileRead() throws ActorSchedulingException, InterruptedException, TimeoutException {
+        ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(TwoActorsVolatileRead.class));
+        CheckpointRegister checkpointRegister = point.getCheckpointRegister();
+        String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
+        System.out.println(checkpoints);
+        Assert.assertEquals(checkpoints, 4, checkpointRegister.allCheckpoints().size());
+        point.executeOnce();
 
+        Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
+        Assert.assertTrue(maybeNode.isPresent());
+        TreeNode treeNode = maybeNode.get();
+        Assert.assertEquals(2, treeNode.threads().size());
+        Assert.assertFalse(treeNode.isFullyExplored());
+        Assert.assertEquals(4, treeNode.maxKnownDepth());
+        for(int i = 0; i < 4; i++) {
+            point.executeOnce();
+            maybeNode = point.getExplorationTree().getRootNode();
+            Assert.assertTrue(maybeNode.isPresent());
+            treeNode = maybeNode.get();
+            Assert.assertEquals(4, treeNode.maxKnownDepth());
+            Assert.assertFalse("shouldn't have explored after %d explorations".formatted(i + 1), treeNode.isFullyExplored());
+        }
+        point.executeOnce();
+        maybeNode = point.getExplorationTree().getRootNode();
+        Assert.assertTrue(maybeNode.isPresent());
+        treeNode = maybeNode.get();
+        Assert.assertEquals(4, treeNode.maxKnownDepth());
+        Assert.assertTrue(treeNode.isFullyExplored());
+
+    }
 }

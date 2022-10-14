@@ -63,7 +63,7 @@ public class PlainTreeNode implements TreeNode {
         ActorInformation information = actorInformationMap.get(actorName);
         Objects.requireNonNull(information, "Path not found for actor named: %s".formatted(actorName));
         PlainTreeNode link = nodes.get(actorName);
-        return !information.isBlocked() && (link == null || !link.isFullyExplored());
+        return !information.isBlocked() && (link == null || !link.isFullyExplored()) && !information.finished();
     }
 
     @Override
@@ -83,7 +83,7 @@ public class PlainTreeNode implements TreeNode {
 
     @Override
     public void checkAllChildrenExplored() {
-        if (nodes.values().stream().allMatch(PlainTreeNode::isFullyExplored)) {
+        if (nodes.size() == actorInformationMap.values().stream().filter(ai -> !ai.finished()).count() && nodes.values().stream().allMatch(PlainTreeNode::isFullyExplored)) {
             this.markFullyExplored();
         }
     }

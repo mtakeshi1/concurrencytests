@@ -35,19 +35,21 @@ public class ActorSchedulerEntryPoint {
     private final int maxLoopCount;
     private final Class<?> mainTestClass;
     private final CheckpointRegister checkpointRegister;
+    private final boolean traceCheckpoints;
     private volatile Throwable actorError;
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass) {
-        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations());
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass, boolean traceCheckpoints) {
+        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), traceCheckpoints);
     }
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount) {
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount, boolean traceCheckpoints) {
         this.explorationTree = explorationTree;
         this.checkpointRegister = register;
         this.configuration = configuration;
         this.initialPathActorNames = initialPathActorNames;
         this.maxLoopCount = maxLoopCount;
         this.mainTestClass = mainTestClassName;
+        this.traceCheckpoints = traceCheckpoints;
     }
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
@@ -114,6 +116,10 @@ public class ActorSchedulerEntryPoint {
     }
 
     public void executeOnce() throws InterruptedException, ActorSchedulingException, TimeoutException {
+        executeWithPresectedPath(new ArrayDeque<>(initialPathActorNames));
+    }
+
+    public void executeWithPresectedPath(Queue<String> preSelectedActorNames) throws InterruptedException, TimeoutException, ActorSchedulingException {
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(initialActorNames);
@@ -123,14 +129,13 @@ public class ActorSchedulerEntryPoint {
         TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
         invokeBefore(mainTestObject);
         long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
-        Queue<String> preSelectedActorNames = new ArrayDeque<>(initialPathActorNames);
         while (!runtime.finished() && actorError == null) {
             callInvariants(mainTestObject);
             detectDeadlock(path);
             Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
             if (nextActorToAdvance.isEmpty()) {
                 // we are done with this path
-                return;
+                throw new RuntimeException("?");
             }
             path = path.prepend(nextActorToAdvance.get());
             ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
@@ -145,6 +150,7 @@ public class ActorSchedulerEntryPoint {
         if (actorError == null) {
             callEndOfActors(mainTestObject);
             node.markFullyExplored();
+            System.out.println("Path taken: " + path.reverse());
         }
     }
 
@@ -289,7 +295,7 @@ public class ActorSchedulerEntryPoint {
             };
             managedThreadRunnables.put(actor, wrapped);
         });
-        return new MutableRuntimeState(this.checkpointRegister, managedThreadRunnables);
+        return new MutableRuntimeState(this.checkpointRegister, managedThreadRunnables, traceCheckpoints);
 
     }
 

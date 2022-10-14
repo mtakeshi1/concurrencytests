@@ -30,6 +30,10 @@ public interface Configuration extends Serializable {
         return new CheckpointDurationConfiguration();
     }
 
+    default boolean traceCheckpoints() {
+        return false;
+    }
+
     default CheckpointConfiguration checkpointConfiguration() {
         return new CheckpointConfiguration() {
         };
