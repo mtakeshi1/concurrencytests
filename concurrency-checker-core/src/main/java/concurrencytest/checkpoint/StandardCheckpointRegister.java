@@ -9,12 +9,13 @@ import org.objectweb.asm.Type;
 import java.io.Serializable;
 import java.lang.reflect.Member;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StandardCheckpointRegister implements CheckpointRegister, Serializable {
 
-    private final Map<CheckpointDescription, Checkpoint> allCheckpoints = new HashMap<>();
+    private final Map<CheckpointDescription, Checkpoint> allCheckpoints = new LinkedHashMap<>();
 
     private final AtomicInteger idGenerator = new AtomicInteger(1);
 

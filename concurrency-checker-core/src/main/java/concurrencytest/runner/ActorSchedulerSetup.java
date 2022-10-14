@@ -23,7 +23,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.concurrent.TimeoutException;
+import java.util.Optional;
 import java.util.function.Function;
 
 public class ActorSchedulerSetup {
@@ -40,29 +40,34 @@ public class ActorSchedulerSetup {
         this.configuration = configuration;
     }
 
-    public void run() throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, TimeoutException, ClassNotFoundException {
+    public Optional<Throwable> run() throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
         }
-        saveConfiguration();
-        ExecutionMode mode = selectMode();
-        CheckpointRegister register = getRegister();
-        enhanceClasses(mode, folder, register, ReflectionHelper.getInstance());
-        renameMainTestClassIfNecessary(mode, folder);
-        saveCheckpointInformation(register);
+        ExecutionMode mode = prepare();
         if (mode == ExecutionMode.FORK) {
             throw new RuntimeException("not yet implemented");
         } else {
-            runInVm(configuration, register);
+            return runInVm(configuration, checkpointRegister);
         }
     }
 
-    private void runInVm(Configuration configuration, CheckpointRegister register) throws ActorSchedulingException, InterruptedException, TimeoutException, IOException, ClassNotFoundException {
+    public ExecutionMode prepare() throws IOException {
+        File folder = configuration.outputFolder();
+        saveConfiguration();
+        ExecutionMode mode = selectMode();
+        enhanceClasses(mode, folder, checkpointRegister, ReflectionHelper.getInstance());
+        renameMainTestClassIfNecessary(mode, folder);
+        saveCheckpointInformation(checkpointRegister);
+        return mode;
+    }
+
+    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register) throws ActorSchedulingException, InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
         Class<?> mainTestClass = loadMainTestClass();
-        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass, configuration.traceCheckpoints());
-        entryPoint.exploreAll();
+        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass);
+        return entryPoint.exploreAll();
     }
 
     private Class<?> loadMainTestClass() throws MalformedURLException, ClassNotFoundException {

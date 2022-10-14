@@ -15,22 +15,26 @@ public interface RuntimeState {
 
     int monitorIdFor(Object object);
 
+    List<String> getExecutionPath();
+
     int lockIdFor(Lock lock);
 
     Collection<? extends ThreadState> allActors();
 
-    Collection<ManagedThread> start(Object testInstance, Duration timeout)throws InterruptedException, TimeoutException;
+    Collection<ManagedThread> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException;
 
     /**
      * Signal the given actor to advance tot he next checkpoint. The current thread waits for rendezvous for the given maxWaitTime.
      * This methos can either mutate the current instance of create a copy.
      *
-     * @param selected the actor selected to resume
+     * @param selected    the actor selected to resume
      * @param maxWaitTime max wait time for the rendezvous
      * @return the new state or 'this' with a mutated state
      * @throws TimeoutException if maxWaitTime passed without the threads reaching their destination
      */
     RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException;
+
+    Optional<Throwable> errorReported();
 
     default Map<Integer, ThreadState> ownedMonitors() {
         Map<Integer, ThreadState> monitors = new HashMap<>();

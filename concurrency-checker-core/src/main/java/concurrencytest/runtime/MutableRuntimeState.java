@@ -10,6 +10,8 @@ import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.*;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 
 public class MutableRuntimeState implements RuntimeState {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MutableRuntimeState.class);
+
     private final CheckpointRegister register;
     private final StandardCheckpointRuntime checkpointRuntime;
 
@@ -33,7 +37,9 @@ public class MutableRuntimeState implements RuntimeState {
     private final Map<String, Consumer<Object>> threads;
     private final ThreadRendezvouCheckpointCallback rendezvouCallback;
 
-    public MutableRuntimeState(CheckpointRegister register, Map<String, Consumer<Object>> managedThreadMap, boolean traceCheckpoints) {
+    private final List<String> executionPath = new ArrayList<>();
+
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Consumer<Object>> managedThreadMap) {
         this.register = register;
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
@@ -42,10 +48,10 @@ public class MutableRuntimeState implements RuntimeState {
         this.threads = managedThreadMap;
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
-        if (traceCheckpoints) {
-            checkpointRuntime.addCheckpointCallback(checkpointReached ->
-                    System.out.printf("[%s] reached checkpoint %d - %s%n", checkpointReached.actorName(), checkpointReached.checkpointId(), checkpointReached.checkpoint().description()));
-        }
+        checkpointRuntime.addCheckpointCallback(checkpointReached -> {
+            executionPath.add("[%s] %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description()));
+            LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
+        });
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override
             public void checkpointReached(CheckpointReached checkpointReached) {
@@ -66,6 +72,15 @@ public class MutableRuntimeState implements RuntimeState {
             }
         });
         this.checkpointRuntime.addCheckpointCallback(rendezvouCallback);
+    }
+
+    public List<String> getExecutionPath() {
+        return Collections.unmodifiableList(executionPath);
+    }
+
+    @Override
+    public Optional<Throwable> errorReported() {
+        return this.checkpointRuntime.errorReported();
     }
 
     private void registerLockAcquireRelease(LockAcquireReleaseCheckpointReached checkpointReached) {
@@ -157,9 +172,6 @@ public class MutableRuntimeState implements RuntimeState {
         if (newActorState.finished()) {
             rendezvouCallback.actorFinished(selected.actorName(), maxWaitTime);
         }
-//        } else {
-//            allActors.put(selected.actorName(), newActorState);
-//        }
         return this;
     }
 }

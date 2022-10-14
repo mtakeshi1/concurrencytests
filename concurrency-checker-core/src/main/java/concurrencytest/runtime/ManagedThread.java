@@ -1,5 +1,7 @@
 package concurrencytest.runtime;
 
+import org.slf4j.MDC;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -54,13 +56,15 @@ public class ManagedThread extends Thread {
 
     @Override
     public void run() {
-        getActorName();
+        String actorName = getActorName();
+        MDC.put("actor", actorName);
         CheckpointRuntimeAccessor.associateRuntime(this.checkpointRuntime);
         try {
             CheckpointRuntimeAccessor.beforeStartCheckpoint();
             super.run();
         } finally {
             CheckpointRuntimeAccessor.releaseRuntime();
+            MDC.remove("actor");
         }
     }
 

@@ -16,6 +16,9 @@ import concurrencytest.runtime.tree.TreeNode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -29,39 +32,40 @@ import java.util.stream.Collectors;
 
 public class ActorSchedulerEntryPoint {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ActorSchedulerEntryPoint.class);
+
     private final Tree explorationTree;
     private final CheckpointDurationConfiguration configuration;
     private final List<String> initialPathActorNames;
     private final int maxLoopCount;
     private final Class<?> mainTestClass;
     private final CheckpointRegister checkpointRegister;
-    private final boolean traceCheckpoints;
     private volatile Throwable actorError;
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass, boolean traceCheckpoints) {
-        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), traceCheckpoints);
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass) {
+        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations());
     }
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount, boolean traceCheckpoints) {
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount) {
         this.explorationTree = explorationTree;
         this.checkpointRegister = register;
         this.configuration = configuration;
         this.initialPathActorNames = initialPathActorNames;
         this.maxLoopCount = maxLoopCount;
         this.mainTestClass = mainTestClassName;
-        this.traceCheckpoints = traceCheckpoints;
     }
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
 
     private ScheduledExecutorService managedExecutorService;
 
-    public void exploreAll() throws ActorSchedulingException, InterruptedException, TimeoutException {
+    public Optional<Throwable> exploreAll() throws ActorSchedulingException, InterruptedException {
         try {
             invokeBeforeClass();
-            while (hasMorePathsToExplore()) {
+            while (hasMorePathsToExplore() && actorError == null) {
                 executeOnce();
             }
+            return Optional.ofNullable(actorError);
         } finally {
             invokeCleanup();
         }
@@ -105,7 +109,7 @@ public class ActorSchedulerEntryPoint {
 
     private boolean hasMorePathsToExplore() {
         Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
-        return node.map(TreeNode::isFullyExplored).orElse(false);
+        return !node.map(TreeNode::isFullyExplored).orElse(false);
     }
 
     private Optional<TreeNode> walk(TreeNode treeNode, Queue<String> initialPathActorNames) {
@@ -115,42 +119,48 @@ public class ActorSchedulerEntryPoint {
         throw new RuntimeException("not yet implemented");
     }
 
-    public void executeOnce() throws InterruptedException, ActorSchedulingException, TimeoutException {
-        executeWithPresectedPath(new ArrayDeque<>(initialPathActorNames));
+    public void executeOnce() throws InterruptedException, ActorSchedulingException {
+        executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames));
     }
 
-    public void executeWithPresectedPath(Queue<String> preSelectedActorNames) throws InterruptedException, TimeoutException, ActorSchedulingException {
+    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames) throws InterruptedException, ActorSchedulingException {
+        MDC.put("actor", "scheduler");
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(initialActorNames);
-        runtime.start(mainTestObject, configuration.checkpointTimeout());
-        LList<String> path = LList.empty();
-        String lastActor = null;
-        TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
-        invokeBefore(mainTestObject);
-        long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
-        while (!runtime.finished() && actorError == null) {
-            callInvariants(mainTestObject);
-            detectDeadlock(path);
-            Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
-            if (nextActorToAdvance.isEmpty()) {
-                // we are done with this path
-                throw new RuntimeException("?");
+        try {
+            runtime.start(mainTestObject, configuration.checkpointTimeout());
+            String lastActor = null;
+            TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
+            invokeBefore(mainTestObject);
+            long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
+            runtime.errorReported().ifPresent(this::reportActorError);
+            while (!runtime.finished() && actorError == null) {
+                callInvariants(mainTestObject, runtime);
+                Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
+                if (nextActorToAdvance.isEmpty()) {
+                    // we are done with this path
+                    throw new RuntimeException("?");
+                }
+                ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
+                RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
+                node = node.advance(selected, next);
+                lastActor = nextActorToAdvance.get();
+                runtime = next;
+                if (System.nanoTime() > maxTime) {
+                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+                }
+                runtime.errorReported().ifPresent(this::reportActorError);
             }
-            path = path.prepend(nextActorToAdvance.get());
-            ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
-            RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
-            node = node.advance(selected, next);
-            lastActor = nextActorToAdvance.get();
-            runtime = next;
-            if (System.nanoTime() > maxTime) {
-                throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+            if (actorError == null) {
+                callEndOfActors(mainTestObject, runtime);
+                node.markFullyExplored();
+                LOGGER.debug("Finished executiong with path: {}", runtime.getExecutionPath());
             }
-        }
-        if (actorError == null) {
-            callEndOfActors(mainTestObject);
-            node.markFullyExplored();
-            System.out.println("Path taken: " + path.reverse());
+        } catch (TimeoutException e) {
+            LOGGER.warn("Timing out waiting for actors to converge.");
+            LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
+            reportActorError(e);
         }
     }
 
@@ -168,7 +178,7 @@ public class ActorSchedulerEntryPoint {
         }
     }
 
-    private void callEndOfActors(Object mainTestObject) {
+    private void callEndOfActors(Object mainTestObject, RuntimeState runtime) {
         for (Method m : mainTestClass.getMethods()) {
             if (m.isAnnotationPresent(AfterActorsCompleted.class)) {
                 try {
@@ -176,13 +186,15 @@ public class ActorSchedulerEntryPoint {
                 } catch (IllegalAccessException e) {
                     reportActorError(new IllegalStateException("Security error trying to invoke @AfterActorsCompleted method: " + m + ". Is it public?", e));
                 } catch (InvocationTargetException e) {
+                    LOGGER.warn("@AfterActorCompleted %s threw %s (%s). Execution path follows:".formatted(m.getName(), e.getTargetException().getClass().getName(), e.getTargetException().getMessage()));
+                    LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
                     reportActorError(e.getTargetException());
                 }
             }
         }
     }
 
-    private void callInvariants(Object mainTestObject) {
+    private void callInvariants(Object mainTestObject, RuntimeState runtime) {
         for (Method m : mainTestClass.getMethods()) {
             if (m.isAnnotationPresent(Invariant.class)) {
                 try {
@@ -190,6 +202,8 @@ public class ActorSchedulerEntryPoint {
                 } catch (IllegalAccessException e) {
                     reportActorError(new IllegalStateException("Security error trying to invoke @Invariant method: " + m + ". Is it public?", e));
                 } catch (InvocationTargetException e) {
+                    LOGGER.warn("@Invariant %s threw %s (%s). Execution path follows:".formatted(m.getName(), e.getTargetException().getClass().getName(), e.getTargetException().getMessage()));
+                    LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
                     reportActorError(e.getTargetException());
                 }
             }
@@ -269,7 +283,7 @@ public class ActorSchedulerEntryPoint {
     }
 
     protected void reportActorError(Throwable t) {
-        t.printStackTrace();
+        LOGGER.debug("Error thrown", t);
         if (actorError == null) {
             this.actorError = t;
         } else {
@@ -295,7 +309,7 @@ public class ActorSchedulerEntryPoint {
             };
             managedThreadRunnables.put(actor, wrapped);
         });
-        return new MutableRuntimeState(this.checkpointRegister, managedThreadRunnables, traceCheckpoints);
+        return new MutableRuntimeState(this.checkpointRegister, managedThreadRunnables);
 
     }
 
@@ -313,5 +327,9 @@ public class ActorSchedulerEntryPoint {
 
     public CheckpointRegister getCheckpointRegister() {
         return checkpointRegister;
+    }
+
+    public Throwable getReportedError() {
+        return actorError;
     }
 }

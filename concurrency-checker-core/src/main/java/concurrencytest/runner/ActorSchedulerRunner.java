@@ -14,7 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.concurrent.TimeoutException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ActorSchedulerRunner extends Runner {
@@ -45,8 +45,8 @@ public class ActorSchedulerRunner extends Runner {
             Configuration configuration = parseConfiguration();
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
             notifier.fireTestStarted(childDescription());
-            setup.run();
-            notifier.fireTestFinished(childDescription());
+            Optional<Throwable> error = setup.run();
+            error.ifPresentOrElse(t -> notifier.fireTestFailure(new Failure(childDescription(), t)), () -> notifier.fireTestFinished(childDescription()));
         } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException e) {
             // infrastructure error =(
             notifier.fireTestFailure(new Failure(childDescription(), e));
@@ -57,8 +57,6 @@ public class ActorSchedulerRunner extends Runner {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             notifier.fireTestFailure(new Failure(childDescription(), e));
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -68,7 +66,6 @@ public class ActorSchedulerRunner extends Runner {
                 return (Configuration) m.invoke(null);
             }
         }
-        String folderPref = testClass.getName().substring(testClass.getName().lastIndexOf('.') + 1);
         return new BasicConfiguration(testClass);
     }
 }
