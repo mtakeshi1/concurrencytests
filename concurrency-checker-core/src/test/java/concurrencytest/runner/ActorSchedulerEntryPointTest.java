@@ -7,6 +7,7 @@ import concurrencytest.runtime.tree.ActorInformation;
 import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.v2.test.SimpleSharedCounter;
 import concurrencytest.v2.test.SingularActorTest;
+import concurrencytest.v2.test.TwoActorsVolatileRead;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     }
 
     @Test
-    public void testSchedulerSingleActor() throws ActorSchedulingException, InterruptedException, TimeoutException {
+    public void testSchedulerSingleActor() throws ActorSchedulingException, InterruptedException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SingularActorTest.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 6, checkpointRegister.allCheckpoints().size());
@@ -99,7 +100,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     }
 
     @Test
-    public void doubleActorTest() throws ActorSchedulingException, InterruptedException, TimeoutException {
+    public void doubleActorTest() throws ActorSchedulingException, InterruptedException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SimpleSharedCounter.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 8, checkpointRegister.allCheckpoints().size()); // it must include access on the @invariant
@@ -112,35 +113,35 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         Assert.assertTrue(t instanceof AssertionError);
     }
 
-//    @Test
-//    public void testSchedulerTwoActorsVolatileRead() throws ActorSchedulingException, InterruptedException, TimeoutException {
-//        ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(TwoActorsVolatileRead.class));
-//        CheckpointRegister checkpointRegister = point.getCheckpointRegister();
-//        String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
-//        System.out.println(checkpoints);
-//        Assert.assertEquals(checkpoints, 4, checkpointRegister.allCheckpoints().size());
-//        point.executeOnce();
-//
-//        Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
-//        Assert.assertTrue(maybeNode.isPresent());
-//        TreeNode treeNode = maybeNode.get();
-//        Assert.assertEquals(2, treeNode.threads().size());
-//        Assert.assertFalse(treeNode.isFullyExplored());
-//        Assert.assertEquals(4, treeNode.maxKnownDepth());
-//        for(int i = 0; i < 4; i++) {
-//            point.executeOnce();
-//            maybeNode = point.getExplorationTree().getRootNode();
-//            Assert.assertTrue(maybeNode.isPresent());
-//            treeNode = maybeNode.get();
-//            Assert.assertEquals(4, treeNode.maxKnownDepth());
-//            Assert.assertFalse("shouldn't have explored after %d explorations".formatted(i + 1), treeNode.isFullyExplored());
-//        }
-//        point.executeOnce();
-//        maybeNode = point.getExplorationTree().getRootNode();
-//        Assert.assertTrue(maybeNode.isPresent());
-//        treeNode = maybeNode.get();
-//        Assert.assertEquals(4, treeNode.maxKnownDepth());
-//        Assert.assertTrue(treeNode.isFullyExplored());
-//
-//    }
+    @Test
+    public void testSchedulerTwoActorsVolatileRead() throws ActorSchedulingException, InterruptedException {
+        ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(TwoActorsVolatileRead.class));
+        CheckpointRegister checkpointRegister = point.getCheckpointRegister();
+        String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
+        System.out.println(checkpoints);
+        Assert.assertEquals(checkpoints, 4, checkpointRegister.allCheckpoints().size());
+        point.executeOnce();
+
+        Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
+        Assert.assertTrue(maybeNode.isPresent());
+        TreeNode treeNode = maybeNode.get();
+        Assert.assertEquals(2, treeNode.threads().size());
+        Assert.assertFalse(treeNode.isFullyExplored());
+        Assert.assertEquals(4, treeNode.maxKnownDepth());
+        for (int i = 0; i < 4; i++) {
+            point.executeOnce();
+            maybeNode = point.getExplorationTree().getRootNode();
+            Assert.assertTrue(maybeNode.isPresent());
+            treeNode = maybeNode.get();
+            Assert.assertEquals(4, treeNode.maxKnownDepth());
+            Assert.assertFalse("shouldn't have explored after %d explorations".formatted(i + 1), treeNode.isFullyExplored());
+        }
+        point.executeOnce();
+        maybeNode = point.getExplorationTree().getRootNode();
+        Assert.assertTrue(maybeNode.isPresent());
+        treeNode = maybeNode.get();
+        Assert.assertEquals(4, treeNode.maxKnownDepth());
+        Assert.assertTrue(treeNode.isFullyExplored());
+
+    }
 }
