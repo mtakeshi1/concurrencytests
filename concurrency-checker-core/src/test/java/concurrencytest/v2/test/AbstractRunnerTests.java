@@ -1,0 +1,62 @@
+package concurrencytest.v2.test;
+
+import concurrencytest.runner.ActorSchedulerRunner;
+import concurrencytest.util.FileUtils;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
+import org.junit.runner.notification.RunNotifier;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
+
+/**
+ * Subclasses of this class should test the end result of running test classes.
+ *
+ */
+public abstract class AbstractRunnerTests {
+
+    private final List<File> files = new CopyOnWriteArrayList<>();
+
+    @After
+    public void cleaup() throws IOException {
+        for (File outputFolder : files) {
+            FileUtils.deltree(outputFolder);
+        }
+    }
+
+    public void runExpectError(Class<?> mainTestClass, Predicate<Throwable> errorMatcher) {
+        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass);
+        files.add(runner.getConfiguration().outputFolder());
+        RunNotifier notifier = new RunNotifier();
+        Throwable[] container = new Throwable[1];
+        notifier.addListener(new RunListener() {
+            @Override
+            public void testFailure(Failure failure) {
+                container[0] = failure.getException();
+            }
+        });
+        runner.run(notifier);
+        Assert.assertNotNull(container[0]);
+        Assert.assertTrue(String.valueOf(container[0]), errorMatcher.test(container[0]));
+    }
+
+    public void runToCompletion(Class<?> mainTestClass) {
+        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass);
+        files.add(runner.getConfiguration().outputFolder());
+        RunNotifier notifier = new RunNotifier();
+        Throwable[] container = new Throwable[1];
+        notifier.addListener(new RunListener() {
+            @Override
+            public void testFailure(Failure failure) {
+                container[0] = failure.getException();
+            }
+        });
+        runner.run(notifier);
+        Assert.assertNull(container[0]);
+    }
+}

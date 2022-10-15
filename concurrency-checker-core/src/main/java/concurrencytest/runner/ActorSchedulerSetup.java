@@ -138,7 +138,7 @@ public class ActorSchedulerSetup {
             delegate = new SynchronizedMethodDeclarationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         }
         if (checkpointConfiguration.monitorCheckpointEnabled()) {
-            delegate = new SynchronizedMethodDeclarationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
+            delegate = new SynchronizedBlockVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         }
         for (var matcher : checkpointConfiguration.fieldsToInstrument()) {
             delegate = new FieldCheckpointVisitor(matcher, delegate, checkpointRegister, classUnderEnhancement, classResolver);

@@ -2,6 +2,7 @@ package concurrencytest.runner;
 
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.runtime.CheckpointRuntimeAccessor;
+import concurrencytest.util.FileUtils;
 import concurrencytest.v2.test.SimpleSharedCounter;
 import org.junit.After;
 import org.junit.Assert;
@@ -11,11 +12,6 @@ import org.objectweb.asm.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActorSchedulerSetupTest {
@@ -25,19 +21,7 @@ public class ActorSchedulerSetupTest {
     @After
     public void cleanup() throws IOException {
         if (mainFolder != null) {
-            Files.walkFileTree(mainFolder.toPath(), new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    Files.delete(dir);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            FileUtils.deltree(mainFolder);
         }
     }
 

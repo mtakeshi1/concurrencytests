@@ -1,16 +1,15 @@
 package concurrencytest;
 
-import concurrencytest.annotations.TestParameters;
-import org.junit.Ignore;
-import sut.ExceptionalRacingCondition;
-import sut.RacyIndySynchronizedMethodRef;
-import sut.SynchronizedActors;
-import sut.SynchronizedValueHolderActors;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
+import sut.ExceptionalRacingCondition;
+import sut.RacyIndySynchronizedMethodRef;
+import sut.SynchronizedActors;
+import sut.SynchronizedValueHolderActors;
 
 public class NonRacyChecker extends RunListener {
 
@@ -38,7 +37,6 @@ public class NonRacyChecker extends RunListener {
         notifier.addListener(this);
         runner.run(notifier);
         Assert.assertNull(message, failure);
-
     }
 
     @Test

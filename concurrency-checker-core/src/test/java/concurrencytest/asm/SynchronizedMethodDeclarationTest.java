@@ -1,5 +1,6 @@
 package concurrencytest.asm;
 
+import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.asm.testClasses.SyncCallable;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
@@ -24,7 +25,8 @@ public class SynchronizedMethodDeclarationTest extends BaseClassVisitorTest {
         Assert.assertTrue(delegatedMethod.isSynthetic());
         Assert.assertFalse(Modifier.isSynchronized(delegatedMethod.getModifiers()));
         Method originalMethod = injected.getDeclaredMethod("call");
-        Assert.assertFalse(Modifier.isSynchronized(originalMethod.getModifiers()));
+        Assert.assertTrue(originalMethod.isAnnotationPresent(Actor.class));
+        Assert.assertFalse("did not preserve original @Actor annotation", Modifier.isSynchronized(originalMethod.getModifiers()));
         Object newInstance = injected.getConstructor().newInstance();
         Assert.assertTrue(newInstance instanceof Callable<?>);
     }

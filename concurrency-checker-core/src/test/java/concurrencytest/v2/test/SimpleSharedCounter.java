@@ -10,7 +10,7 @@ import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
-@RunWith(ActorSchedulerRunner.class)
+//@RunWith(ActorSchedulerRunner.class)
 public class SimpleSharedCounter {
 
     private volatile int counter;

@@ -20,10 +20,12 @@ import java.util.stream.Collectors;
 public class ActorSchedulerRunner extends Runner {
     private final Class<?> testClass;
     private final String testName;
+    private final Configuration configuration;
 
     public ActorSchedulerRunner(Class<?> testClass) {
         this.testClass = testClass;
         this.testName = Arrays.stream(testClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(Method::getName).collect(Collectors.joining("_"));
+        this.configuration = parseConfiguration(testClass);
     }
 
     @Override
@@ -42,7 +44,6 @@ public class ActorSchedulerRunner extends Runner {
     @Override
     public void run(RunNotifier notifier) {
         try {
-            Configuration configuration = parseConfiguration();
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
             notifier.fireTestStarted(childDescription());
             Optional<Throwable> error = setup.run();
@@ -61,10 +62,20 @@ public class ActorSchedulerRunner extends Runner {
         }
     }
 
-    protected Configuration parseConfiguration() throws IOException, InvocationTargetException, IllegalAccessException {
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    private static Configuration parseConfiguration(Class<?> testClass) {
         for (Method m : testClass.getMethods()) {
             if (m.isAnnotationPresent(ConfigurationSource.class) && Modifier.isStatic(m.getModifiers())) {
-                return (Configuration) m.invoke(null);
+                try {
+                    return (Configuration) m.invoke(null);
+                } catch (IllegalAccessException e) {
+                    throw new IllegalArgumentException("Configuration method: %s threw IllegalAccessException. Is it public?".formatted(m), e);
+                } catch (InvocationTargetException e) {
+                    throw new IllegalArgumentException("Configuration method: %s threw %s - %s".formatted(m, e.getTargetException().getClass(), e.getTargetException().getMessage()), e.getTargetException());
+                }
             }
         }
         return new BasicConfiguration(testClass);

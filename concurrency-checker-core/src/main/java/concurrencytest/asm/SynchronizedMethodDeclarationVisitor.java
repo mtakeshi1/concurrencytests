@@ -28,7 +28,39 @@ public class SynchronizedMethodDeclarationVisitor extends BaseClassVisitor {
         createDelegator(name, descriptor, signature, exceptions, mods, newMods, newName, AccessModifier.unreflect(access));
 
         newMods |= BehaviourModifier.SYNTHETIC.modifier() | BehaviourModifier.FINAL.modifier() | AccessModifier.PRIVATE.modifier();
-        return super.visitMethod(newMods, newName, descriptor, signature, exceptions);
+        MethodVisitor delegate = super.visitMethod(newMods, newName, descriptor, signature, exceptions);
+        //TODO find a way to copy annotations over - or maybe move the annotations over
+        return new MethodVisitor(Opcodes.ASM9, delegate) {
+            @Override
+            public AnnotationVisitor visitAnnotationDefault() {
+                return super.visitAnnotationDefault();
+            }
+
+            @Override
+            public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                return super.visitAnnotation(descriptor, visible);
+            }
+
+            @Override
+            public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
+                return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
+            }
+
+            @Override
+            public void visitAnnotableParameterCount(int parameterCount, boolean visible) {
+                super.visitAnnotableParameterCount(parameterCount, visible);
+            }
+
+            @Override
+            public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
+                return super.visitParameterAnnotation(parameter, descriptor, visible);
+            }
+
+            @Override
+            public void visitEnd() {
+                super.visitEnd();
+            }
+        };
     }
 
     private void createDelegator(String name, String descriptor, String signature, String[] exceptions, Collection<BehaviourModifier> mods, int newMods, String newName, AccessModifier accessModifier) {
