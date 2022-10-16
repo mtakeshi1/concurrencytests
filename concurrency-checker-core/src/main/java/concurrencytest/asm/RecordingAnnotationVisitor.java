@@ -11,12 +11,8 @@ public class RecordingAnnotationVisitor extends AnnotationVisitor {
 
     private final List<Consumer<AnnotationVisitor>> commands = new ArrayList<>();
 
-    public RecordingAnnotationVisitor(int api, AnnotationVisitor annotationVisitor) {
-        super(api, annotationVisitor);
-    }
-
-    protected RecordingAnnotationVisitor(int api) {
-        super(api);
+    public RecordingAnnotationVisitor(AnnotationVisitor annotationVisitor) {
+        super(Opcodes.ASM9, annotationVisitor);
     }
 
     @Override
@@ -34,10 +30,7 @@ public class RecordingAnnotationVisitor extends AnnotationVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String name, String descriptor) {
         AnnotationVisitor delegate = super.visitAnnotation(name, descriptor);
-        if (delegate == null) {
-            return null;
-        }
-        RecordingAnnotationVisitor rec = new RecordingAnnotationVisitor(Opcodes.ASM9, delegate);
+        RecordingAnnotationVisitor rec = new RecordingAnnotationVisitor(delegate);
         commands.add(av -> {
             var inner = av.visitAnnotation(name, descriptor);
             if (inner != null) {
@@ -47,7 +40,7 @@ public class RecordingAnnotationVisitor extends AnnotationVisitor {
         return rec;
     }
 
-    private void replay(AnnotationVisitor av) {
+    public void replay(AnnotationVisitor av) {
         for (var cmd : commands) {
             cmd.accept(av);
         }
@@ -56,10 +49,7 @@ public class RecordingAnnotationVisitor extends AnnotationVisitor {
     @Override
     public AnnotationVisitor visitArray(String name) {
         AnnotationVisitor delegate = super.visitArray(name);
-        if (delegate == null) {
-            return null;
-        }
-        RecordingAnnotationVisitor rec = new RecordingAnnotationVisitor(Opcodes.ASM9, delegate);
+        RecordingAnnotationVisitor rec = new RecordingAnnotationVisitor(delegate);
         commands.add(av -> {
             var inner = av.visitArray(name);
             if (inner != null) {
