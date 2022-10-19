@@ -4,6 +4,7 @@ import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
+import concurrencytest.runtime.tree.TreeNode;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
@@ -15,12 +16,17 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ActorSchedulerRunner extends Runner {
     private final Class<?> testClass;
     private final String testName;
     private final Configuration configuration;
+
+    private volatile Consumer<TreeNode> treeObserver = ignored -> {
+    };
 
     public ActorSchedulerRunner(Class<?> testClass) {
         this.testClass = testClass;
@@ -40,13 +46,16 @@ public class ActorSchedulerRunner extends Runner {
         return Description.createTestDescription(testClass.getName(), testName, testClass.getAnnotations());
     }
 
+    public void setTreeObserver(Consumer<TreeNode> treeObserver) {
+        this.treeObserver = treeObserver;
+    }
 
     @Override
     public void run(RunNotifier notifier) {
         try {
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
             notifier.fireTestStarted(childDescription());
-            Optional<Throwable> error = setup.run();
+            Optional<Throwable> error = setup.run(treeObserver);
             error.ifPresent(t -> notifier.fireTestFailure(new Failure(childDescription(), t)));
             notifier.fireTestFinished(childDescription());
         } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException e) {

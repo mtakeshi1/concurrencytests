@@ -83,9 +83,15 @@ public class PlainTreeNode implements TreeNode {
 
     @Override
     public void checkAllChildrenExplored() {
-        if (nodes.size() == actorInformationMap.values().stream().filter(ai -> !ai.finished()).count() && nodes.values().stream().allMatch(PlainTreeNode::isFullyExplored)) {
-            this.markFullyExplored();
+        for(var actorName : actorInformationMap.keySet()) {
+            if(shouldExplore(actorName)) {
+                return;
+            }
         }
+        markFullyExplored();
+//        if (nodes.size() == actorInformationMap.values().stream().filter(ai -> !ai.finished()).count() && nodes.values().stream().allMatch(PlainTreeNode::isFullyExplored)) {
+//            this.markFullyExplored();
+//        }
     }
 
     @Override

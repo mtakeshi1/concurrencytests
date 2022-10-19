@@ -10,6 +10,7 @@ import concurrencytest.reflection.ClassResolver;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runtime.tree.HeapTree;
 import concurrencytest.runtime.tree.Tree;
+import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.util.ASMUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -24,6 +25,7 @@ import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ActorSchedulerSetup {
@@ -40,7 +42,7 @@ public class ActorSchedulerSetup {
         this.configuration = configuration;
     }
 
-    public Optional<Throwable> run() throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public Optional<Throwable> run(Consumer<TreeNode> treeObserver) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
@@ -49,7 +51,7 @@ public class ActorSchedulerSetup {
         if (mode == ExecutionMode.FORK) {
             throw new RuntimeException("not yet implemented");
         } else {
-            return runInVm(configuration, checkpointRegister);
+            return runInVm(configuration, checkpointRegister, treeObserver);
         }
     }
 
@@ -63,11 +65,11 @@ public class ActorSchedulerSetup {
         return mode;
     }
 
-    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register) throws ActorSchedulingException, InterruptedException, IOException, ClassNotFoundException {
+    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver) throws ActorSchedulingException, InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
         Class<?> mainTestClass = loadMainTestClass();
         ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass);
-        return entryPoint.exploreAll();
+        return entryPoint.exploreAll(treeObserver);
     }
 
     private Class<?> loadMainTestClass() throws MalformedURLException, ClassNotFoundException {
@@ -96,7 +98,7 @@ public class ActorSchedulerSetup {
     }
 
     private void renameMainTestClassIfNecessary(ExecutionMode mode, File folder) throws IOException {
-        if(!configuration.classesToInstrument().contains(configuration.mainTestClass())) {
+        if (!configuration.classesToInstrument().contains(configuration.mainTestClass())) {
             ClassVisitor visitor = createCheckpointsVisitor(this.configuration, createDelegateFactory(mode, folder).apply(configuration.mainTestClass()), checkpointRegister, ReflectionHelper.getInstance(), configuration.mainTestClass());
             ClassReader reader = ASMUtils.readClass(configuration.mainTestClass());
             if (reader == null) {
@@ -134,11 +136,11 @@ public class ActorSchedulerSetup {
         if (checkpointConfiguration.threadsEnhanced()) {
             delegate = new ThreadConstrutorVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         }
-        if (checkpointConfiguration.removeSynchronizedMethodDeclaration()) {
-            delegate = new SynchronizedMethodDeclarationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
-        }
         if (checkpointConfiguration.monitorCheckpointEnabled()) {
             delegate = new SynchronizedBlockVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
+        }
+        if (checkpointConfiguration.removeSynchronizedMethodDeclaration()) {
+            delegate = new SynchronizedMethodDeclarationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         }
         for (var matcher : checkpointConfiguration.fieldsToInstrument()) {
             delegate = new FieldCheckpointVisitor(matcher, delegate, checkpointRegister, classUnderEnhancement, classResolver);

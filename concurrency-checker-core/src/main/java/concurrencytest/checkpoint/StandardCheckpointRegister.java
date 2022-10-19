@@ -62,14 +62,6 @@ public class StandardCheckpointRegister implements CheckpointRegister, Serializa
         return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, monitorOwnerType.getClassName(), true));
     }
 
-    private Class<?> resolveType(Type monitorOwnerType) {
-        try {
-            return ReflectionHelper.resolveType(monitorOwnerType.getClassName());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public Checkpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
         return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, monitorOwnerType.getClassName(), false));

@@ -9,7 +9,7 @@ public record LockOrMonitorInformation(String monitorType, Optional<String> owne
     public static final int OWNER_PRESENT_FLAG = 1;
 
     public boolean isBlocked(String selfName) {
-        return ownerActorName().isEmpty() || ownerActorName.get().equals(selfName);
+        return ownerActorName.filter(s -> !s.equals(selfName)).isPresent();
     }
 
     public int writeToByteBuffer(ByteBuffer buffer) {

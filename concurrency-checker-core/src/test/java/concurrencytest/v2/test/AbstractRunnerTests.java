@@ -1,6 +1,7 @@
 package concurrencytest.v2.test;
 
 import concurrencytest.runner.ActorSchedulerRunner;
+import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.util.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -46,7 +48,12 @@ public abstract class AbstractRunnerTests {
     }
 
     public void runToCompletion(Class<?> mainTestClass) {
+        runToCompletion(mainTestClass, ignored -> {});
+    }
+
+    public void runToCompletion(Class<?> mainTestClass, Consumer<TreeNode> treeObserver) {
         ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass);
+        runner.setTreeObserver(treeObserver);
         files.add(runner.getConfiguration().outputFolder());
         RunNotifier notifier = new RunNotifier();
         Throwable[] container = new Throwable[1];
@@ -57,6 +64,9 @@ public abstract class AbstractRunnerTests {
             }
         });
         runner.run(notifier);
+        if (container[0] != null) {
+            container[0].printStackTrace();
+        }
         Assert.assertNull(container[0]);
     }
 }

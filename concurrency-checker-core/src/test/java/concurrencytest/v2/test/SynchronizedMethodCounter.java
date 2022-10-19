@@ -5,10 +5,13 @@ import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;
+import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
+
+import java.time.Duration;
 
 @RunWith(ActorSchedulerRunner.class)
 public class SynchronizedMethodCounter {
@@ -31,6 +34,11 @@ public class SynchronizedMethodCounter {
                         return true;
                     }
                 };
+            }
+
+            @Override
+            public CheckpointDurationConfiguration durationConfiguration() {
+                return new CheckpointDurationConfiguration(Duration.ofMinutes(20), Duration.ofMinutes(30), Duration.ofHours(1));
             }
         };
     }

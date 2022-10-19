@@ -119,6 +119,8 @@ public class MutableRuntimeState implements RuntimeState {
             }
         } else if (mon.checkpoint().injectionPoint() == InjectionPoint.AFTER) {
             allActors.put(actorName, state.monitorReleased(monitorId));
+        } else {
+            allActors.put(actorName, state);
         }
     }
 

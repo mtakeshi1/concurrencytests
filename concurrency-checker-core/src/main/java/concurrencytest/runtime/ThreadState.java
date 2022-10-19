@@ -3,17 +3,14 @@ package concurrencytest.runtime;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.util.ByteBufferUtil;
 import concurrencytest.util.CollectionUtils;
 
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Stream;
 
 public record ThreadState(String actorName, int checkpoint, int loopCount, List<LockMonitorAcquisition> ownedMonitors,
                           List<LockMonitorAcquisition> ownedLocks, Optional<LockMonitorAcquisition> waitingForMonitor,
-                          Optional<LockMonitorAcquisition> waitingForLock,
-                          Optional<String> waitingForThread, boolean finished) {
+                          Optional<LockMonitorAcquisition> waitingForLock, Optional<String> waitingForThread, boolean finished) {
 
     public static final int MAX_ACTOR_NAME_LENGTH = 255;
     public static final int MAX_OWNED_MONITOR_LIST = 16;
@@ -101,8 +98,8 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
     }
 
     public boolean lockIsFreeOrMine(RuntimeState state) {
-        return waitingForMonitor.map(LockMonitorAcquisition::lockOrMonitorId).map(checkpointId1 -> state.ownedMonitors().get(checkpointId1) == null ||
-                state.lockedLocks().get(checkpointId1).actorName().equals(actorName())).orElse(true);
+        return waitingForLock.map(LockMonitorAcquisition::lockOrMonitorId).map(checkpointId1 -> state.lockedLocks().get(checkpointId1) == null || state.lockedLocks().get(checkpointId1).actorName().equals(actorName()))
+                .orElse(true);
     }
 
     public boolean monitorIsFreeOrMine(RuntimeState state) {
@@ -161,10 +158,34 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         if (newMonitors.size() == ownedMonitors.size()) {
             throw new IllegalStateException("actor %s tried to release a monitor (%d) that it did not held (%s)".formatted(actorName, monitorId, ownedMonitors));
         }
-        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, newMonitors, waitingForMonitor, waitingForLock, waitingForThread, false);
+        return new ThreadState(actorName, checkpoint, loopCount, newMonitors, ownedLocks, waitingForMonitor, waitingForLock, waitingForThread, false);
     }
 
     public ThreadState newCheckpointReached(CheckpointReached newCheckpoint, boolean lastCheckpoint) {
         return new ThreadState(actorName, newCheckpoint.checkpointId(), newCheckpoint.checkpointId() == this.checkpoint() ? loopCount + 1 : 0, ownedMonitors, ownedLocks, waitingForMonitor, waitingForLock, waitingForThread, lastCheckpoint);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ThreadState{");
+        sb.append("'").append(actorName).append('\'');
+        sb.append(", checkpoint=").append(checkpoint);
+        if (loopCount != 0) {
+            sb.append(", loopCount=").append(loopCount);
+        }
+        if (!ownedLocks.isEmpty()) {
+            sb.append(", ownedMonitors=").append(ownedMonitors);
+        }
+        if (!ownedLocks.isEmpty()) {
+            sb.append(", ownedLocks=").append(ownedLocks);
+        }
+        waitingForMonitor.ifPresent(lockMonitorAcquisition -> sb.append(", waitingForMonitor=").append(lockMonitorAcquisition));
+        waitingForLock.ifPresent(lockMonitorAcquisition -> sb.append(", waitingForLock=").append(lockMonitorAcquisition));
+        waitingForThread.ifPresent(t -> sb.append(", waitingForThread:").append(t));
+        if (finished) {
+            sb.append(", finished");
+        }
+        sb.append('}');
+        return sb.toString();
     }
 }

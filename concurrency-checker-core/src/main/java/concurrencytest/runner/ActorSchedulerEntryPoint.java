@@ -59,11 +59,13 @@ public class ActorSchedulerEntryPoint {
 
     private ScheduledExecutorService managedExecutorService;
 
-    public Optional<Throwable> exploreAll() throws ActorSchedulingException, InterruptedException {
+    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver) throws ActorSchedulingException, InterruptedException {
         try {
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
                 executeOnce();
+                TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
+                treeObserver.accept(node);
             }
             return Optional.ofNullable(actorError);
         } finally {
@@ -279,7 +281,11 @@ public class ActorSchedulerEntryPoint {
             throw maxLoopViolation.map(actor -> (ActorSchedulingException) new MaxLoopCountViolationException(actor, maxLoopCount)).orElse(new NoRunnableActorFoundException(unexploredNodes, Collections.emptyList()));
         }
         runnableActors.retainAll(unexploredNodes);
-        return runnableActors.stream().findAny();
+        Optional<String> any = runnableActors.stream().findAny();
+        if (any.isEmpty()) {
+            System.out.println("?");
+        }
+        return any;
     }
 
     protected void reportActorError(Throwable t) {
