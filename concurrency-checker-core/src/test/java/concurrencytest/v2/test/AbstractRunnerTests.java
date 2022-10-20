@@ -18,7 +18,6 @@ import java.util.function.Predicate;
 
 /**
  * Subclasses of this class should test the end result of running test classes.
- *
  */
 public abstract class AbstractRunnerTests {
 
@@ -44,11 +43,13 @@ public abstract class AbstractRunnerTests {
         });
         runner.run(notifier);
         Assert.assertNotNull(container[0]);
+        container[0].printStackTrace();
         Assert.assertTrue(String.valueOf(container[0]), errorMatcher.test(container[0]));
     }
 
     public void runToCompletion(Class<?> mainTestClass) {
-        runToCompletion(mainTestClass, ignored -> {});
+        runToCompletion(mainTestClass, ignored -> {
+        });
     }
 
     public void runToCompletion(Class<?> mainTestClass, Consumer<TreeNode> treeObserver) {
