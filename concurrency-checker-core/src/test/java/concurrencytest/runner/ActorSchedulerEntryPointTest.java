@@ -6,7 +6,7 @@ import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.tree.ActorInformation;
 import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.v2.test.SimpleSharedCounter;
-import concurrencytest.v2.test.SingularActorTest;
+import concurrencytest.v2.test.SingleActorTest;
 import concurrencytest.v2.test.SynchronizedMethodCounter;
 import concurrencytest.v2.test.TwoActorsVolatileRead;
 import org.junit.Assert;
@@ -45,7 +45,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
 
     @Test
     public void testSchedulerSingleActor() throws ActorSchedulingException, InterruptedException {
-        ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SingularActorTest.class));
+        ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SingleActorTest.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 6, checkpointRegister.allCheckpoints().size());
         point.executeOnce();

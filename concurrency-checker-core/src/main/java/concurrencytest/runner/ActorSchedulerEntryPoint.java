@@ -1,6 +1,5 @@
 package concurrencytest.runner;
 
-import concurrencytest.LList;
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
@@ -28,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ActorSchedulerEntryPoint {
@@ -118,7 +118,12 @@ public class ActorSchedulerEntryPoint {
         if (initialPathActorNames.isEmpty()) {
             return Optional.of(treeNode);
         }
-        throw new RuntimeException("not yet implemented");
+        Optional<TreeNode> next = Optional.of(treeNode);
+        while (!initialPathActorNames.isEmpty()) {
+            var childNode = initialPathActorNames.remove();
+            next = next.flatMap(s -> s.childNode(childNode)).map(Supplier::get);
+        }
+        return next;
     }
 
     public void executeOnce() throws InterruptedException, ActorSchedulingException {
@@ -238,11 +243,6 @@ public class ActorSchedulerEntryPoint {
         throw new RuntimeException("not yet implemented");
     }
 
-    private void throwNoPathError(LList<String> path, String lastActor, TreeNode node, RuntimeState state) {
-        //TODO
-        throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
-    }
-
     private Object instantiateMainTestClass() {
         try {
             return mainTestClass.getConstructor().newInstance();
@@ -257,16 +257,17 @@ public class ActorSchedulerEntryPoint {
         }
     }
 
-    private void detectDeadlock(LList<String> path) {
-//        throw new RuntimeException("no path from here - selected path: %s".formatted(path.reverse()));
-    }
-
     public static Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
         if (node.isFullyExplored()) {
             return Optional.empty();
         }
         if (!preSelectedActorNames.isEmpty()) {
-            return Optional.of(preSelectedActorNames.poll());
+            String selected = preSelectedActorNames.poll();
+            ThreadState state = currentState.actorNamesToThreadStates().get(selected);
+            if (!state.canProceed(currentState)) {
+                throw new InitialPathBlockedException("actor named '%s' from preselected path cannot proceed.".formatted(selected));
+            }
+            return Optional.of(selected);
         }
         var runnableActors = currentState.runnableActors()
                 .filter(actor -> !actor.actorName().equals(lastActor) || currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() < maxLoopCount)
@@ -278,6 +279,7 @@ public class ActorSchedulerEntryPoint {
             Optional<String> maxLoopViolation = currentState.runnableActors()
                     .filter(actor -> !actor.actorName().equals(lastActor) || currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() >= maxLoopCount)
                     .map(ThreadState::actorName).findAny();
+            findCircularDependency(currentState);
             throw maxLoopViolation.map(actor -> (ActorSchedulingException) new MaxLoopCountViolationException(actor, maxLoopCount)).orElse(new NoRunnableActorFoundException(unexploredNodes, Collections.emptyList()));
         }
         runnableActors.retainAll(unexploredNodes);
@@ -286,6 +288,36 @@ public class ActorSchedulerEntryPoint {
             System.out.println("?");
         }
         return any;
+    }
+
+    private static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
+        Map<String, Set<String>> directDependencies = new HashMap<>();
+        for (var actor : currentState.allActors()) {
+            actor.waitingForMonitor().map(mon -> currentState.ownedMonitors().get(mon.lockOrMonitorId())).filter(dep -> dep.canProceed(currentState)).ifPresent(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName()));
+        }
+
+        Set<String> actors = new HashSet<>(directDependencies.keySet());
+        for (var ac : actors) {
+            Set<String> visited = new HashSet<>();
+            visited.add(ac);
+            exploreRecursive(ac, directDependencies, visited);
+        }
+
+
+    }
+
+    private static void exploreRecursive(String initial, Map<String, Set<String>> directDependencies, Set<String> visited) throws DeadlockFoundException {
+
+        Set<String> dependencies = directDependencies.getOrDefault(initial, Collections.emptySet());
+        for (var dep : dependencies) {
+            if (visited.contains(dep)) {
+                // deadlock found
+                throw new DeadlockFoundException("actor '%s' depends on '%s' which depends on '%s' again".formatted(initial, dep, initial));
+            }
+            visited.add(dep);
+            exploreRecursive(dep, directDependencies, visited);
+        }
+
     }
 
     protected void reportActorError(Throwable t) {

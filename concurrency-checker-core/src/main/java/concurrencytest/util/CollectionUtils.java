@@ -1,7 +1,5 @@
 package concurrencytest.util;
 
-import concurrencytest.runtime.LockMonitorAcquisition;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -15,7 +13,7 @@ public final class CollectionUtils {
         List<T> copy = new ArrayList<>(original.size());
         boolean removed = false;
         for (T element : original) {
-            if (!removed || predicate.test(element)) {
+            if (!removed && predicate.test(element)) {
                 removed = true;
                 continue;
             }

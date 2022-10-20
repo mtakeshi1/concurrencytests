@@ -22,6 +22,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class ActorSchedulerSetup {
         this.configuration = configuration;
     }
 
-    public Optional<Throwable> run(Consumer<TreeNode> treeObserver) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public Optional<Throwable> run(Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
@@ -51,7 +52,7 @@ public class ActorSchedulerSetup {
         if (mode == ExecutionMode.FORK) {
             throw new RuntimeException("not yet implemented");
         } else {
-            return runInVm(configuration, checkpointRegister, treeObserver);
+            return runInVm(configuration, checkpointRegister, treeObserver, preselectedPath);
         }
     }
 
@@ -65,10 +66,10 @@ public class ActorSchedulerSetup {
         return mode;
     }
 
-    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver) throws ActorSchedulingException, InterruptedException, IOException, ClassNotFoundException {
+    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws ActorSchedulingException, InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
         Class<?> mainTestClass = loadMainTestClass();
-        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass);
+        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), new ArrayList<>(preselectedPath), mainTestClass, configuration.maxLoopIterations());
         return entryPoint.exploreAll(treeObserver);
     }
 

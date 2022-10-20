@@ -15,8 +15,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,8 @@ public class ActorSchedulerRunner extends Runner {
     private final Class<?> testClass;
     private final String testName;
     private final Configuration configuration;
+
+    private Collection<? extends String> preselectedPath = Collections.emptyList();
 
     private volatile Consumer<TreeNode> treeObserver = ignored -> {
     };
@@ -52,22 +55,22 @@ public class ActorSchedulerRunner extends Runner {
 
     @Override
     public void run(RunNotifier notifier) {
+        Description description = childDescription();
         try {
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
-            notifier.fireTestStarted(childDescription());
-            Optional<Throwable> error = setup.run(treeObserver);
-            error.ifPresent(t -> notifier.fireTestFailure(new Failure(childDescription(), t)));
-            notifier.fireTestFinished(childDescription());
-        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException e) {
+            notifier.fireTestStarted(description);
+            Optional<Throwable> error = setup.run(treeObserver, preselectedPath);
+            error.ifPresent(t -> notifier.fireTestFailure(new Failure(description, t)));
+        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException | ActorSchedulingException e) {
             // infrastructure error =(
-            notifier.fireTestFailure(new Failure(childDescription(), e));
+            notifier.fireTestFailure(new Failure(description, e));
         } catch (InvocationTargetException e) {
-            notifier.fireTestFailure(new Failure(childDescription(), e.getTargetException()));
-        } catch (ActorSchedulingException e) {
-            throw new RuntimeException(e);
+            notifier.fireTestFailure(new Failure(description, e.getTargetException()));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            notifier.fireTestFailure(new Failure(childDescription(), e));
+            notifier.fireTestFailure(new Failure(description, e));
+        } finally {
+            notifier.fireTestFinished(description);
         }
     }
 
@@ -88,5 +91,9 @@ public class ActorSchedulerRunner extends Runner {
             }
         }
         return new BasicConfiguration(testClass);
+    }
+
+    public void setPreselectedPath(Collection<? extends String> preselectedPath) {
+        this.preselectedPath = preselectedPath;
     }
 }

@@ -5,7 +5,7 @@ import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import org.junit.Assert;
 
-public class SingularActorTest {
+public class SingleActorTest {
 
     private volatile int counter;
 

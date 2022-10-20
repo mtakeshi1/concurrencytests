@@ -21,8 +21,8 @@ public class DeadlockTest {
 
     @Actor
     public void actor2() {
-        synchronized (left) {
-            synchronized (right) {
+        synchronized (right) {
+            synchronized (left) {
                 counter++;
             }
         }

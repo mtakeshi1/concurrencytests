@@ -173,7 +173,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         if (loopCount != 0) {
             sb.append(", loopCount=").append(loopCount);
         }
-        if (!ownedLocks.isEmpty()) {
+        if (!ownedMonitors.isEmpty()) {
             sb.append(", ownedMonitors=").append(ownedMonitors);
         }
         if (!ownedLocks.isEmpty()) {

@@ -11,6 +11,8 @@ import org.junit.runner.notification.RunNotifier;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -31,8 +33,14 @@ public abstract class AbstractRunnerTests {
     }
 
     public void runExpectError(Class<?> mainTestClass, Predicate<Throwable> errorMatcher) {
+        runExpectError(mainTestClass, Collections.emptyList(), errorMatcher);
+    }
+
+    public void runExpectError(Class<?> mainTestClass, Collection<? extends String> preselectedPath, Predicate<Throwable> errorMatcher) {
         ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass);
+        runner.setPreselectedPath(preselectedPath);
         files.add(runner.getConfiguration().outputFolder());
+
         RunNotifier notifier = new RunNotifier();
         Throwable[] container = new Throwable[1];
         notifier.addListener(new RunListener() {

@@ -1,4 +1,10 @@
 package concurrencytest.runner;
 
-public class ActorSchedulingException extends Exception {
+public abstract class ActorSchedulingException extends Exception {
+    public ActorSchedulingException(String message) {
+        super(message);
+    }
+
+    public ActorSchedulingException() {
+    }
 }

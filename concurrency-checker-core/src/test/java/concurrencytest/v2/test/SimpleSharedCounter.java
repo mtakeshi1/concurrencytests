@@ -6,9 +6,7 @@ import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
-import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
-import org.junit.runner.RunWith;
 
 //@RunWith(ActorSchedulerRunner.class)
 public class SimpleSharedCounter {
