@@ -290,24 +290,25 @@ public class ActorSchedulerEntryPoint {
         return any;
     }
 
-    private static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
+    public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
         Map<String, Set<String>> directDependencies = new HashMap<>();
+        Map<Integer, ThreadState> ownedMonitors = currentState.ownedMonitors();
+        Map<Integer, ThreadState> lockedLocks = currentState.lockedLocks();
         for (var actor : currentState.allActors()) {
-            actor.waitingForMonitor().map(mon -> currentState.ownedMonitors().get(mon.lockOrMonitorId())).filter(dep -> dep.canProceed(currentState)).ifPresent(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName()));
+            actor.waitingForMonitor().map(mon -> ownedMonitors.get(mon.lockOrMonitorId())).ifPresent(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName()));
+            actor.waitingForLock().map(mon -> lockedLocks.get(mon.lockOrMonitorId())).ifPresent(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName()));
         }
 
-        Set<String> actors = new HashSet<>(directDependencies.keySet());
-        for (var ac : actors) {
+        Set<String> actorNames = new HashSet<>(directDependencies.keySet());
+        for (var ac : actorNames) {
             Set<String> visited = new HashSet<>();
             visited.add(ac);
             exploreRecursive(ac, directDependencies, visited);
+            directDependencies.remove(ac);
         }
-
-
     }
 
-    private static void exploreRecursive(String initial, Map<String, Set<String>> directDependencies, Set<String> visited) throws DeadlockFoundException {
-
+    public static void exploreRecursive(String initial, Map<String, Set<String>> directDependencies, Set<String> visited) throws DeadlockFoundException {
         Set<String> dependencies = directDependencies.getOrDefault(initial, Collections.emptySet());
         for (var dep : dependencies) {
             if (visited.contains(dep)) {

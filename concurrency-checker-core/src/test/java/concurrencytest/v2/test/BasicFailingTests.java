@@ -1,6 +1,6 @@
 package concurrencytest.v2.test;
 
-import concurrencytest.exception.DeadlockFoundException;
+import concurrencytest.runner.DeadlockFoundException;
 import org.junit.Test;
 
 public class BasicFailingTests extends AbstractRunnerTests {

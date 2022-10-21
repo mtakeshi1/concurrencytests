@@ -1,7 +1,4 @@
 # Before I consider 'usable':
-- off-heap graph - allows forking
-- Fork to another jvm 
-  - we could export the classes to the other jvm via standard classpath mechanism
 - Random execution with max time 
 - Better error output (thread monitor / lock status)
 - Better lock / monitor information

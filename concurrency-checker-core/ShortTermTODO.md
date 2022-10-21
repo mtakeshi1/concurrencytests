@@ -1,8 +1,0 @@
-- stack tracking method visitor
-- CheckpointLocation
-- test for MethodInvocationVisitor
-- change protected members to private
-- thread dependencies:
-  - ex Thread.join, Future.get, etc
-- better serialization for Configuration 
-- better serialization for CheckpointRegister
