@@ -2,11 +2,13 @@ package concurrencytest.v2.test;
 
 import concurrencytest.runner.DeadlockFoundException;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
-import sut.NestedSyncBlocks;
-import sut.RacyActorsFieldAccess;
-import sut.RacyActorsGetters;
-import sut.RacyIndyLambda;
+import sut.*;
+import sut.RacyActorsFieldAccess.ValueHolder;
+import sut.mock.Session;
+import sut.mock.SessionManager;
+import sut.mock.SessionState;
 
 public class BasicFailingTests extends AbstractRunnerTests {
 
@@ -21,18 +23,19 @@ public class BasicFailingTests extends AbstractRunnerTests {
     }
 
     @Test
+    @Ignore("this test is currently taking a long time")
     public void nestedSyncBlocks() {
-        runExpectError(NestedSyncBlocks.class, e -> e instanceof DeadlockFoundException);
+        runExpectError(NestedSyncBlocks.class, e -> e instanceof DeadlockFoundException, SessionManager.class, Session.class, SessionState.class);
     }
 
     @Test
     public void innerClassField() {
-        runExpectError(RacyActorsFieldAccess.class, e -> e instanceof AssertionError);
+        runExpectError(RacyActorsFieldAccess.class, e -> e instanceof AssertionError, ValueHolder.class);
     }
 
     @Test
     public void racyGetters() {
-        runExpectError(RacyActorsGetters.class, e -> e instanceof AssertionError);
+        runExpectError(RacyActorsGetters.class, e -> e instanceof AssertionError, SynchronizedValueHolder.class);
     }
 
     @Test

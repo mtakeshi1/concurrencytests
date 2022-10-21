@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Subclasses of this class should test the end result of running test classes.
@@ -40,12 +39,12 @@ public abstract class AbstractRunnerTests {
         });
     }
 
-    public void runExpectError(Class<?> mainTestClass, Predicate<Throwable> errorMatcher) {
-        runExpectError(mainTestClass, Collections.emptyList(), errorMatcher);
+    public void runExpectError(Class<?> mainTestClass, Predicate<Throwable> errorMatcher, Class<?>...additionalClasses) {
+        runExpectError(mainTestClass, Collections.emptyList(), errorMatcher, additionalClasses);
     }
 
-    public void runExpectError(Class<?> mainTestClass, Collection<? extends String> preselectedPath, Predicate<Throwable> errorMatcher) {
-        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass);
+    public void runExpectError(Class<?> mainTestClass, Collection<? extends String> preselectedPath, Predicate<Throwable> errorMatcher, Class<?>...additionalClasses) {
+        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass, additionalClasses);
         runner.setPreselectedPath(preselectedPath);
         files.add(runner.getConfiguration().outputFolder());
 
@@ -68,8 +67,8 @@ public abstract class AbstractRunnerTests {
         });
     }
 
-    public void runToCompletion(Class<?> mainTestClass, Consumer<TreeNode> treeObserver) {
-        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass);
+    public void runToCompletion(Class<?> mainTestClass, Consumer<TreeNode> treeObserver, Class<?>...additionalClasses) {
+        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass, additionalClasses);
         runner.setTreeObserver(treeObserver);
         files.add(runner.getConfiguration().outputFolder());
         RunNotifier notifier = new RunNotifier();

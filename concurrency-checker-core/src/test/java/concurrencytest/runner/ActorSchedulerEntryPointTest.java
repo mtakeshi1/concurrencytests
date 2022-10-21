@@ -158,7 +158,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
         System.out.println(checkpoints);
-        Assert.assertEquals(checkpoints, 7, checkpointRegister.allCheckpoints().size());
+        Assert.assertEquals(checkpoints, 11, checkpointRegister.allCheckpoints().size());
         point.executeOnce();
         Optional<TreeNode> rootNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(rootNode.isPresent());

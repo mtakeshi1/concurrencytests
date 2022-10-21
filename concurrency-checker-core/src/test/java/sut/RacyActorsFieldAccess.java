@@ -9,7 +9,7 @@ import org.junit.Before;
 public class RacyActorsFieldAccess {
 
     public static class ValueHolder {
-        public int value;
+        public volatile int value;
     }
 
     private ValueHolder shared;

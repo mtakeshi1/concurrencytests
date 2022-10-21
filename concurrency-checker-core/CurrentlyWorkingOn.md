@@ -11,6 +11,8 @@
 - injection of ExecutorService / ScheduledExecutorService into @Before and actors
 - tests witj j.u.c.l.Locks
 - writing README.md
+- callbacks should be invoked by the scheduler thread and not by the actor threads. 
+- run tests against mutable runtime state
 
 # nice to haves
 - auto detect classes to inject checkpoints

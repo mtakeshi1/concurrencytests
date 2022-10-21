@@ -8,10 +8,14 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.*;
+import sut.RacyActorsGetters;
+import sut.SynchronizedValueHolder;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActorSchedulerSetupTest {
@@ -23,6 +27,76 @@ public class ActorSchedulerSetupTest {
         if (mainFolder != null) {
             FileUtils.deltree(mainFolder);
         }
+    }
+
+    @Test
+    public void testFindAllDependencies2() throws IOException {
+        Collection<? extends Class<?>> dependencies = ActorSchedulerSetup.findAllDependencies(A.class);
+        Assert.assertTrue(dependencies.contains(B.class));
+        Assert.assertFalse(dependencies.contains(CC.class));
+    }
+
+    @Test
+    public void testFindAllDependencies() throws IOException {
+        Collection<? extends Class<?>> dependencies = ActorSchedulerSetup.findAllDependencies(AA.class);
+        Assert.assertTrue(dependencies.contains(BB.class));
+        Assert.assertTrue(dependencies.contains(CC.class));
+        Assert.assertTrue(dependencies.contains(DD.class));
+        Assert.assertTrue(dependencies.contains(AA.class));
+    }
+
+
+    @Test
+    public void testIsSelfContained() throws IOException {
+        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(Object.class)));
+        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(RacyActorsGetters.class, SynchronizedValueHolder.class)));
+        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(RacyActorsGetters.class)));
+        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(SynchronizedValueHolder.class)));
+        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(A.class, B.class)));
+
+        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(A.class)));
+        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(B.class)));
+
+        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(AA.class)));
+        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(AA.class, BB.class)));
+        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(AA.class, CC.class)));
+        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(AA.class, BB.class, CC.class, DD.class)));
+    }
+
+    public static class A {
+        private B b;
+    }
+
+    public static class B {
+        private A a;
+    }
+
+    public static class AA {
+        public void foo(BB bb) {
+        }
+
+        ;
+    }
+
+    public static class BB {
+        public void foo(CC bb) {
+        }
+
+        ;
+    }
+
+    public static class CC {
+        public void foo(DD bb) {
+        }
+
+        ;
+    }
+
+    public static class DD {
+        public void foo(AA bb) {
+        }
+
+        ;
     }
 
     @Test

@@ -13,23 +13,13 @@ public class RecordingCheckpointRuntime extends StandardCheckpointRuntime implem
 
     private final List<CheckpointReached> checkpoints = new CopyOnWriteArrayList<>();
 
-    private final List<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
-
     public List<CheckpointReached> getCheckpoints() {
         return checkpoints;
     }
 
     public RecordingCheckpointRuntime(CheckpointRegister checkpointRegister) {
         super(checkpointRegister);
+        addCheckpointCallback(checkpoints::add);
     }
 
-    @Override
-    public void addCheckpointCallback(CheckpointReachedCallback basicRuntimeState) {
-        callbacks.add(basicRuntimeState);
-    }
-
-    @Override
-    public void removeCheckpointCallback(CheckpointReachedCallback basicRuntimeState) {
-        callbacks.remove(basicRuntimeState);
-    }
 }

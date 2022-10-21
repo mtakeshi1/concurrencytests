@@ -12,6 +12,7 @@ import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -19,12 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -60,15 +63,18 @@ public class ActorSchedulerEntryPoint {
     private ScheduledExecutorService managedExecutorService;
 
     public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver) throws ActorSchedulingException, InterruptedException {
+        int c = 0;
         try {
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
                 executeOnce();
                 TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
                 treeObserver.accept(node);
+                c++;
             }
             return Optional.ofNullable(actorError);
         } finally {
+            LOGGER.info("Finished exploration with {} runs", c);
             invokeCleanup();
         }
     }
@@ -132,9 +138,11 @@ public class ActorSchedulerEntryPoint {
 
     public void executeWithPreselectedPath(Queue<String> preSelectedActorNames) throws InterruptedException, ActorSchedulingException {
         MDC.put("actor", "scheduler");
+        long t0 = System.nanoTime();
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = parseActorNames();
         RuntimeState runtime = initialState(initialActorNames);
+
         try {
             runtime.start(mainTestObject, configuration.checkpointTimeout());
             String lastActor = null;
@@ -162,13 +170,19 @@ public class ActorSchedulerEntryPoint {
             if (actorError == null) {
                 callEndOfActors(mainTestObject, runtime);
                 node.markFullyExplored();
-                LOGGER.debug("Finished executiong with path: {}", runtime.getExecutionPath());
+                long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
+                LOGGER.debug("Finished executiong in {}ms with path: {}", duration, runtime.getExecutionPath());
             }
+            callJUnitAfter(mainTestObject, runtime);
         } catch (TimeoutException e) {
             LOGGER.warn("Timing out waiting for actors to converge.");
             LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
             reportActorError(e);
         }
+    }
+
+    private void callJUnitAfter(Object mainTestObject, RuntimeState runtime) {
+        invokeMethodsWithAnnotation(mainTestObject, runtime, After.class);
     }
 
     private void invokeBefore(Object mainTestObject) {
@@ -186,15 +200,19 @@ public class ActorSchedulerEntryPoint {
     }
 
     private void callEndOfActors(Object mainTestObject, RuntimeState runtime) {
+        invokeMethodsWithAnnotation(mainTestObject, runtime, AfterActorsCompleted.class);
+    }
+
+    private void invokeMethodsWithAnnotation(Object mainTestObject, RuntimeState runtime, Class<? extends Annotation> desiredAnnotation) {
         for (Method m : mainTestClass.getMethods()) {
-            if (m.isAnnotationPresent(AfterActorsCompleted.class)) {
+            if (m.isAnnotationPresent(desiredAnnotation)) {
                 try {
                     m.invoke(mainTestObject);
                 } catch (IllegalAccessException e) {
-                    reportActorError(new IllegalStateException("Security error trying to invoke @AfterActorsCompleted method: " + m + ". Is it public?", e));
+                    reportActorError(new IllegalStateException("Security error trying to invoke method: %s with annotation %s. Is it public?".formatted(m, desiredAnnotation.getName()), e));
                 } catch (InvocationTargetException e) {
                     LOGGER.warn("@AfterActorCompleted %s threw %s (%s). Execution path follows:".formatted(m.getName(), e.getTargetException().getClass().getName(), e.getTargetException().getMessage()));
-                    LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
+                    LOGGER.warn("Execution path follows:\n%s".formatted(String.join("\n", runtime.getExecutionPath())));
                     reportActorError(e.getTargetException());
                 }
             }
@@ -202,19 +220,7 @@ public class ActorSchedulerEntryPoint {
     }
 
     private void callInvariants(Object mainTestObject, RuntimeState runtime) {
-        for (Method m : mainTestClass.getMethods()) {
-            if (m.isAnnotationPresent(Invariant.class)) {
-                try {
-                    m.invoke(mainTestObject);
-                } catch (IllegalAccessException e) {
-                    reportActorError(new IllegalStateException("Security error trying to invoke @Invariant method: " + m + ". Is it public?", e));
-                } catch (InvocationTargetException e) {
-                    LOGGER.warn("@Invariant %s threw %s (%s). Execution path follows:".formatted(m.getName(), e.getTargetException().getClass().getName(), e.getTargetException().getMessage()));
-                    LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
-                    reportActorError(e.getTargetException());
-                }
-            }
-        }
+        invokeMethodsWithAnnotation(mainTestObject, runtime, Invariant.class);
     }
 
 

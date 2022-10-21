@@ -2,6 +2,7 @@ package sut;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
+import concurrencytest.annotations.v2.AfterActorsCompleted;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,15 +28,19 @@ public class RacyActorsGetters {
 
     @Actor
     public void actor1() {
-        shared.setValue(shared.getValue() + 1);
+        int value = shared.getValue();
+        System.out.println("actor1 read: " + value);
+        shared.setValue(value + 1);
     }
 
     @Actor
     public void actor2() {
-        shared.setValue(shared.getValue() + 1);
+        int value = shared.getValue();
+        System.out.println("actor2 read: " + value);
+        shared.setValue(value + 1);
     }
 
-    @After
+    @AfterActorsCompleted
     public void check() {
         Assert.assertEquals(2, shared.getValue());
     }

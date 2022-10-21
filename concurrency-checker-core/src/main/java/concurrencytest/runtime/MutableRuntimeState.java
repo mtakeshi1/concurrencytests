@@ -49,8 +49,10 @@ public class MutableRuntimeState implements RuntimeState {
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
         checkpointRuntime.addCheckpointCallback(checkpointReached -> {
-            executionPath.add("[%s] %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description()));
-            LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
+            synchronized (this) {
+                executionPath.add("[%s] %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description()));
+                LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
+            }
         });
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override

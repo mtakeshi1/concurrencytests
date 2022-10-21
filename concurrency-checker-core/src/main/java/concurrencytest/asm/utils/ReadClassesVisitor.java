@@ -9,7 +9,6 @@ import java.util.Set;
 
 public class ReadClassesVisitor extends ClassVisitor {
 
-
     private Set<Class<?>> discoveredClasses = new HashSet<>();
 
     public ReadClassesVisitor() {

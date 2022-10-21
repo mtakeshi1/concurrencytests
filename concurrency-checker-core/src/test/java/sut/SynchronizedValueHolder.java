@@ -3,7 +3,7 @@ package sut;
 public class SynchronizedValueHolder {
     private volatile int value;
 
-    public int getValue() {
+    public synchronized int getValue() {
         return value;
     }
 

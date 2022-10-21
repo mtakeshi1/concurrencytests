@@ -1,6 +1,7 @@
 package concurrencytest.runner;
 
 import concurrencytest.asm.*;
+import concurrencytest.asm.utils.ReadClassesVisitor;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.config.CheckpointConfiguration;
@@ -15,6 +16,8 @@ import concurrencytest.util.ASMUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -22,14 +25,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ActorSchedulerSetup {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ActorSchedulerSetup.class);
 
     private final Configuration configuration;
 
@@ -86,6 +88,7 @@ public class ActorSchedulerSetup {
         try (var oout = new ObjectOutputStream(new FileOutputStream(new File(configuration.outputFolder(), "checkpoints.ser")))) {
             oout.writeObject(register);
         }
+        LOGGER.debug("Checkpoints generated: %d".formatted(register.allCheckpoints().size()));
     }
 
     private Tree createFileTree() throws IOException {
@@ -113,14 +116,66 @@ public class ActorSchedulerSetup {
         return checkpointRegister;
     }
 
-    private ExecutionMode selectMode() {
+    private ExecutionMode selectMode() throws IOException {
         if (configuration.executionMode() != ExecutionMode.AUTO) {
             return configuration.executionMode();
         }
-        if (configuration.classesToInstrument().size() == 1 && configuration.classesToInstrument().contains(configuration.mainTestClass())) {
+        Set<Class<?>> set = new HashSet<>(configuration.classesToInstrument());
+        set.add(configuration.mainTestClass());
+        if (isSelfContained(set)) {
+//        if (configuration.classesToInstrument().size() == 1 && configuration.classesToInstrument().contains(configuration.mainTestClass())) {
             return ExecutionMode.RENAMING;
         }
         return ExecutionMode.FORK;
+    }
+
+    public static boolean isSelfContained(Collection<? extends Class<?>> toInstrument) throws IOException {
+        for (Class<?> toRename : toInstrument) {
+            Collection<? extends Class<?>> dependencies = findAllDependencies(toRename);
+            for (Class<?> dep : dependencies) {
+                for (Class<?> secondLevelDep : findAllDependencies(dep)) {
+                    if (toInstrument.contains(secondLevelDep) && !toInstrument.contains(dep)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        //TODO find a way to find out if renaming all of these classes would be enough
+        return true;
+    }
+
+    private static Collection<? extends Class<?>> findDirectDependencies(Class<?> type) throws IOException {
+        ClassReader reader = ASMUtils.readClass(type);
+        if (reader == null) {
+            return Collections.emptyList();
+        }
+        ReadClassesVisitor visitor = new ReadClassesVisitor();
+        reader.accept(visitor, ClassReader.EXPAND_FRAMES);
+        return visitor.getDiscoveredClasses();
+    }
+
+    public static Collection<? extends Class<?>> findAllDependencies(Class<?> type) throws IOException {
+        Set<Class<?>> known = new HashSet<>();
+        Queue<Class<?>> toVisit = new ArrayDeque<>();
+        toVisit.add(type);
+        while (!toVisit.isEmpty()) {
+            Class<?> next = toVisit.poll();
+            ClassReader reader = ASMUtils.readClass(next);
+            if (reader == null) {
+                known.add(next);
+                continue;
+            }
+            ReadClassesVisitor visitor = new ReadClassesVisitor(new HashSet<>(known));
+            reader.accept(visitor, ClassReader.EXPAND_FRAMES);
+            Set<Class<?>> latestDiscovered = visitor.getDiscoveredClasses();
+            for (Class<?> maybeNew : latestDiscovered) {
+                if (!known.contains(maybeNew)) {
+                    toVisit.add(maybeNew);
+                }
+            }
+            known.add(next);
+        }
+        return known;
     }
 
     public static ClassVisitor createCheckpointsVisitor(Configuration configuration, ClassVisitor delegate, CheckpointRegister checkpointRegister, ClassResolver classResolver, Class<?> classUnderEnhancement) {

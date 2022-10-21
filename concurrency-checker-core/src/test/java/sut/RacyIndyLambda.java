@@ -1,13 +1,14 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
+import concurrencytest.annotations.v2.AfterActorsCompleted;
 import org.junit.After;
 import org.junit.Assert;
 
 public class RacyIndyLambda {
 
 
-    private int value = 0;
+    private volatile int value = 0;
 
     private final Runnable modifier = () -> value++;
 
@@ -21,7 +22,7 @@ public class RacyIndyLambda {
         modifier.run();
     }
 
-    @After
+    @AfterActorsCompleted
     public void check() {
         Assert.assertEquals(2, value);
     }
