@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Subclasses of this class should test the end result of running test classes.
@@ -30,6 +31,13 @@ public abstract class AbstractRunnerTests {
         for (File outputFolder : files) {
             FileUtils.deltree(outputFolder);
         }
+    }
+
+    public void runExpectError(Class<?> mainTestClass, Consumer<Throwable> errorMatcher) {
+        runExpectError(mainTestClass, t -> {
+            errorMatcher.accept(t);
+            return true;
+        });
     }
 
     public void runExpectError(Class<?> mainTestClass, Predicate<Throwable> errorMatcher) {

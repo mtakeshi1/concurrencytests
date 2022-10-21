@@ -1,8 +1,7 @@
 package sut;
 
-import concurrencytest.ConcurrencyRunner;
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.TestParameters;
+import concurrencytest.annotations.v2.AfterActorsCompleted;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -10,8 +9,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RunWith(ConcurrencyRunner.class)
-@TestParameters(parallelScenarios = 24, runTimeoutSeconds = 10000, threadTimeoutSeconds = 100000)
+//@RunWith(ConcurrencyRunner.class)
 @Ignore
 public class LargerTest {
 
@@ -55,7 +53,7 @@ public class LargerTest {
         }
     }
 
-    @After
+    @AfterActorsCompleted
     public void check() {
         Assert.assertEquals(3 * MAX, counter.get());
     }

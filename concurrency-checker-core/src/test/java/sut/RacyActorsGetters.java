@@ -2,12 +2,10 @@ package sut;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
-import concurrencytest.annotations.TestParameters;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-@TestParameters
 public class RacyActorsGetters {
 
     private SynchronizedValueHolder shared;

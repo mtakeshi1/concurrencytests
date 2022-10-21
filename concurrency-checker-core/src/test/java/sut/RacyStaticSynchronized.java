@@ -1,6 +1,7 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
+import concurrencytest.annotations.v2.AfterActorsCompleted;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,7 +23,7 @@ public class RacyStaticSynchronized {
         StaticSynchronizedValueHolder.increment();
     }
 
-    @After
+    @AfterActorsCompleted
     public void check() {
         Assert.assertEquals(2, StaticSynchronizedValueHolder.getValue());
     }

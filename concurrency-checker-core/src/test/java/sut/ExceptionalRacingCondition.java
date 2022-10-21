@@ -1,11 +1,7 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.TestParameters;
 
-import static concurrencytest.annotations.CheckpointInjectionPoint.*;
-
-@TestParameters(defaultCheckpoints = {VOLATILE_FIELD_WRITE,SYNCHRONIZED_METHODS, SYNCHRONIZED_BLOCKS, LOCKS, ATOMIC_VARIABLES})
 public class ExceptionalRacingCondition {
 
     private final Object monitor = new Object();

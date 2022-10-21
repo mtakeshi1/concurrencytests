@@ -1,4 +1,4 @@
-package concurrencytest.agent;
+package concurrencytest.asm.utils;
 
 import concurrencytest.reflection.ReflectionHelper;
 import org.objectweb.asm.*;

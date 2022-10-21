@@ -1,11 +1,9 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.TestParameters;
 import org.junit.After;
 import org.junit.Assert;
 
-@TestParameters(threadTimeoutSeconds = 1, runTimeoutSeconds = 2)
 public class RacyIndySynchronizedMethodRef {
 
 

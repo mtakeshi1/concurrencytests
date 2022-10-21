@@ -1,11 +1,9 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.TestParameters;
 import org.junit.After;
 import org.junit.Assert;
 
-@TestParameters
 public class GenerateCheckpointsTest {
 
     private volatile int one;
@@ -18,7 +16,7 @@ public class GenerateCheckpointsTest {
 
     @After
     public void after() {
-        Assert.assertTrue(1 == one);
+        Assert.assertEquals(1, one);
         Assert.assertEquals(2L, two);
     }
 

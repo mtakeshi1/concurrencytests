@@ -1,14 +1,11 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.CheckpointInjectionPoint;
-import concurrencytest.annotations.TestParameters;
 import org.junit.Before;
 import sut.mock.Session;
 import sut.mock.SessionManager;
 import sut.mock.SessionState;
 
-@TestParameters(parallelScenarios = 1, defaultCheckpoints = {CheckpointInjectionPoint.SYNCHRONIZED_BLOCKS})
 public class NestedSyncBlocks {
 
     private final SessionManager sessionManager = new SessionManager();

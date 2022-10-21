@@ -2,14 +2,13 @@ package concurrencytest;
 
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.InstrumentationStrategy;
-import concurrencytest.annotations.TestParameters;
+import concurrencytest.runner.ActorSchedulerRunner;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
-@RunWith(ConcurrencyRunner.class)
-@TestParameters(instrumentationStrategy = InstrumentationStrategy.NONE)
+@RunWith(ActorSchedulerRunner.class)
 public class SampleManualTest {
 
     private volatile int counter;
@@ -26,9 +25,9 @@ public class SampleManualTest {
 
     @Actor
     public void actor1() {
-        TestRuntimeImpl.autoCheckpoint(this);
+        CheckpointRuntimeAccessor.manualCheckpoint();
         int localCount = counter + 1;
-        TestRuntimeImpl.autoCheckpoint(this);
+        CheckpointRuntimeAccessor.manualCheckpoint();
         counter = localCount;
         testArray(null, null, null, null, null, null);
     }
@@ -39,9 +38,9 @@ public class SampleManualTest {
 
     @Actor
     public void actor2() {
-        TestRuntimeImpl.autoCheckpoint(this);
+        CheckpointRuntimeAccessor.manualCheckpoint();
         int localCount = counter + 2;
-        TestRuntimeImpl.autoCheckpoint(this);
+        CheckpointRuntimeAccessor.manualCheckpoint();
         counter = localCount;
     }
 
