@@ -6,11 +6,24 @@ To do that, it injects 'checkpoints' into the code (according to user specificat
 
 # Concepts
 
+## Run
+
+## Path
+
+## Execution Graph
+
 ## Actor
+An actor is basically a thread, managed by the scheduler. The actors are the basic working unit for the test, and you indicate them by the @Actor annotation. The scheduler will start the threads corresponding to each actor. (It is more clear looking at the examples).
+As of now, the actor must be a public method with no arguments, but there are plans to have some things injected (notably, an ExecutorService or ScheduledExecutorService to start more actors with any type of task).
 
 ## Checkpoints
+Actors run until they reach a checkpoint. The runtime waits for all actors to reach checkpoints and them choses on to proceed, based on availability (only threads that are not blocked by a monitor or Lock) and whether or not a 'path' has been fully explored.
+
 
 ## Execution Mode
+
+Currently, only the Renaming executiom mode is supported. That means that classes that are subjected to Checkpoint injection have their bytecode copied to another class with a suffix generated randomly.
+
 
 # Configuration options
 
@@ -22,7 +35,3 @@ With the help of the writer, it can also check for invariants at every point.
 # Examples
 
 # Planned Features
-
-- Resume actors with action
-  - for instance, spurious wakeup, exception thrown, etc
-- 

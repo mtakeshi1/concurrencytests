@@ -1,12 +1,16 @@
 # Before I consider 'usable':
 - Random execution with max time 
+  - random exploration for when tests are taking too long
 - Better error output (thread monitor / lock status)
 - Better lock / monitor information
-- Recoded output and re-run with recorded output
+  - monitors currently don't even hold the monitor class information
+- Recorded output and re-run with recorded output
 - better checkpoint names and details 
 - wait / notify / lock.condition coordination
 - random / sleep detection
- 
+  - random should be seeded or bypassed 
+- Resume actors with action
+  - for instance, spurious wakeup, exception thrown, etc
 
 # Nice to haves
 
