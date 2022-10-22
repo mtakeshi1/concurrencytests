@@ -6,6 +6,7 @@ import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.runner.RecordingCheckpointRuntime;
 import concurrencytest.util.ASMUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -18,7 +19,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
 
-public class BaseClassVisitorTest {
+public abstract class BaseClassVisitorTest {
 
     private static int idSeed;
 
@@ -31,6 +32,11 @@ public class BaseClassVisitorTest {
         CheckpointRuntimeAccessor.setup(runtime);
         execution.accept(instance);
         return runtime;
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        CheckpointRuntimeAccessor.releaseRuntime();
     }
 
     protected CheckpointRegister register = new StandardCheckpointRegister();

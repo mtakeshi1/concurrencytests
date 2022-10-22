@@ -6,6 +6,9 @@ To do that, it injects 'checkpoints' into the code (according to user specificat
 
 # Concepts
 
+## Test Scenario
+
+
 ## Run
 
 ## Path
