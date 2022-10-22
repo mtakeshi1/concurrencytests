@@ -16,6 +16,7 @@ import concurrencytest.util.ASMUtils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -259,6 +260,10 @@ public class ActorSchedulerSetup {
                     fout.write(bytes);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
+                }
+                if (configuration.checkClassesBytecode()) {
+                    ClassReader reader = new ClassReader(bytes);
+                    reader.accept(new CheckClassAdapter(null, true), ClassReader.EXPAND_FRAMES);
                 }
             }
         };

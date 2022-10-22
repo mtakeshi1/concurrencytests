@@ -3,10 +3,19 @@ package concurrencytest.philosophers;
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
+import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.asm.ArrayElementMatcher;
+import concurrencytest.config.BasicConfiguration;
+import concurrencytest.config.CheckpointConfiguration;
+import concurrencytest.config.Configuration;
 import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 @RunWith(ActorSchedulerRunner.class)
 public class DeadlockingPhilosophersTest {
@@ -16,6 +25,26 @@ public class DeadlockingPhilosophersTest {
     private Spoon[] spoons;
 
     private boolean[] eaten;
+
+    @ConfigurationSource
+    public static Configuration config() {
+        return new BasicConfiguration(DeadlockingPhilosophersTest.class) {
+            @Override
+            public CheckpointConfiguration checkpointConfiguration() {
+                return new CheckpointConfiguration() {
+                    @Override
+                    public Collection<ArrayElementMatcher> arrayCheckpoints() {
+                        return Collections.emptyList();
+                    }
+                };
+            }
+
+//            @Override
+//            public Collection<Class<?>> classesToInstrument() {
+//                return List.of(Spoon.class);
+//            }
+        };
+    }
 
     @Before
     public void setup() {

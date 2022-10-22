@@ -1,17 +1,20 @@
 # Currently working on:
-- Removing old code - mostly completed
-- better test infrastructure - mostly to detect which classes to inject for the basic tests
+- Locks and other interesting checkpoints
+  - java.util.concurrent.atomic.*
+- callbacks should be invoked by the scheduler thread and not by the actor threads
+- Unsafe?
 - off-heap graph - allows forking
 - Fork to another jvm
   - we could export the classes to the other jvm via standard classpath mechanism
-- java.util.concurrent specific classes and methods
-  - easy ones are atomicX and lock
+  - jdk classes must be patched https://openjdk.org/jeps/261
+  - https://learn.microsoft.com/en-us/java/openjdk/transition-from-java-8-to-java-11
+  - https://openjdk.org/projects/jigsaw/quick-start#xoverride
 - making @After call (in case of failure)
 - test actors spawning threads
 - injection of ExecutorService / ScheduledExecutorService into @Before and actors
-- tests witj j.u.c.l.Locks
+- better test infrastructure - mostly to detect which classes to inject for the basic tests
 - writing README.md
-- callbacks should be invoked by the scheduler thread and not by the actor threads. 
+ 
 - run tests against mutable runtime state
 
 # nice to haves

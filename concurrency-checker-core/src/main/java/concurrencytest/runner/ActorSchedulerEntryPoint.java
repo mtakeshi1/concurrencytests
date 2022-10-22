@@ -64,6 +64,7 @@ public class ActorSchedulerEntryPoint {
 
     public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver) throws ActorSchedulingException, InterruptedException {
         int c = 0;
+        long nextReport = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
         try {
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
@@ -71,6 +72,10 @@ public class ActorSchedulerEntryPoint {
                 TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
                 treeObserver.accept(node);
                 c++;
+                if(System.nanoTime() > nextReport) {
+                    LOGGER.info("Explored {} runs", c);
+                    nextReport = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
+                }
             }
             return Optional.ofNullable(actorError);
         } finally {

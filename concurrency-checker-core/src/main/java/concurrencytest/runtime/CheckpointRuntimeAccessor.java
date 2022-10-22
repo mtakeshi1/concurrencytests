@@ -1,7 +1,5 @@
 package concurrencytest.runtime;
 
-import concurrencytest.runtime.CheckpointRuntime;
-
 public class CheckpointRuntimeAccessor {
 
     private static final ThreadLocal<CheckpointRuntime> runtimeThreadLocal = new ThreadLocal<>();
@@ -41,7 +39,7 @@ public class CheckpointRuntimeAccessor {
 
     public static void releaseRuntime() {
         CheckpointRuntime runtime = runtimeThreadLocal.get();
-        if(runtime != null) {
+        if (runtime != null) {
             runtime.actorFinishedCheckpoint();
             runtimeThreadLocal.remove();
         }
