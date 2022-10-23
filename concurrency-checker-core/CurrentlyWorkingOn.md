@@ -15,7 +15,7 @@
 - injection of ExecutorService / ScheduledExecutorService into @Before and actors
 - better test infrastructure - mostly to detect which classes to inject for the basic tests
 - writing README.md
- 
+- fork mode should take special notice of the  InitialPathBlockedException as the initial scheduler is blind and will assign possibly blocked paths to forks
 - run tests against mutable runtime state
   - it seems that mutable runtime state callbacks can be called from multiple threads?
 
