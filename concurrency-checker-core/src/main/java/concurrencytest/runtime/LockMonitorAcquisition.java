@@ -2,10 +2,14 @@ package concurrencytest.runtime;
 
 import concurrencytest.checkpoint.description.CheckpointDescription;
 
-public record LockMonitorAcquisition(int lockOrMonitorId, CheckpointDescription aquisitionCheckpoint) {
+public record LockMonitorAcquisition(int lockOrMonitorId, CheckpointDescription aquisitionCheckpoint, LockType type) {
+
+    enum LockType {
+        LOCK, MONITOR
+    }
 
     @Override
     public String toString() {
-        return "LockMonitorAcquisition{ %d acquired at: %s:%d ".formatted(lockOrMonitorId, aquisitionCheckpoint.sourceFile(), aquisitionCheckpoint.lineNumber());
+        return "%S id=%d acquisition at: %s:%d ".formatted(type, lockOrMonitorId, aquisitionCheckpoint.sourceFile(), aquisitionCheckpoint.lineNumber());
     }
 }

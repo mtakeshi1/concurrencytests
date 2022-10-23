@@ -1,4 +1,5 @@
 # Before I consider 'usable':
+- 
 - Random execution with max time 
   - random exploration for when tests are taking too long
 - Better error output (thread monitor / lock status)
@@ -11,6 +12,9 @@
   - random should be seeded or bypassed 
 - Resume actors with action
   - for instance, spurious wakeup, exception thrown, etc
+- Checkpoint matcher's should operate on CheckpointDescriptors
+- Standard method checkpoints
+- Check if we can eliminate some of the default checkpoints
 
 # Nice to haves
 

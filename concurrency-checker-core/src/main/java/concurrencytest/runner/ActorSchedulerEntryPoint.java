@@ -72,7 +72,7 @@ public class ActorSchedulerEntryPoint {
                 TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
                 treeObserver.accept(node);
                 c++;
-                if(System.nanoTime() > nextReport) {
+                if (System.nanoTime() > nextReport) {
                     LOGGER.info("Explored {} runs", c);
                     nextReport = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
                 }
@@ -141,7 +141,7 @@ public class ActorSchedulerEntryPoint {
         executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames));
     }
 
-    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames) throws InterruptedException, ActorSchedulingException {
+    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames) throws InterruptedException {
         MDC.put("actor", "scheduler");
         long t0 = System.nanoTime();
         Object mainTestObject = instantiateMainTestClass();
@@ -181,6 +181,10 @@ public class ActorSchedulerEntryPoint {
             callJUnitAfter(mainTestObject, runtime);
         } catch (TimeoutException e) {
             LOGGER.warn("Timing out waiting for actors to converge.");
+            LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
+            reportActorError(e);
+        } catch (ActorSchedulingException e) {
+            LOGGER.warn("Scheduling error - either a deadlock or starvation");
             LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
             reportActorError(e);
         }

@@ -117,7 +117,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         if (this.waitingForLock().isPresent()) {
             throw new IllegalStateException("actor %s is already waiting for lock %s but its requesting another lock: %d".formatted(actorName, waitingForLock, lockId));
         }
-        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, ownedLocks, waitingForMonitor, Optional.of(new LockMonitorAcquisition(lockId, checkpointDescription)), waitingForThread, false);
+        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, ownedLocks, waitingForMonitor, Optional.of(new LockMonitorAcquisition(lockId, checkpointDescription, LockMonitorAcquisition.LockType.LOCK)), waitingForThread, false);
     }
 
     public ThreadState lockAcquired(int lockId) {
@@ -141,14 +141,14 @@ public record ThreadState(String actorName, int checkpoint, int loopCount, List<
         if (this.waitingForLock().isPresent()) {
             throw new IllegalStateException("actor %s is already waiting for monitor %s but its requesting another monitor: %d".formatted(actorName, waitingForMonitor, monitorId));
         }
-        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, ownedLocks, Optional.of(new LockMonitorAcquisition(monitorId, description)), waitingForLock, waitingForThread, false);
+        return new ThreadState(actorName, checkpoint, loopCount, ownedMonitors, ownedLocks, Optional.of(new LockMonitorAcquisition(monitorId, description, LockMonitorAcquisition.LockType.MONITOR)), waitingForLock, waitingForThread, false);
     }
 
     public ThreadState monitorAcquired(int monitorId) {
         assertNotFinished();
         return this.waitingForMonitor.filter(lma -> lma.lockOrMonitorId() == monitorId)
                 .map(lma -> CollectionUtils.copyAndAdd(ownedMonitors, lma))
-                .map(lma -> new ThreadState(actorName, checkpoint, loopCount, lma, ownedLocks, waitingForMonitor, waitingForLock, waitingForThread, false))
+                .map(lma -> new ThreadState(actorName, checkpoint, loopCount, lma, ownedLocks, Optional.empty(), waitingForLock, waitingForThread, false))
                 .orElseThrow(() -> new IllegalStateException("actor %s was not waiting for monitor %d but tried to acquire (was waiting for %s)".formatted(actorName, monitorId, waitingForMonitor)));
     }
 

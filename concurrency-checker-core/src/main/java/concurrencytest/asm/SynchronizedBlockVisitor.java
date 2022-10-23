@@ -38,10 +38,10 @@ public class SynchronizedBlockVisitor extends BaseClassVisitor {
         }
 
         private void monitorExit() {
-            Checkpoint beforeCheckpoint = checkpointRegister.newMonitorExitCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE);
+//            Checkpoint beforeCheckpoint = checkpointRegister.newMonitorExitCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE);
+//            super.visitInsn(Opcodes.DUP);
             super.visitInsn(Opcodes.DUP);
-            super.visitInsn(Opcodes.DUP);
-            super.invokeGenericCheckpointWithContext(beforeCheckpoint);
+//            super.invokeGenericCheckpointWithContext(beforeCheckpoint);
             super.visitInsn(Opcodes.MONITOREXIT);
             Checkpoint after = checkpointRegister.newMonitorExitCheckpoint(InjectionPoint.AFTER, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.AFTER);
             super.invokeGenericCheckpointWithContext(after);
