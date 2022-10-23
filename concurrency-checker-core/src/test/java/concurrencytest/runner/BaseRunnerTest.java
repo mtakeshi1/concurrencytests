@@ -40,10 +40,12 @@ public abstract class BaseRunnerTest {
 
     public void assertNotBlockedNoLocks(ActorInformation information) {
         Assert.assertFalse(information.isBlocked());
-        Assert.assertTrue(information.monitorsOwned().isEmpty());
-        Assert.assertTrue(information.locksLocked().isEmpty());
-        Assert.assertEquals(Optional.empty(), information.waitingForLock());
-        Assert.assertEquals(Optional.empty(), information.waitingForMonitor());
+        Assert.assertTrue(information.resourcesOwned().isEmpty());
+        Assert.assertTrue(information.blockedBy().isEmpty());
+//        Assert.assertTrue(information.monitorsOwned().isEmpty());
+//        Assert.assertTrue(information.locksLocked().isEmpty());
+//        Assert.assertEquals(Optional.empty(), information.waitingForLock());
+//        Assert.assertEquals(Optional.empty(), information.waitingForMonitor());
     }
 
     public ActorSchedulerEntryPoint prepare(Configuration configuration) {

@@ -2,7 +2,7 @@ package concurrencytest.asm;
 
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.reflection.ClassResolver;
-import concurrencytest.runtime.ManagedThread;
+import concurrencytest.runtime.thread.ManagedThread;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

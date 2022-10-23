@@ -1,7 +1,7 @@
 package concurrencytest.runtime.checkpoint;
 
 import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.runtime.ManagedThread;
+import concurrencytest.runtime.thread.ManagedThread;
 
 /**
  * Adds context information to a Checkpoint

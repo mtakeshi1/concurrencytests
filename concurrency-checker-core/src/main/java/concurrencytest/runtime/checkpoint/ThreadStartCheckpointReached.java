@@ -1,8 +1,7 @@
 package concurrencytest.runtime.checkpoint;
 
 import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.checkpoint.description.CheckpointDescription;
-import concurrencytest.runtime.ManagedThread;
+import concurrencytest.runtime.thread.ManagedThread;
 
 public record ThreadStartCheckpointReached(Checkpoint checkpoint, ManagedThread managedThread, Thread thread) implements CheckpointReached {
     @Override

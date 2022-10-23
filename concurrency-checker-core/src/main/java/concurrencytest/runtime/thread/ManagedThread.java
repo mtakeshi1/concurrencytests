@@ -1,5 +1,7 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.thread;
 
+import concurrencytest.runtime.CheckpointRuntime;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import org.slf4j.MDC;
 
 import java.util.concurrent.atomic.AtomicInteger;

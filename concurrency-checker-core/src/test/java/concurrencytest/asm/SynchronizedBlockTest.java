@@ -15,7 +15,7 @@ public class SynchronizedBlockTest extends BaseClassVisitorTest {
     public void monitorCheckpointTest() throws Exception {
         Class<?> prepare = super.prepare(SyncBlockTarget.class, (c, delegate) -> new SynchronizedBlockVisitor(delegate, register, c, ReflectionHelper.getInstance()));
         RecordingCheckpointRuntime runtime = execute(prepare.getConstructor().newInstance(), c -> ((Runnable) c).run());
-        Assert.assertEquals(4, runtime.getCheckpoints().size());
+        Assert.assertEquals(SynchronizedBlockVisitor.BEFORE_EXIT_CHECKPOINT ? 4 : 3, runtime.getCheckpoints().size());
         CheckpointReached checkpointReached = runtime.getCheckpoints().get(0);
         Assert.assertTrue(checkpointReached instanceof MonitorCheckpointReached);
         MonitorCheckpointReached mon = (MonitorCheckpointReached) checkpointReached;

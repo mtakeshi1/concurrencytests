@@ -9,7 +9,7 @@ import concurrencytest.config.Configuration;
 import concurrencytest.runtime.CheckpointRuntime;
 import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.ThreadState;
+import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 import org.junit.After;
@@ -137,7 +137,7 @@ public class ActorSchedulerEntryPoint {
         return next;
     }
 
-    public void executeOnce() throws InterruptedException, ActorSchedulingException {
+    public void executeOnce() throws InterruptedException {
         executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames));
     }
 
@@ -307,11 +307,8 @@ public class ActorSchedulerEntryPoint {
 
     public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
         Map<String, Set<String>> directDependencies = new HashMap<>();
-        Map<Integer, ThreadState> ownedMonitors = currentState.ownedMonitors();
-        Map<Integer, ThreadState> lockedLocks = currentState.lockedLocks();
         for (var actor : currentState.allActors()) {
-            actor.waitingForMonitor().map(mon -> ownedMonitors.get(mon.lockOrMonitorId())).ifPresent(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName()));
-            actor.waitingForLock().map(mon -> lockedLocks.get(mon.lockOrMonitorId())).ifPresent(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName()));
+            actor.blockedBy().ifPresent($ -> $.blockedBy(currentState).forEach(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName())));
         }
 
         Set<String> actorNames = new HashSet<>(directDependencies.keySet());

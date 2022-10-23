@@ -1,5 +1,7 @@
 package concurrencytest.runtime.tree;
 
+import concurrencytest.runtime.lock.BlockCauseType;
+import concurrencytest.runtime.lock.LockType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,21 +12,22 @@ public class ActorInformationTest {
 
     @Test
     public void testUnblocked() {
-        var info = new LockOrMonitorInformation(Object.class.getName(), Optional.empty(), "none", -1);
-        var ai = new ActorInformation("actor", 0, 0, Collections.emptyList(), Collections.emptyList(), Optional.of(info), Optional.empty(), false);
-        Assert.assertFalse(info.isBlocked("actor"));
+        var info = new BlockingCause(BlockCauseType.LOCK, Optional.of("actor"));
+        var ai = new ActorInformation("actor", 0, 0, Collections.emptyList(), Optional.of(info), false);
         Assert.assertFalse(ai.isBlocked());
-        info = new LockOrMonitorInformation(Object.class.getName(), Optional.of("actor"), "none", -1);
-        ai = new ActorInformation("actor", 0, 0, Collections.emptyList(), Collections.emptyList(), Optional.of(info), Optional.empty(), false);
+        info = new BlockingCause(BlockCauseType.MONITOR, Optional.of("actor"));
+        ai = new ActorInformation("actor", 0, 0, Collections.emptyList(), Optional.of(info), false);
         Assert.assertFalse(ai.isBlocked());
     }
 
     @Test
     public void testBlocked() {
-        var info = new LockOrMonitorInformation(Object.class.getName(), Optional.of("actor2"), "none", -1);
-        var ai = new ActorInformation("actor1", 0, 0, Collections.emptyList(), Collections.emptyList(), Optional.of(info), Optional.empty(), false);
-        Assert.assertFalse(info.isBlocked("actor2"));
-        Assert.assertTrue(info.isBlocked("actor1"));
+        var info = new BlockingCause(BlockCauseType.LOCK, Optional.of("actor2"));
+        var ai = new ActorInformation("actor", 0, 0, Collections.emptyList(), Optional.of(info), false);
+        Assert.assertTrue(ai.isBlocked());
+
+        info = new BlockingCause(BlockCauseType.THREAD_JOIN, Optional.empty());
+        ai = new ActorInformation("actor", 0, 0, Collections.emptyList(), Optional.of(info), false);
         Assert.assertTrue(ai.isBlocked());
     }
 

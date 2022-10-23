@@ -1,6 +1,10 @@
 package concurrencytest.util;
 
+import concurrencytest.runtime.thread.ThreadState;
+
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -26,5 +30,9 @@ public final class CollectionUtils {
         List<T> copy = new ArrayList<>(list);
         copy.add(element);
         return copy;
+    }
+
+    public static <T> Collection<? extends T> nonNull(Collection<? extends T> collection) {
+        return collection == null ? Collections.emptyList() : collection;
     }
 }

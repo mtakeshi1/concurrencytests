@@ -274,9 +274,9 @@ public class ActorSchedulerSetup {
             HashMap<String, String> classRenames = new HashMap<>();
             for (Class<?> c : configuration.classesToInstrument()) {
                 String iName = Type.getInternalName(c);
-                if (!c.isMemberClass() && configuration.classesToInstrument().contains(c.getDeclaringClass())) {
+                if (!c.isMemberClass()) {
                     classRenames.put(iName, iName + suffix);
-                } else {
+                } else if(c.getDeclaringClass() != null && configuration.classesToInstrument().contains(c.getDeclaringClass())){
                     classRenames.put(iName, iName);
                 }
             }

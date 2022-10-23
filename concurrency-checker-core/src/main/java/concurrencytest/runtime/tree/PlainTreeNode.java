@@ -2,7 +2,7 @@ package concurrencytest.runtime.tree;
 
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.ThreadState;
+import concurrencytest.runtime.thread.ThreadState;
 
 import java.util.Collection;
 import java.util.Map;
@@ -26,7 +26,7 @@ public class PlainTreeNode implements TreeNode {
     }
 
     public static PlainTreeNode newChildNode(PlainTreeNode parent, RuntimeState runtimeState) {
-        Map<String, ActorInformation> map = ByteBufferBackedTreeNode.toActorInformation(runtimeState.actorNamesToThreadStates().values()).stream().collect(Collectors.toMap(ActorInformation::actorName, ai -> ai));
+        Map<String, ActorInformation> map = ByteBufferBackedTreeNode.toActorInformation(runtimeState, runtimeState.actorNamesToThreadStates().values()).stream().collect(Collectors.toMap(ActorInformation::actorName, ai -> ai));
         return new PlainTreeNode(parent, map);
     }
 
@@ -83,8 +83,8 @@ public class PlainTreeNode implements TreeNode {
 
     @Override
     public void checkAllChildrenExplored() {
-        for(var actorName : actorInformationMap.keySet()) {
-            if(shouldExplore(actorName)) {
+        for (var actorName : actorInformationMap.keySet()) {
+            if (shouldExplore(actorName)) {
                 return;
             }
         }

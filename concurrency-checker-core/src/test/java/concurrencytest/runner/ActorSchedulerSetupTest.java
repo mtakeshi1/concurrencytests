@@ -74,29 +74,22 @@ public class ActorSchedulerSetupTest {
     public static class AA {
         public void foo(BB bb) {
         }
-
-        ;
     }
 
     public static class BB {
         public void foo(CC bb) {
         }
 
-        ;
     }
 
     public static class CC {
         public void foo(DD bb) {
         }
-
-        ;
     }
 
     public static class DD {
         public void foo(AA bb) {
         }
-
-        ;
     }
 
     @Test

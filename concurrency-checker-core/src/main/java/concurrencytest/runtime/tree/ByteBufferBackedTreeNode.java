@@ -1,9 +1,11 @@
 package concurrencytest.runtime.tree;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.runtime.LockMonitorAcquisition;
+import concurrencytest.runtime.lock.BlockCause;
+import concurrencytest.runtime.lock.BlockingResource;
+import concurrencytest.runtime.lock.LockMonitorAcquisition;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.ThreadState;
+import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.ByteBufferManager.RecordEntry;
 import concurrencytest.util.ByteBufferUtil;
 
@@ -19,10 +21,10 @@ import java.util.stream.Stream;
  * - parent offset (or 0 in case of uninitialized nodes) - 6 bytes
  * - length (4 bytes unsigned int)
  * - flags (1 byte)
- *      - all visited
+ * - all visited
  * - number of actors N (unsigned varint, up to 5 bytes)
  * - N entries of:
- *      - actorname (varstring), offset (6 bytes), threadInfo (var bytes)
+ * - actorname (varstring), offset (6 bytes), threadInfo (var bytes)
  * <p>
  * if offset is 0, it is an unitialized node that will be initialized later
  * <p>
@@ -67,8 +69,8 @@ public class ByteBufferBackedTreeNode implements TreeNode {
         }
     }
 
-    public static ByteBuffer initializeTemporaryNodeBuffer(long parentOffset, Collection<? extends ThreadState> threadStates, ByteBufferManager byteBufferManager) {
-        return initializeStates(parentOffset, byteBufferManager, toActorInformation(threadStates));
+    public static ByteBuffer initializeTemporaryNodeBuffer(long parentOffset, RuntimeState state, ByteBufferManager byteBufferManager) {
+        return initializeStates(parentOffset, byteBufferManager, toActorInformation(state, state.actorNamesToThreadStates().values()));
     }
 
     private static ByteBuffer initializeStates(long parentOffset, ByteBufferManager byteBufferManager, Collection<ActorInformation> information) {
@@ -118,31 +120,36 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     }
 
 
-    public static Collection<ActorInformation> toActorInformation(Collection<? extends ThreadState> threadStates) {
-        Map<Integer, String> monitorOwners = new HashMap<>();
-        Map<Integer, String> lockOwners = new HashMap<>();
-        for (ThreadState state : threadStates) {
-            for (LockMonitorAcquisition monitor : state.ownedMonitors()) {
-                monitorOwners.put(monitor.lockOrMonitorId(), state.actorName());
-            }
-            for (LockMonitorAcquisition lock : state.ownedLocks()) {
-                lockOwners.put(lock.lockOrMonitorId(), state.actorName());
+    public static Collection<ActorInformation> toActorInformation(RuntimeState state, Collection<? extends ThreadState> threadStates) {
+        Map<BlockingResource, List<String>> resourceOwners = new HashMap<>();
+        for (ThreadState threadState : threadStates) {
+            for (BlockingResource resource : threadState.ownedResources()) {
+                resourceOwners.computeIfAbsent(resource, ignored -> new ArrayList<>()).add(threadState.actorName());
             }
         }
-        return threadStates.stream().map(ts -> new ActorInformation(ts.actorName(), ts.checkpoint(), ts.loopCount(), toMonitorInformations(ts.ownedMonitors(), monitorOwners), toMonitorInformations(ts.ownedLocks(), lockOwners),
-                ts.waitingForMonitor().map(lma -> toMonitorLockInformation(monitorOwners, lma)), ts.waitingForLock().map(lma1 -> toMonitorLockInformation(lockOwners, lma1)), ts.finished())
-        ).toList();
+        List<ActorInformation> list = new ArrayList<>();
+        for (ThreadState threadState : threadStates) {
+            Optional<BlockingCause> blockCause = threadState.blockedBy().map(cause -> new BlockingCause(cause.type(), cause.blockedBy(state).stream().map(ThreadState::actorName).filter(name -> !name.equals(threadState.actorName())).findAny()));
+            list.add(new ActorInformation(threadState.actorName(), threadState.checkpoint(), threadState.loopCount(), threadState.ownedResources().stream().map(res -> toResourceInformation(threadState.actorName(), res, resourceOwners)).toList(), blockCause, state.finished()));
+        }
+        return list;
     }
 
-    private static LockOrMonitorInformation toMonitorLockInformation(Map<Integer, String> monitorOwners, LockMonitorAcquisition lma) {
-        return new LockOrMonitorInformation(
-                lma.aquisitionCheckpoint().details(), Optional.ofNullable(monitorOwners.get(lma.lockOrMonitorId())), lma.aquisitionCheckpoint().sourceFile(), lma.aquisitionCheckpoint().lineNumber()
-        );
+    private static ResourceInformation toResourceInformation(String actor, BlockingResource blockingResource, Map<BlockingResource, List<String>> resourceOwners) {
+        var orDefault = resourceOwners.getOrDefault(blockingResource, Collections.emptyList()).stream().filter(owner -> !actor.equals(owner)).findAny();
+        return new ResourceInformation(blockingResource.lockType() + " ( " + blockingResource.resourceType().getName() + " ) ", orDefault, blockingResource.lockType(), blockingResource.sourceCode(), blockingResource.lineNumber());
     }
 
-    private static List<LockOrMonitorInformation> toMonitorInformations(List<LockMonitorAcquisition> monitors, Map<Integer, String> monitorOwners) {
-        return monitors.stream().map(lma -> toMonitorLockInformation(monitorOwners, lma)).toList();
-    }
+
+//    private static ResourceInformation toMonitorLockInformation(Map<Integer, String> monitorOwners, LockMonitorAcquisition lma) {
+//        return new ResourceInformation(
+//                lma.aquisitionCheckpoint().details(), Optional.ofNullable(monitorOwners.get(lma.lockOrMonitorId())), lma.aquisitionCheckpoint().sourceFile(), lma.aquisitionCheckpoint().lineNumber()
+//        );
+//    }
+
+//    private static List<ResourceInformation> toMonitorInformations(List<LockMonitorAcquisition> monitors, Map<Integer, String> monitorOwners) {
+//        return monitors.stream().map(lma -> toMonitorLockInformation(monitorOwners, lma)).toList();
+//    }
 
     @Override
     public TreeNode parentNode() {
@@ -210,7 +217,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
                 var node = NodeLink.readFromBuffer(myBuffer);
                 if (node.information.actorName().equals(selectedToProceed.actorName())) {
                     if (node.childOffset() == 0) {
-                        ByteBuffer byteBuffer = initializeTemporaryNodeBuffer(this.recordEntry.offset(), next.actorNamesToThreadStates().values(), this.byteBufferManager);
+                        ByteBuffer byteBuffer = initializeTemporaryNodeBuffer(this.recordEntry.offset(), next, this.byteBufferManager);
                         RecordEntry recordEntry = byteBufferManager.allocateNewSlice(byteBuffer.remaining());
                         recordEntry.overwriteRecord(byteBuffer);
                         myBuffer.reset();

@@ -1,9 +1,8 @@
 package concurrencytest.runtime.tree;
 
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.ThreadState;
+import concurrencytest.runtime.thread.ThreadState;
 
-import java.lang.management.ThreadInfo;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;

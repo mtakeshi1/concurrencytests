@@ -10,6 +10,8 @@ import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
+import concurrencytest.runtime.thread.ManagedThread;
+import concurrencytest.runtime.thread.ThreadState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,9 +95,10 @@ public class MutableRuntimeState implements RuntimeState {
         ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));
         if (checkpointReached.checkpoint().description() instanceof LockAcquireCheckpointDescription lacq) {
             if (lacq.injectionPoint() == InjectionPoint.BEFORE) {
-                allActors.put(actorName, state.beforeLockAcquisition(lockId, lacq));
+                allActors.put(actorName, state.beforeLockAcquisition(lockId, checkpointReached.theLock(), lacq));
             } else {
-                allActors.put(actorName, state.lockAcquired(lockId));
+                //TODO actually  find a way to communicate if the tryAcquire failed or succeeded
+                allActors.put(actorName, state.lockTryAcquire(lockId, true, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber()));
             }
         } else if (checkpointReached.checkpoint().description() instanceof LockReleaseCheckpointDescription lr && lr.injectionPoint() == InjectionPoint.AFTER) {
             allActors.put(actorName, state.lockReleased(lockId));
@@ -117,9 +120,9 @@ public class MutableRuntimeState implements RuntimeState {
         MonitorCheckpointDescription description = (MonitorCheckpointDescription) mon.checkpoint().description();
         if (description.monitorAcquire()) {
             if (mon.checkpoint().injectionPoint() == InjectionPoint.BEFORE) {
-                allActors.put(actorName, state.beforeMonitorAcquire(monitorId, description));
+                allActors.put(actorName, state.beforeMonitorAcquire(monitorId, mon.monitorOwner(), description));
             } else {
-                allActors.put(actorName, state.monitorAcquired(monitorId));
+                allActors.put(actorName, state.monitorAcquired(monitorId, description.sourceFile(), description.lineNumber()));
             }
         } else if (mon.checkpoint().injectionPoint() == InjectionPoint.AFTER) {
             allActors.put(actorName, state.monitorReleased(monitorId));

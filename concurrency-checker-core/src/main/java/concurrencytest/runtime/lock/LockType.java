@@ -1,4 +1,5 @@
 package concurrencytest.runtime.lock;
 
-public class ParkUnparkMonitor {
+public enum LockType {
+    LOCK, MONITOR
 }
