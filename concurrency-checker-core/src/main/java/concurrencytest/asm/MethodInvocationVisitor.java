@@ -32,7 +32,6 @@ public class MethodInvocationVisitor extends BaseClassVisitor {
             super(classUnderEnhancement, delegate, MethodInvocationVisitor.this.checkpointRegister, MethodInvocationVisitor.this.sourceName, access, name, descriptor, MethodInvocationVisitor.this.classResolver);
         }
 
-        //TODO check how the last parameter (isInterface) interacts with interfaces and default methods (and maybe records?)
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
             Class<?> callTarget = resolveType(null, owner.replace('/', '.'));

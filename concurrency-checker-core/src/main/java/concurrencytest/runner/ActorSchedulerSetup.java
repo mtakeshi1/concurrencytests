@@ -262,9 +262,8 @@ public class ActorSchedulerSetup {
                     throw new UncheckedIOException(e);
                 }
                 if (configuration.checkClassesBytecode()) {
-                    //TODO basic failing tests are failing with this uncommented
-//                    ClassReader reader = new ClassReader(bytes);
-//                    reader.accept(new CheckClassAdapter(null, true), ClassReader.EXPAND_FRAMES);
+                    ClassReader reader = new ClassReader(bytes);
+                    reader.accept(new CheckClassAdapter(null, true), ClassReader.EXPAND_FRAMES);
                 }
             }
         };
@@ -275,7 +274,11 @@ public class ActorSchedulerSetup {
             HashMap<String, String> classRenames = new HashMap<>();
             for (Class<?> c : configuration.classesToInstrument()) {
                 String iName = Type.getInternalName(c);
-                classRenames.put(iName, iName + suffix);
+                if (!c.isMemberClass() && configuration.classesToInstrument().contains(c.getDeclaringClass())) {
+                    classRenames.put(iName, iName + suffix);
+                } else {
+                    classRenames.put(iName, iName);
+                }
             }
             String iName = Type.getInternalName(configuration.mainTestClass());
             classRenames.put(iName, iName + suffix);
