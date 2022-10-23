@@ -8,8 +8,10 @@ import java.util.Optional;
 
 public record BlockingCause(BlockCauseType type, Optional<String> resourceHolder) {
 
-    public BlockingCause(BlockCauseType type) {
-        this(type, Optional.empty());
+    public BlockingCause {
+        if (resourceHolder.isEmpty()) {
+            System.out.println("?");
+        }
     }
 
     public int writeToByteBuffer(ByteBuffer buffer) {
@@ -27,7 +29,7 @@ public record BlockingCause(BlockCauseType type, Optional<String> resourceHolder
 
     public boolean blocksActor(String actorName) {
         return switch (type) {
-            case LOCK, MONITOR -> resourceHolder.filter(actorName::equals).isEmpty();
+            case LOCK, MONITOR -> resourceHolder.isPresent() && !resourceHolder.get().equals(actorName);
             default -> true;
         };
     }

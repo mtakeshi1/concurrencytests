@@ -5,9 +5,7 @@ import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.util.CollectionUtils;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.locks.Lock;
 
 public record LockBlockCause(int resourceId, Lock lock, CheckpointDescription acquisitionPoint) implements BlockCause {
