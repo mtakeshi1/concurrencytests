@@ -2,6 +2,7 @@
 - Locks and other interesting checkpoints
   - java.util.concurrent.atomic.*
   - lock.tryLock -> the checkpoint after the lock tryLock should check for lock acquisition by checking the return value
+- BlockCause should carry the information about the resource so it knows if is blocked by anything other than locks / monitor. That way, we can let the scheduler know if a thread can proceed or not (for instance, if the BlockCause is THREAD_JOIN and it carries the thread that is being joined in, it can check for Thread.isAlive)
 - add checkpoint for exception catching
 - callbacks should be invoked by the scheduler thread and not by the actor threads
 - Unsafe?
@@ -24,15 +25,14 @@
 - unify causes of blocking
 - write a non-mutable runtimestate. That will require many changes to how checkpoints are listened to
 
-# planned / done checkpoint types
+# planned
 - field access - missing pushing field details to stack
 - missing inspecting stack to fill in monitor type
 - wait and notify
+- park / unpark
 - checkpoint location shouldn't be ambiguous
 
 # open questions
-- should we persist / serialize thread state / details with the checkpoint?
 - should we special case java.util.concurrent.Lock?
   - how about other concurrency 'primitives'?
-- how to deal with conditional Lock.tryLock
-- 
+ 
