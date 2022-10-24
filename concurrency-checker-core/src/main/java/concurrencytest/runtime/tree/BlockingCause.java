@@ -8,12 +8,6 @@ import java.util.Optional;
 
 public record BlockingCause(BlockCauseType type, Optional<String> resourceHolder) {
 
-    public BlockingCause {
-        if (resourceHolder.isEmpty()) {
-            System.out.println("?");
-        }
-    }
-
     public int writeToByteBuffer(ByteBuffer buffer) {
         int c = 0;
         buffer.put((byte) type.ordinal());

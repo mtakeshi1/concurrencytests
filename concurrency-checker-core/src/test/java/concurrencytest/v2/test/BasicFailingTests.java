@@ -1,8 +1,6 @@
 package concurrencytest.v2.test;
 
 import concurrencytest.runner.DeadlockFoundException;
-import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import sut.*;
 import sut.RacyActorsFieldAccess.ValueHolder;

@@ -276,7 +276,7 @@ public class ActorSchedulerSetup {
                 String iName = Type.getInternalName(c);
                 if (!c.isMemberClass()) {
                     classRenames.put(iName, iName + suffix);
-                } else if(c.getDeclaringClass() != null && configuration.classesToInstrument().contains(c.getDeclaringClass())){
+                } else if (c.getDeclaringClass() != null && (configuration.classesToInstrument().contains(c.getDeclaringClass()) || configuration.mainTestClass().equals(c.getDeclaringClass()))) {
                     classRenames.put(iName, iName);
                 }
             }

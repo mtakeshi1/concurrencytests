@@ -1,5 +1,6 @@
 package concurrencytest.runner;
 
+import concurrencytest.asm.SynchronizedBlockVisitor;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.runtime.MutableRuntimeState;
@@ -44,7 +45,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     }
 
     @Test
-    public void testSchedulerSingleActor() throws ActorSchedulingException, InterruptedException {
+    public void testSchedulerSingleActor() throws InterruptedException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SingleActorTest.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 6, checkpointRegister.allCheckpoints().size());
@@ -107,7 +108,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     }
 
     @Test
-    public void sharedConterError() throws ActorSchedulingException, InterruptedException {
+    public void sharedConterError() throws InterruptedException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SimpleSharedCounter.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 8, checkpointRegister.allCheckpoints().size()); // it must include access on the @invariant
@@ -122,7 +123,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     }
 
     @Test
-    public void testSchedulerTwoActorsVolatileRead() throws ActorSchedulingException, InterruptedException {
+    public void testSchedulerTwoActorsVolatileRead() throws InterruptedException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(TwoActorsVolatileRead.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
@@ -153,12 +154,12 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     }
 
     @Test
-    public void testSimpleSynchronizedBlocks() throws ActorSchedulingException, InterruptedException {
+    public void testSimpleSynchronizedBlocks() throws InterruptedException {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SynchronizedMethodCounter.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
         System.out.println(checkpoints);
-        Assert.assertEquals(checkpoints, 11, checkpointRegister.allCheckpoints().size());
+        Assert.assertEquals(checkpoints, SynchronizedBlockVisitor.BEFORE_EXIT_CHECKPOINT ? 11 : 10, checkpointRegister.allCheckpoints().size());
         point.executeOnce();
         Optional<TreeNode> rootNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(rootNode.isPresent());

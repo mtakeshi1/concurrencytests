@@ -44,11 +44,13 @@ public class SynchronizedMethodDeclarationTest extends BaseClassVisitorTest {
         Assert.assertFalse(Modifier.isSynchronized(originalMethod.getModifiers()));
         Object newInstance = injected.getConstructor().newInstance();
         Assert.assertTrue(newInstance instanceof Callable<?>);
-        Assert.assertEquals(6, register.allCheckpoints().size());
+        Assert.assertEquals(SynchronizedBlockVisitor.BEFORE_EXIT_CHECKPOINT ? 6 : 5, register.allCheckpoints().size());
         Assert.assertTrue(monitorCheckpoints().allMatch(s -> s.lineNumber() == -1));
         Assert.assertTrue("should have BEFORE monitor acquire", monitorCheckpoints().filter(MonitorCheckpointDescription::monitorAcquire).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
         Assert.assertTrue("should have AFTER monitor acquire", monitorCheckpoints().filter(MonitorCheckpointDescription::monitorAcquire).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.AFTER));
-        Assert.assertTrue("should have BEFORE monitor release", monitorCheckpoints().filter(MonitorCheckpointDescription::isMonitorRelease).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
+        if (SynchronizedBlockVisitor.BEFORE_EXIT_CHECKPOINT) {
+            Assert.assertTrue("should have BEFORE monitor release", monitorCheckpoints().filter(MonitorCheckpointDescription::isMonitorRelease).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.BEFORE));
+        }
         Assert.assertTrue("should have AFTER monitor release", monitorCheckpoints().filter(MonitorCheckpointDescription::isMonitorRelease).toList().stream().anyMatch(s -> s.injectionPoint() == InjectionPoint.AFTER));
 //        Assert.assertTrue("monitor type should be SyncCallable but was: " + monitorCheckpoints().map(CheckpointDescription::details).filter(s -> !s.equals(SyncCallable.class.getName())).collect(Collectors.toList()), monitorCheckpoints().allMatch(s -> s.details().equals(SyncCallable.class.getName())));
     }

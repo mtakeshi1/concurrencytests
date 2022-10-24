@@ -62,7 +62,7 @@ public class ActorSchedulerEntryPoint {
 
     private ScheduledExecutorService managedExecutorService;
 
-    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver) throws ActorSchedulingException, InterruptedException {
+    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver) throws InterruptedException {
         int c = 0;
         long nextReport = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
         try {
@@ -298,11 +298,7 @@ public class ActorSchedulerEntryPoint {
             throw maxLoopViolation.map(actor -> (ActorSchedulingException) new MaxLoopCountViolationException(actor, maxLoopCount)).orElse(new NoRunnableActorFoundException(unexploredNodes, Collections.emptyList()));
         }
         runnableActors.retainAll(unexploredNodes);
-        Optional<String> any = runnableActors.stream().findAny();
-        if (any.isEmpty()) {
-            System.out.println("?");
-        }
-        return any;
+        return runnableActors.stream().findAny();
     }
 
     public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {

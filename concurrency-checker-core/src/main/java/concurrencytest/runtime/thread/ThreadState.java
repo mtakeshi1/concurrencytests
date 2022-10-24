@@ -44,7 +44,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
     }
 
     public boolean canProceed(RuntimeState state) {
-        return this.blockedBy().stream().flatMap(cause -> cause.blockedBy(state).stream()).allMatch(ts -> this.actorName.equals(ts.actorName()));
+        return this.blockedBy().map(cause -> cause.isRunnable(this, state)).orElse(true);
     }
 
     private void assertNotFinished() {

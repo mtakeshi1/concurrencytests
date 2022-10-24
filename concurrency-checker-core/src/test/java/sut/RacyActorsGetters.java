@@ -18,11 +18,12 @@ public class RacyActorsGetters {
 
     @Invariant
     public void sharedIsNeverNull() {
-//        Assert.assertNotNull(shared);
+        Assert.assertNotNull(shared);
     }
 
     @Invariant
     public void sharedIsNeverNegative() {
+        // the following line deadlocks the test runtime
 //        Assert.assertTrue(shared.getValue() >= 0);
     }
 
