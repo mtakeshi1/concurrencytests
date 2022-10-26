@@ -50,5 +50,8 @@ public interface CheckpointConfiguration {
         return true;
     }
 
+    default boolean lockAcquisitionCheckpointEnabled() {
+        return true;
+    }
 
 }

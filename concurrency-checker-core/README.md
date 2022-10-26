@@ -38,3 +38,15 @@ With the help of the writer, it can also check for invariants at every point.
 # Examples
 
 # Planned Features
+
+# Beware of exponential growth
+
+Beware that the number of different runs and the time it takes for each one to complete grows exponential to the number of threads and checkpoints.
+Consider how in the `NewThreadTest.java`, the number of runs and the time it takes to explore all runs increases very quickly:
+
+| Number of threads | Different Runs | Execution time (seconds) |
+|------------------:|---------------:|-------------------------:|
+|                 1 |              3 |                      0.3 |
+|                 2 |             45 |                      0.5 |
+|                 3 |           1620 |                      1.5 |
+|                 4 |         106920 |                      140 |

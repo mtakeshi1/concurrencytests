@@ -1,5 +1,11 @@
+# Before public release
+- ClassLoaderIsolation Mode
+- Lock.tryLock
+- More examples
+- Documentation
+
 # Before I consider 'usable':
-- 
+- Injection on java classes
 - Random execution with max time 
   - random exploration for when tests are taking too long
 - Better error output (thread monitor / lock status)

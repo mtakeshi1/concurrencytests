@@ -12,6 +12,12 @@ import sut.SynchronizedValueHolderActors;
 public class BasicPassingTests extends AbstractRunnerTests {
 
     @Test
+    public void atomicCounter() {
+        runToCompletion(AtomicIncrementTest.class);
+    }
+
+
+    @Test
     public void synchronizedCounter() {
         runToCompletion(SynchronizedMethodCounter.class);
     }
