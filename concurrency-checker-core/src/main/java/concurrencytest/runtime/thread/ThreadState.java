@@ -18,7 +18,11 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
     public static final int MAX_OWNED_RESOURCES = 16;
 
     public ThreadState(String actorName) {
-        this(actorName, 0, 0, Collections.emptyList(), Optional.empty(), false);
+        this(actorName, 0);
+    }
+
+    public ThreadState(String actorName, int checkpoint) {
+        this(actorName, checkpoint, 0, Collections.emptyList(), Optional.empty(), false);
     }
 
     public ThreadState(String actorName, int checkpoint, int loopCount, List<BlockingResource> ownedResources, BlockCause blockedBy, boolean finished) {

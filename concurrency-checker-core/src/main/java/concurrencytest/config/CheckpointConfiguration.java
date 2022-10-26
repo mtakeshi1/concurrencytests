@@ -26,6 +26,10 @@ public interface CheckpointConfiguration {
         return List.of((classUnderEnhancement, method, injectionPoint, arrayElementRead) -> true);
     }
 
+    default boolean includeStandardMethods() {
+        return true;
+    }
+
     default boolean enhanceWaitParkNotify() {
         return true;
     }

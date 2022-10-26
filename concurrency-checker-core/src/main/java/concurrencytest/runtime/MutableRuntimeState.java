@@ -46,10 +46,18 @@ public class MutableRuntimeState implements RuntimeState {
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
         this.monitorLockSeed = new AtomicInteger();
-        this.allActors = managedThreadMap.keySet().stream().map(ThreadState::new).collect(Collectors.toMap(ThreadState::actorName, t -> t));
+        this.allActors = new ConcurrentHashMap<>();
         this.threads = managedThreadMap;
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
+
+        this.checkpointRuntime.addCheckpointCallback(cb -> {
+            if (cb.checkpointId() == register.taskStartingCheckpoint().checkpointId()) {
+                if (cb.thread() instanceof ManagedThread mt) {
+                    allActors.putIfAbsent(mt.getActorName(), new ThreadState(mt.getActorName(), cb.checkpointId()));
+                }
+            }
+        });
 
         this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
             @Override
@@ -61,14 +69,6 @@ public class MutableRuntimeState implements RuntimeState {
                 }
             }
 
-        });
-        this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
-            @Override
-            public void checkpointReached(CheckpointReached checkpointReached) {
-                if (checkpointReached instanceof ThreadStartCheckpointReached cp) {
-                    registerNewActor(cp);
-                }
-            }
         });
         checkpointRuntime.addCheckpointCallback(checkpointReached -> {
             synchronized (this) {
@@ -105,13 +105,13 @@ public class MutableRuntimeState implements RuntimeState {
         }
     }
 
-    private void registerNewActor(ThreadStartCheckpointReached checkpointReached) {
-        String brandNewActor = checkpointReached.newActorName();
-        ThreadState old = allActors.putIfAbsent(brandNewActor, new ThreadState(brandNewActor));
-        if (old != null) {
-            throw new IllegalArgumentException("actor named %s was already registered? ".formatted(brandNewActor));
-        }
-    }
+//    private void registerNewActor(ThreadStartCheckpointReached checkpointReached) {
+//        String brandNewActor = checkpointReached.newActorName();
+//        ThreadState old = allActors.putIfAbsent(brandNewActor, new ThreadState(brandNewActor));
+//        if (old != null) {
+//            throw new IllegalArgumentException("actor named %s was already registered? ".formatted(brandNewActor));
+//        }
+//    }
 
     private void registerMonitorCheckpoint(MonitorCheckpointReached mon) {
         int monitorId = monitorIdFor(mon.monitorOwner());
@@ -121,6 +121,7 @@ public class MutableRuntimeState implements RuntimeState {
         if (description.monitorAcquire()) {
             if (mon.checkpoint().injectionPoint() == InjectionPoint.BEFORE) {
                 allActors.put(actorName, state.beforeMonitorAcquire(monitorId, mon.monitorOwner(), description));
+//                rendezvouCallback.
             } else {
                 allActors.put(actorName, state.monitorAcquired(monitorId, description.sourceFile(), description.lineNumber()));
             }

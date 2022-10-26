@@ -28,6 +28,11 @@ public class ManagedThread extends Thread {
     public ManagedThread() {
     }
 
+    public ManagedThread(Runnable target) {
+        super(target);
+    }
+
+
     public ManagedThread(ThreadGroup group, Runnable target) {
         super(group, target);
     }

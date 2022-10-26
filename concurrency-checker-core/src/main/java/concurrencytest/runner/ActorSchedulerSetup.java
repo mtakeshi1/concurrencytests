@@ -2,6 +2,7 @@ package concurrencytest.runner;
 
 import concurrencytest.asm.*;
 import concurrencytest.asm.utils.ReadClassesVisitor;
+import concurrencytest.asm.utils.SpecialMethods;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.config.CheckpointConfiguration;
@@ -69,7 +70,7 @@ public class ActorSchedulerSetup {
         return mode;
     }
 
-    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws ActorSchedulingException, InterruptedException, IOException, ClassNotFoundException {
+    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
         Class<?> mainTestClass = loadMainTestClass();
         ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), new ArrayList<>(preselectedPath), mainTestClass, configuration.maxLoopIterations());
@@ -209,6 +210,9 @@ public class ActorSchedulerSetup {
         }
         for (var matcher : checkpointConfiguration.methodsToInstrument()) {
             delegate = new MethodInvocationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver, matcher);
+        }
+        if (configuration.checkpointConfiguration().includeStandardMethods()) {
+            delegate = new MethodInvocationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver, SpecialMethods.DEFAULT_SPECIAL_METHODS);
         }
         return delegate;
     }

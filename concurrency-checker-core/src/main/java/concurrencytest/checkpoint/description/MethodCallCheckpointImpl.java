@@ -2,49 +2,41 @@ package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.MethodCallCheckpointDescription;
-import concurrencytest.reflection.StaticInitializer;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
-                                       int lineNumber, Member methodOrConstructor) implements MethodCallCheckpointDescription {
+                                       int lineNumber, String methodName, Class<?> declaringType, Class<?>[] parameterTypes,
+                                       Class<?> returnType) implements MethodCallCheckpointDescription {
+
+    public MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
+                                    int lineNumber, Member methodOrConstructor) {
+        this(injectionPoint, sourceFile, lineNumber, methodOrConstructor.getName(), methodOrConstructor.getDeclaringClass(), findParameterTypes(methodOrConstructor), findReturnType(methodOrConstructor));
+    }
+
+    private static Class<?> findReturnType(Member methodOrConstructor) {
+        if (methodOrConstructor instanceof Constructor<?>) {
+            return methodOrConstructor.getDeclaringClass();
+        } else if (methodOrConstructor instanceof Method method) {
+            return method.getReturnType();
+        }
+        throw new IllegalArgumentException("not a method or constructor: %s".formatted(methodOrConstructor));
+    }
+
+    private static Class<?>[] findParameterTypes(Member methodOrConstructor) {
+        if (methodOrConstructor instanceof Executable ctor) {
+            return ctor.getParameterTypes();
+        }
+        throw new IllegalArgumentException("not a method or constructor: %s".formatted(methodOrConstructor));
+    }
+
+
     @Override
     public String details() {
         return null;
     }
 
-    @Override
-    public String methodName() {
-        return methodOrConstructor.getName();
-    }
-
-    @Override
-    public Class<?> declaringType() {
-        return methodOrConstructor.getDeclaringClass();
-    }
-
-    @Override
-    public Class<?>[] parameterTypes() {
-        if (methodOrConstructor instanceof Method m) {
-            return m.getParameterTypes();
-        } else if (methodOrConstructor instanceof Constructor<?> c) {
-            return c.getParameterTypes();
-        } else {
-            return new Class[0];
-        }
-    }
-
-    @Override
-    public Class<?> returnType() {
-        if (methodOrConstructor instanceof Method m) {
-            return m.getReturnType();
-        } else if (methodOrConstructor instanceof Constructor<?> c) {
-            return c.getDeclaringClass();
-        } else if(methodOrConstructor instanceof StaticInitializer st) {
-            return st.getDeclaringClass();
-        }
-        throw new IllegalArgumentException("Cannot determine return type for: " + methodOrConstructor);
-    }
 }
