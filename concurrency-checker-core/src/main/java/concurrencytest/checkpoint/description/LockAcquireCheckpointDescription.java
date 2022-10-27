@@ -1,6 +1,7 @@
 package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.asm.TryAcquireWithResult;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpointReached;
@@ -11,6 +12,6 @@ public record LockAcquireCheckpointDescription(InjectionPoint injectionPoint, St
                                                boolean timedAcquire) implements CheckpointDescription {
     @Override
     public CheckpointReached newCheckpointReached(Checkpoint checkpoint, Object context, Thread triggeredThread) {
-        return new LockAcquireReleaseCheckpointReached(checkpoint, (Lock) context, triggeredThread);
+        return new LockAcquireReleaseCheckpointReached(checkpoint, (TryAcquireWithResult) context, triggeredThread);
     }
 }

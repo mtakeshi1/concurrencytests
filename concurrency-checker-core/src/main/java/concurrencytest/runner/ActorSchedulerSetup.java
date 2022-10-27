@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -299,6 +298,9 @@ public class ActorSchedulerSetup {
         }
         if (configuration.checkpointConfiguration().includeStandardMethods()) {
             delegate = new MethodInvocationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver, SpecialMethods.DEFAULT_SPECIAL_METHODS);
+        }
+        if (checkpointConfiguration.lockAcquisitionCheckpointEnabled()) {
+            delegate = new LockVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         }
         return delegate;
     }

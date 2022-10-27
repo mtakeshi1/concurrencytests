@@ -40,6 +40,7 @@ public class LockVisitor extends BaseClassVisitor {
                 super.visitInsn(Opcodes.DUP);
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 Checkpoint checkpoint = checkpointRegister.newLockReleasedCheckpoint(InjectionPoint.AFTER, classUnderEnhancement, methodName, methodDescriptor, sourceName, latestLineNumber);
+                invokeTryAcquireStaticConstructorSingleArg();
                 invokeGenericCheckpointWithContext(checkpoint);
             }
 
@@ -47,7 +48,7 @@ public class LockVisitor extends BaseClassVisitor {
                 //stack should be Lock, params
                 Type[] params = Type.getArgumentTypes(descriptor);
                 int[] localVarsIndex = new int[params.length];
-                for (int i = 0; i < params.length; i++) {
+                for (int i = params.length - 1; i >= 0; i--) {
                     localVarsIndex[i] = nextFreeLocalVariable;
                     super.visitVarInsn(params[i].getOpcode(Opcodes.ISTORE), localVarsIndex[i]);
                 }
@@ -59,28 +60,37 @@ public class LockVisitor extends BaseClassVisitor {
                 super.visitInsn(Opcodes.DUP);
                 //stack should be Lock, Lock
                 Checkpoint checkpoint = checkpointRegister.newLockAcquireCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, methodName, methodDescriptor, sourceName, latestLineNumber);
+                invokeTryAcquireStaticConstructorSingleArg();
                 invokeGenericCheckpointWithContext(checkpoint);
                 //stack should be Lock
-                for (int i = params.length - 1; i >= 0; i--) {
+                for (int i = 0; i < params.length; i++) {
                     super.visitVarInsn(params[i].getOpcode(Opcodes.ILOAD), localVarsIndex[i]);
                 }
                 //stack should be Lock, params
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                // stack should be either empty or boolean
                 Type returnType = Type.getReturnType(methodDescriptor);
                 if (returnType == Type.BOOLEAN_TYPE) {
-                    //stack should have a boolean
                     super.visitInsn(Opcodes.DUP);
-                    //stack should have a boolean, boolean
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Boolean.class), "valueOf", Type.getMethodDescriptor(Type.getType(Boolean.class), Type.BOOLEAN_TYPE), false);
-                    //stack should have a boolean, Boolean
+                    super.visitVarInsn(Opcodes.ALOAD, lockLocalVar);
+                    // stack should be boolean boolean Lock
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TryAcquireWithResult.class), "from", Type.getMethodDescriptor(Type.getType(TryAcquireWithResult.class), Type.BOOLEAN_TYPE, Type.getType(Lock.class)), false);
+                    //stack should be boolean TryAcquireWithResult
                 } else if (returnType == Type.VOID_TYPE) {
-                    super.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Boolean.class), "TRUE", Type.getDescriptor(Boolean.class));
-                    //stack should have a Boolean
+                    super.visitVarInsn(Opcodes.ALOAD, lockLocalVar);
+                    invokeTryAcquireStaticConstructorSingleArg();
+                    //stack should be TryAcquireWithResult
                 } else {
                     throw new IllegalArgumentException("Did not expect return type %s from method: %s.%s".formatted(returnType, Lock.class.getName(), methodName));
                 }
+
+                // stack should be [boolean] TryAcquireWithResult
                 checkpoint = checkpointRegister.newLockAcquireCheckpoint(InjectionPoint.AFTER, classUnderEnhancement, methodName, methodDescriptor, sourceName, latestLineNumber);
                 invokeGenericCheckpointWithContext(checkpoint);
+            }
+
+            private void invokeTryAcquireStaticConstructorSingleArg() {
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(TryAcquireWithResult.class), "from", Type.getMethodDescriptor(Type.getType(TryAcquireWithResult.class), Type.getType(Lock.class)), false);
             }
         };
     }

@@ -14,13 +14,10 @@ public class LockTest implements Runnable {
         try {
             if (lock.tryLock(1, TimeUnit.MINUTES)) {
                 System.out.println("acquired");
+                lock.unlock();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        } finally {
-            lock.unlock();
         }
-
-
     }
 }
