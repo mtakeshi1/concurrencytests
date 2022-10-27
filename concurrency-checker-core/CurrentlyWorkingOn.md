@@ -1,6 +1,6 @@
 # Currently working on:
 - Locks 
-  - lock.tryLock -> the checkpoint after the lock tryLock should check for lock acquisition by checking the return value
+  - more tests
 - BlockCause should carry the information about the resource so it knows if is blocked by anything other than locks / monitor. That way, we can let the scheduler know if a thread can proceed or not (for instance, if the BlockCause is THREAD_JOIN and it carries the thread that is being joined in, it can check for Thread.isAlive)
 - add checkpoint for exception catching
 - callbacks should be invoked by the scheduler thread and not by the actor threads

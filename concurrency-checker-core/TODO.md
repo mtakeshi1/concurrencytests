@@ -1,5 +1,5 @@
 # Before public release
-- Lock.tryLock
+- A bit more tests (specially Lock)
 - More examples
 - Documentation
 
@@ -8,11 +8,19 @@
 - Random execution with max time 
   - random exploration for when tests are taking too long
 - wait / notify / lock.condition coordination
+- OffHeapTree
 - random / sleep detection
   - random should be seeded or bypassed 
 - Checkpoint matcher's should operate on CheckpointDescriptors
 - repeated state count (if the system as a whole is not making progress)
   - hash over threadstates to try to detect a 'loop'
+- more blocking resources:
+  - blocking queue
+  - Thread.join
+  - Condition.await
+  - CyclicBarrier
+  - Semaphore
+  - LockSupport.park
 
 # Nice to haves
 - Resume actors with action
