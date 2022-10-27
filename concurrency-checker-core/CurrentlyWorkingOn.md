@@ -1,6 +1,5 @@
 # Currently working on:
-- Locks and other interesting checkpoints
-  - java.util.concurrent.atomic.*
+- Locks 
   - lock.tryLock -> the checkpoint after the lock tryLock should check for lock acquisition by checking the return value
 - BlockCause should carry the information about the resource so it knows if is blocked by anything other than locks / monitor. That way, we can let the scheduler know if a thread can proceed or not (for instance, if the BlockCause is THREAD_JOIN and it carries the thread that is being joined in, it can check for Thread.isAlive)
 - add checkpoint for exception catching
@@ -12,7 +11,6 @@
   - jdk classes must be patched https://openjdk.org/jeps/261
   - https://learn.microsoft.com/en-us/java/openjdk/transition-from-java-8-to-java-11
   - https://openjdk.org/projects/jigsaw/quick-start#xoverride
-- test actors spawning threads
 - injection of ExecutorService / ScheduledExecutorService into @Before and actors
 - better test infrastructure - mostly to detect which classes to inject for the basic tests
 - writing README.md
@@ -26,13 +24,7 @@
 - write a non-mutable runtimestate. That will require many changes to how checkpoints are listened to
 
 # planned
-- field access - missing pushing field details to stack
-- missing inspecting stack to fill in monitor type
 - wait and notify
 - park / unpark
-- checkpoint location shouldn't be ambiguous
 
-# open questions
-- should we special case java.util.concurrent.Lock?
-  - how about other concurrency 'primitives'?
  

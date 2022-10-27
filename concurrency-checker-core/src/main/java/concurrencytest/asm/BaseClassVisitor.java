@@ -40,7 +40,7 @@ public class BaseClassVisitor extends ClassVisitor {
         }
         try {
             if (methodName.equals("<init>")) {
-                return callTarget.getConstructor(params);
+                return callTarget.getDeclaredConstructor(params);
             }
             return resolveMethodRecursive(callTarget, methodName, params);
         } catch (NoSuchMethodException e) {

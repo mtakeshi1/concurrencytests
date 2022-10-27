@@ -28,11 +28,13 @@
             <groupId>com.pholser</groupId>
             <artifactId>junit-quickcheck-core</artifactId>
             <version>1.0</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.pholser</groupId>
             <artifactId>junit-quickcheck-generators</artifactId>
             <version>1.0</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
@@ -48,12 +50,6 @@
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
             <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>3.3.0</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

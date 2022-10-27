@@ -1,7 +1,9 @@
 package concurrencytest.runner;
 
+import concurrencytest.annotations.Actor;
 import concurrencytest.asm.*;
 import concurrencytest.asm.utils.ReadClassesVisitor;
+import concurrencytest.asm.utils.SpecialClassLoader;
 import concurrencytest.asm.utils.SpecialMethods;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
@@ -20,6 +22,7 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -28,6 +31,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -56,7 +63,7 @@ public class ActorSchedulerSetup {
         if (mode == ExecutionMode.FORK) {
             throw new RuntimeException("not yet implemented");
         } else {
-            return runInVm(configuration, checkpointRegister, treeObserver, preselectedPath);
+            return runInVm(mode, configuration, checkpointRegister, treeObserver, preselectedPath);
         }
     }
 
@@ -70,20 +77,99 @@ public class ActorSchedulerSetup {
         return mode;
     }
 
-    private Optional<Throwable> runInVm(Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws InterruptedException, IOException, ClassNotFoundException {
+    private Optional<Throwable> runInVm(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath)
+            throws InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
-        Class<?> mainTestClass = loadMainTestClass();
-        ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), new ArrayList<>(preselectedPath), mainTestClass, configuration.maxLoopIterations());
-        return entryPoint.exploreAll(treeObserver);
+        MDC.put("actor", "coordinator");
+        ExecutorService service = Executors.newFixedThreadPool(configuration.parallelExecutions());
+        try {
+            List<List<String>> tasks = buildTaskList(parseInitialActorNames(), configuration.parallelExecutions(), preselectedPath);
+            List<Future<Optional<Throwable>>> futures = new ArrayList<>(tasks.size());
+            AtomicInteger actorIndex = new AtomicInteger();
+            LongAdder adder = new LongAdder();
+            for (var preffix : tasks) {
+                Callable<Optional<Throwable>> task = () -> {
+                    Class<?> mainTestClass = loadMainTestClass(mode);
+                    ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(), "scheduler_" + actorIndex.getAndIncrement());
+                    return entryPoint.exploreAll(treeObserver, adder);
+                };
+                futures.add(service.submit(task));
+            }
+            //TODO add progress
+            for (var fut : futures) {
+                try {
+                    Optional<Throwable> optional = fut.get();
+                    if (optional.isPresent()) {
+                        concelTasks(futures);
+                        return optional;
+                    }
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof IOException ioe) {
+                        throw ioe;
+                    } else if (e.getCause() instanceof ClassNotFoundException cnfe) {
+                        throw cnfe;
+                    } else if (e.getCause() instanceof RuntimeException rte) {
+                        throw rte;
+                    } else {
+                        throw new RuntimeException(e.getCause());
+                    }
+                }
+            }
+            LOGGER.info("Finished after {} runs", adder.longValue());
+            return Optional.empty();
+        } finally {
+            service.shutdown();
+        }
     }
 
-    private Class<?> loadMainTestClass() throws MalformedURLException, ClassNotFoundException {
-        URLClassLoader classLoader = new URLClassLoader(new URL[]{this.configuration.outputFolder().toURI().toURL()});
-        String renamedTestClass = remapper.map(Type.getInternalName(configuration.mainTestClass()));
-        if (renamedTestClass == null) {
-            renamedTestClass = configuration.mainTestClass().getName();
+    private void concelTasks(List<Future<Optional<Throwable>>> futures) {
+        for (var fut : futures) {
+            fut.cancel(true);
         }
-        return Class.forName(Type.getObjectType(renamedTestClass).getClassName(), false, classLoader);
+    }
+
+    public static List<List<String>> buildTaskList(List<String> actorNames, int executions, Collection<? extends String> preselectedPath) {
+        List<List<String>> soFar = new ArrayList<>();
+        soFar.add(new ArrayList<>(preselectedPath));
+        while (soFar.size() < executions) {
+            List<List<String>> copy = new ArrayList<>();
+            for (String actor : actorNames) {
+                for (var preffix : soFar) {
+                    var list = new ArrayList<>(preffix);
+                    list.add(actor);
+                    copy.add(list);
+                }
+            }
+            soFar = copy;
+        }
+        return soFar;
+    }
+
+    private List<String> parseInitialActorNames() {
+        List<String> list = new ArrayList<>();
+        for (var m : configuration.mainTestClass().getMethods()) {
+            Actor actor = m.getAnnotation(Actor.class);
+            if (actor != null) {
+                list.add(actor.actorName().isEmpty() ? m.getName() : actor.actorName());
+            }
+        }
+        return list;
+    }
+
+    private Class<?> loadMainTestClass(ExecutionMode mode) throws MalformedURLException, ClassNotFoundException {
+        if (mode == ExecutionMode.RENAMING) {
+            URLClassLoader classLoader = new URLClassLoader(new URL[]{this.configuration.outputFolder().toURI().toURL()});
+            String renamedTestClass = remapper.map(Type.getInternalName(configuration.mainTestClass()));
+            if (renamedTestClass == null) {
+                renamedTestClass = configuration.mainTestClass().getName();
+            }
+            return Class.forName(Type.getObjectType(renamedTestClass).getClassName(), false, classLoader);
+        } else if (mode == ExecutionMode.CLASSLOADER_ISOLATION) {
+            ClassLoader classLoader = new SpecialClassLoader(this.getClass().getClassLoader(), this.configuration.outputFolder());
+            return Class.forName(configuration.mainTestClass().getName(), false, classLoader);
+        } else {
+            throw new IllegalArgumentException("unknown execution mode: " + mode);
+        }
     }
 
     private void saveCheckpointInformation(CheckpointRegister register) throws IOException {
@@ -235,10 +321,7 @@ public class ActorSchedulerSetup {
         if (mode == ExecutionMode.RENAMING) {
             return c -> {
                 SimpleRemapper remapper = getRemapper();
-                String map = remapper.map(Type.getInternalName(c));
-                if (map == null) {
-                    throw new RuntimeException("could not find renamed class name for class: %s".formatted(c.getName()));
-                }
+                String map = Objects.requireNonNull(remapper.map(Type.getInternalName(c)), "could not find renamed class name for class: %s".formatted(c.getName()));
                 String classFileName = map + ".class";
                 return new ClassRemapper(fileWritingVisitor(rootFolder, classFileName), remapper);
             };

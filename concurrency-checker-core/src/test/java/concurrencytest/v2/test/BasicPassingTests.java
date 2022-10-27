@@ -16,7 +16,6 @@ public class BasicPassingTests extends AbstractRunnerTests {
         runToCompletion(AtomicIncrementTest.class);
     }
 
-
     @Test
     public void synchronizedCounter() {
         runToCompletion(SynchronizedMethodCounter.class);

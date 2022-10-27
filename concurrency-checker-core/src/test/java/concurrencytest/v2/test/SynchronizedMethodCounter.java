@@ -3,17 +3,13 @@ package concurrencytest.v2.test;
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
-import concurrencytest.config.BasicConfiguration;
-import concurrencytest.config.CheckpointConfiguration;
-import concurrencytest.config.CheckpointDurationConfiguration;
-import concurrencytest.config.Configuration;
+import concurrencytest.config.*;
 import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
 import java.time.Duration;
 
-@RunWith(ActorSchedulerRunner.class)
 public class SynchronizedMethodCounter {
 
     private volatile int counter;
@@ -21,6 +17,12 @@ public class SynchronizedMethodCounter {
     @ConfigurationSource
     public static Configuration config() {
         return new BasicConfiguration(SynchronizedMethodCounter.class) {
+
+            @Override
+            public ExecutionMode executionMode() {
+                return ExecutionMode.CLASSLOADER_ISOLATION;
+            }
+
             @Override
             public CheckpointConfiguration checkpointConfiguration() {
                 return new CheckpointConfiguration() {
@@ -34,6 +36,11 @@ public class SynchronizedMethodCounter {
                         return true;
                     }
                 };
+            }
+
+            @Override
+            public int parallelExecutions() {
+                return 2;
             }
 
             @Override
@@ -52,6 +59,16 @@ public class SynchronizedMethodCounter {
     public synchronized void actor2() {
         counter++;
     }
+
+//    @Actor
+//    public synchronized void actor3() {
+//        counter++;
+//    }
+
+//    @Actor
+//    public synchronized void actor4() {
+//        counter++;
+//    }
 
     @AfterActorsCompleted
     public void finished() {

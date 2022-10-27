@@ -29,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -43,43 +44,39 @@ public class ActorSchedulerEntryPoint {
     private final int maxLoopCount;
     private final Class<?> mainTestClass;
     private final CheckpointRegister checkpointRegister;
+    private final String schedulerName;
     private volatile Throwable actorError;
 
     public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass) {
-        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations());
+        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler");
     }
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount) {
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount, String schedulerName) {
         this.explorationTree = explorationTree;
         this.checkpointRegister = register;
         this.configuration = configuration;
         this.initialPathActorNames = initialPathActorNames;
         this.maxLoopCount = maxLoopCount;
         this.mainTestClass = mainTestClassName;
+        this.schedulerName = schedulerName;
     }
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
 
     private ScheduledExecutorService managedExecutorService;
 
-    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver) throws InterruptedException {
-        int c = 0;
-        long nextReport = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
+    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, LongAdder adder) throws InterruptedException {
         try {
+            MDC.put("actor", schedulerName);
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
                 executeOnce();
+                adder.increment();
                 TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
                 treeObserver.accept(node);
-                c++;
-                if (System.nanoTime() > nextReport) {
-                    LOGGER.info("Explored {} runs", c);
-                    nextReport = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
-                }
             }
             return Optional.ofNullable(actorError);
         } finally {
-            LOGGER.info("Finished exploration with {} runs", c);
             invokeCleanup();
         }
     }
