@@ -42,23 +42,23 @@ public class SynchronizedBlockVisitor extends BaseClassVisitor {
         private void monitorExit() {
             super.visitInsn(Opcodes.DUP);
             if (BEFORE_EXIT_CHECKPOINT) {
-                Checkpoint beforeCheckpoint = checkpointRegister.newMonitorExitCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE);
+                Checkpoint beforeCheckpoint = checkpointRegister.newMonitorExitCheckpoint(classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE);
                 super.visitInsn(Opcodes.DUP);
                 super.invokeGenericCheckpointWithContext(beforeCheckpoint);
             }
             super.visitInsn(Opcodes.MONITOREXIT);
-            Checkpoint after = checkpointRegister.newMonitorExitCheckpoint(InjectionPoint.AFTER, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.AFTER);
+            Checkpoint after = checkpointRegister.newMonitorExitCheckpoint(classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.AFTER);
             super.invokeGenericCheckpointWithContext(after);
 
         }
 
         private void monitorEnter() {
-            Checkpoint beforeCheckpoint = checkpointRegister.newMonitorEnterCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE);
+            Checkpoint beforeCheckpoint = checkpointRegister.newMonitorEnterCheckpoint(classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE);
             super.visitInsn(Opcodes.DUP);
             super.visitInsn(Opcodes.DUP);
             super.invokeGenericCheckpointWithContext(beforeCheckpoint);
             super.visitInsn(Opcodes.MONITORENTER);
-            Checkpoint after = checkpointRegister.newMonitorEnterCheckpoint(InjectionPoint.AFTER, classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.AFTER);
+            Checkpoint after = checkpointRegister.newMonitorEnterCheckpoint(classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.AFTER);
             super.invokeGenericCheckpointWithContext(after);
         }
 

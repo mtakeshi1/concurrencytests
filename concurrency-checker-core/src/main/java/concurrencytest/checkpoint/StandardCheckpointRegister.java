@@ -2,13 +2,11 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.description.*;
-import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runtime.ParkCheckpoint;
 import org.objectweb.asm.Type;
 
 import java.io.Serializable;
 import java.lang.reflect.Member;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,12 +56,12 @@ public class StandardCheckpointRegister implements CheckpointRegister, Serializa
     }
 
     @Override
-    public Checkpoint newMonitorEnterCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
+    public Checkpoint newMonitorEnterCheckpoint(Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
         return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, monitorOwnerType.getClassName(), true));
     }
 
     @Override
-    public Checkpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
+    public Checkpoint newMonitorExitCheckpoint(Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
         return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, monitorOwnerType.getClassName(), false));
     }
 
@@ -85,5 +83,17 @@ public class StandardCheckpointRegister implements CheckpointRegister, Serializa
     @Override
     public Checkpoint managedThreadStartedCheckpoint(String classUnderEnhancementName, String methodName, String methodDescriptor, String sourceName, int latestLineNumber) {
         return registerCheckpoint(new ThreadStartingCheckpoint(classUnderEnhancementName, methodName, sourceName, latestLineNumber));
+    }
+
+    @Override
+    public Checkpoint newLockAcquireCheckpoint(InjectionPoint injectionPoint, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber) {
+        return this.registerCheckpoint(
+                new LockAcquireCheckpointDescription(injectionPoint, "", sourceName, latestLineNumber, methodName.equals("tryLock"), methodName.equals("tryLock") && Type.getArgumentTypes(methodDescriptor).length > 0)
+        );
+    }
+
+    @Override
+    public Checkpoint newLockReleasedCheckpoint(InjectionPoint injectionPoint, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber) {
+        return this.registerCheckpoint(new LockReleaseCheckpointDescription(injectionPoint, "", sourceName, latestLineNumber));
     }
 }

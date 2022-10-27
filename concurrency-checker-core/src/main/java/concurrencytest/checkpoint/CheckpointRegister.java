@@ -5,7 +5,6 @@ import concurrencytest.checkpoint.description.CheckpointDescription;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Member;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -32,9 +31,9 @@ public interface CheckpointRegister {
     //TODO not sure if details is needed for manual checkpoint
     Checkpoint newManualCheckpoint(String details, String source, int latestLineNumber);
 
-    Checkpoint newMonitorEnterCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
+    Checkpoint newMonitorEnterCheckpoint(Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
 
-    Checkpoint newMonitorExitCheckpoint(InjectionPoint point, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
+    Checkpoint newMonitorExitCheckpoint(Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint);
 
     Checkpoint newMethodCheckpoint(String sourceName, int latestLineNumber, Member method, InjectionPoint before);
 
@@ -47,4 +46,8 @@ public interface CheckpointRegister {
     default boolean isFinishedCheckpoint(int checkpointId) {
         return checkpointId == taskFinishedCheckpoint().checkpointId();
     }
+
+    Checkpoint newLockAcquireCheckpoint(InjectionPoint before, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
+
+    Checkpoint newLockReleasedCheckpoint(InjectionPoint injectionPoint, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
 }
