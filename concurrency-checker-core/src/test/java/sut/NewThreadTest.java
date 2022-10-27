@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class NewThreadTest {
 
-    public static final int THREAD_COUNT = 4;
+    public static final int THREAD_COUNT = 3;
 
     private final AtomicInteger counter = new AtomicInteger();
 
