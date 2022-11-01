@@ -7,6 +7,11 @@ public record ManualCheckpointImpl(String details, String sourceFile, int lineNu
     public InjectionPoint injectionPoint() {
         return InjectionPoint.AFTER;
     }
+
+    @Override
+    public String toString() {
+        return "ManualCheckpoint (%s:%d)".formatted(sourceFile, lineNumber);
+    }
 }
 
 

@@ -7,6 +7,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
                                        int lineNumber, String methodName, Class<?> declaringType, Class<?>[] parameterTypes,
@@ -33,6 +34,10 @@ public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sou
         throw new IllegalArgumentException("not a method or constructor: %s".formatted(methodOrConstructor));
     }
 
+    @Override
+    public String toString() {
+        return "%s %s.%s (%s:%d)".formatted(injectionPoint, declaringType.getName(), methodName, sourceFile, lineNumber);
+    }
 
     @Override
     public String details() {

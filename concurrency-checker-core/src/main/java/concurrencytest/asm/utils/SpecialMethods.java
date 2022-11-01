@@ -14,7 +14,7 @@ public class SpecialMethods {
             Thread.class.equals(invocationTargetType) && injectionPoint == InjectionPoint.AFTER && methodName.equals("onSpinWait") || methodName.equals("join") || methodName.equals("interrupt") || methodName.equals("yield");
 
     public static MethodInvocationMatcher ATOMIC_METHODS = (classUnderEnhancement, invocationTargetType, methodName, methodDescriptorType, accessModifier, behaviourModifiers, injectionPoint) ->
-            injectionPoint == InjectionPoint.AFTER && invocationTargetType.getName().startsWith("java.util.concurrent.atomic.");
+            invocationTargetType.getName().startsWith("java.util.concurrent.atomic.");
 
     public static MethodInvocationMatcher VAR_HANDLE_METHODS = (classUnderEnhancement, invocationTargetType, methodName, methodDescriptorType, accessModifier, behaviourModifiers, injectionPoint) ->
             injectionPoint == InjectionPoint.AFTER && invocationTargetType.equals(VarHandle.class);

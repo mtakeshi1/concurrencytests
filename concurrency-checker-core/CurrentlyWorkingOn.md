@@ -5,6 +5,7 @@
 - add checkpoint for exception catching
 - callbacks should be invoked by the scheduler thread and not by the actor threads
 - Unsafe?
+- @Actors (numActor = XXX)
 - off-heap graph - allows forking
 - Fork to another jvm
   - we could export the classes to the other jvm via standard classpath mechanism
@@ -22,7 +23,8 @@
 - auto detect classes to inject checkpoints
 - unify causes of blocking
 - write a non-mutable runtimestate. That will require many changes to how checkpoints are listened to
-
+- StackTrackingVisitor
+  - should also track constant LDC's
 # planned
 - wait and notify
 - park / unpark

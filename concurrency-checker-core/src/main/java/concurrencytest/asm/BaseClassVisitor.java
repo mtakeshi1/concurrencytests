@@ -18,7 +18,7 @@ public class BaseClassVisitor extends ClassVisitor {
     protected String sourceName;
 
     public BaseClassVisitor(ClassVisitor delegate, CheckpointRegister register, Class<?> classUnderEnhancement, ClassResolver classResolver) {
-        super(Opcodes.ASM7, delegate);
+        super(Opcodes.ASM9, delegate);
         this.checkpointRegister = register;
         this.classUnderEnhancement = classUnderEnhancement;
         this.classResolver = classResolver;
@@ -57,12 +57,18 @@ public class BaseClassVisitor extends ClassVisitor {
             }
             for (Class<?> implementedInterface : callTarget.getInterfaces()) {
                 try {
-                    resolveMethodRecursive(implementedInterface, methodName, params);
+                    var m = resolveMethodRecursive(implementedInterface, methodName, params);
+                    if (m != null) {
+                        return m;
+                    }
                 } catch (NoSuchMethodException ex) {
                     //ignore
                 }
             }
-            return resolveMethodRecursive(callTarget.getSuperclass(), methodName, params);
+            if (callTarget.getSuperclass() != null) {
+                return resolveMethodRecursive(callTarget.getSuperclass(), methodName, params);
+            }
+            return null;
         }
     }
 

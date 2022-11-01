@@ -33,7 +33,7 @@ public abstract class BaseMethodVisitor extends MethodVisitor {
     protected final ClassResolver classResolver;
 
     public BaseMethodVisitor(Class<?> classUnderEnhancement, MethodVisitor delegate, CheckpointRegister register, String sourceName, int modifiers, String methodName, String descriptor, ClassResolver resolver) {
-        super(Opcodes.ASM7, delegate);
+        super(Opcodes.ASM9, delegate);
         this.checkpointRegister = register;
         this.sourceName = sourceName;
         this.allModifiers = modifiers;
