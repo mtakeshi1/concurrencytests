@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -76,21 +75,40 @@ public class ActorSchedulerSetup {
         return mode;
     }
 
+    private void collectAndPrint(RunStatistics[] statistics) {
+        var combined = new RunStatistics(0, 0, 0);
+        for (var s : statistics) {
+            if (s != null) combined = combined.sum(s);
+        }
+        LOGGER.info(combined.toString());
+    }
+
     private Optional<Throwable> runInVm(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath)
             throws InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
         MDC.put("actor", "coordinator");
         ExecutorService service = Executors.newFixedThreadPool(configuration.parallelExecutions());
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r);
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        List<List<String>> tasks = buildTaskList(parseInitialActorNames(), configuration.parallelExecutions(), preselectedPath);
+        RunStatistics[] statistics = new RunStatistics[tasks.size()];
+        scheduledExecutorService.scheduleWithFixedDelay(() -> this.collectAndPrint(statistics), 1, 1, TimeUnit.MINUTES);
         try {
-            List<List<String>> tasks = buildTaskList(parseInitialActorNames(), configuration.parallelExecutions(), preselectedPath);
             List<Future<Optional<Throwable>>> futures = new ArrayList<>(tasks.size());
             AtomicInteger actorIndex = new AtomicInteger();
-            LongAdder adder = new LongAdder();
-            for (var preffix : tasks) {
+
+            for (int i = 0; i < tasks.size(); i++) {
+                var preffix = tasks.get(i);
+                RunStatistics stat = new RunStatistics();
+                statistics[i] = stat;
                 Callable<Optional<Throwable>> task = () -> {
                     Class<?> mainTestClass = loadMainTestClass(mode);
                     ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(), "scheduler_" + actorIndex.getAndIncrement());
-                    return entryPoint.exploreAll(treeObserver, adder);
+                    return entryPoint.exploreAll(treeObserver, stat);
                 };
                 futures.add(service.submit(task));
             }
@@ -114,7 +132,7 @@ public class ActorSchedulerSetup {
                     }
                 }
             }
-            LOGGER.info("Finished after {} runs", adder.longValue());
+            collectAndPrint(statistics);
             return Optional.empty();
         } finally {
             service.shutdown();

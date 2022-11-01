@@ -49,7 +49,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SingleActorTest.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 6, checkpointRegister.allCheckpoints().size());
-        point.executeOnce();
+        point.executeOnce(new RunStatistics());
         Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(maybeNode.isPresent());
         TreeNode treeNode = maybeNode.get();
@@ -112,7 +112,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SimpleSharedCounter.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
         Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 8, checkpointRegister.allCheckpoints().size()); // it must include access on the @invariant
-        point.executeWithPreselectedPath(new ArrayDeque<>(List.of("actor1", "actor2")));
+        point.executeWithPreselectedPath(new ArrayDeque<>(List.of("actor1", "actor2")), new RunStatistics());
         Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(maybeNode.isPresent());
         TreeNode treeNode = maybeNode.get();
@@ -129,7 +129,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
         System.out.println(checkpoints);
         Assert.assertEquals(checkpoints, 4, checkpointRegister.allCheckpoints().size());
-        point.executeOnce();
+        point.executeOnce(new RunStatistics());
 
         Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(maybeNode.isPresent());
@@ -138,14 +138,14 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         Assert.assertFalse(treeNode.isFullyExplored());
         Assert.assertEquals(4, treeNode.maxKnownDepth());
         for (int i = 0; i < 4; i++) {
-            point.executeOnce();
+            point.executeOnce(new RunStatistics());
             maybeNode = point.getExplorationTree().getRootNode();
             Assert.assertTrue(maybeNode.isPresent());
             treeNode = maybeNode.get();
             Assert.assertEquals(4, treeNode.maxKnownDepth());
             Assert.assertFalse("shouldn't have fully explored after %d explorations".formatted(i + 1), treeNode.isFullyExplored());
         }
-        point.executeOnce();
+        point.executeOnce(new RunStatistics());
         maybeNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(maybeNode.isPresent());
         treeNode = maybeNode.get();
@@ -160,7 +160,7 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
         String checkpoints = checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n"));
         System.out.println(checkpoints);
         Assert.assertEquals(checkpoints, SynchronizedBlockVisitor.BEFORE_EXIT_CHECKPOINT ? 11 : 10, checkpointRegister.allCheckpoints().size());
-        point.executeOnce();
+        point.executeOnce(new RunStatistics());
         Optional<TreeNode> rootNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(rootNode.isPresent());
         TreeNode node = rootNode.get();

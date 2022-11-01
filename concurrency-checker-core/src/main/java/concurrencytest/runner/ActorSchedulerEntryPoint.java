@@ -27,9 +27,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -65,13 +63,12 @@ public class ActorSchedulerEntryPoint {
 
     private ScheduledExecutorService managedExecutorService;
 
-    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, LongAdder adder) throws InterruptedException {
+    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, RunStatistics stat) throws InterruptedException {
         try {
             MDC.put("actor", schedulerName);
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
-                executeOnce();
-                adder.increment();
+                executeOnce(stat);
                 TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
                 treeObserver.accept(node);
             }
@@ -134,11 +131,11 @@ public class ActorSchedulerEntryPoint {
         return next;
     }
 
-    public void executeOnce() throws InterruptedException {
-        executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames));
+    public void executeOnce(RunStatistics stat) throws InterruptedException {
+        executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames), stat);
     }
 
-    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames) throws InterruptedException {
+    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames, RunStatistics stat) throws InterruptedException {
         MDC.put("actor", "scheduler");
         long t0 = System.nanoTime();
         Object mainTestObject = instantiateMainTestClass();
@@ -172,8 +169,9 @@ public class ActorSchedulerEntryPoint {
             if (actorError == null) {
                 callEndOfActors(mainTestObject, runtime);
                 node.markFullyExplored();
-                long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
-                LOGGER.debug("Finished executiong in {}ms with path: {}", duration, runtime.getExecutionPath());
+                long duration = System.nanoTime() - t0;
+                stat.record(duration, runtime.getExecutionPath().size());
+                LOGGER.debug("Finished executiong in {}ns with path: {}", duration, runtime.getExecutionPath());
             }
             callJUnitAfter(mainTestObject, runtime);
         } catch (TimeoutException e) {
