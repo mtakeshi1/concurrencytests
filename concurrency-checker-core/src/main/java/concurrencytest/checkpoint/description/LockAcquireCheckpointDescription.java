@@ -14,4 +14,9 @@ public record LockAcquireCheckpointDescription(InjectionPoint injectionPoint, St
     public CheckpointReached newCheckpointReached(Checkpoint checkpoint, Object context, Thread triggeredThread) {
         return new LockAcquireReleaseCheckpointReached(checkpoint, (TryAcquireWithResult) context, triggeredThread);
     }
+
+    @Override
+    public String toString() {
+        return "%s %s lock acquisition (%s:%d)".formatted(injectionPoint, timedAcquire ? "timed" : "", sourceFile, lineNumber);
+    }
 }

@@ -8,6 +8,7 @@ import concurrencytest.asm.ArrayElementMatcher;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;
 import concurrencytest.config.Configuration;
+import concurrencytest.config.ExecutionMode;
 import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
 import org.junit.Before;
@@ -15,12 +16,11 @@ import org.junit.runner.RunWith;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @RunWith(ActorSchedulerRunner.class)
-public class DeadlockingPhilosophersTest {
+public class ResourceOrderedPhilosophersTest {
 
-    private static final int NUM = 2;
+    private static final int NUM = 3;
 
     private Spoon[] spoons;
 
@@ -28,7 +28,7 @@ public class DeadlockingPhilosophersTest {
 
     @ConfigurationSource
     public static Configuration config() {
-        return new BasicConfiguration(DeadlockingPhilosophersTest.class) {
+        return new BasicConfiguration(ResourceOrderedPhilosophersTest.class) {
             @Override
             public CheckpointConfiguration checkpointConfiguration() {
                 return new CheckpointConfiguration() {
@@ -39,10 +39,15 @@ public class DeadlockingPhilosophersTest {
                 };
             }
 
-//            @Override
-//            public Collection<Class<?>> classesToInstrument() {
-//                return List.of(Spoon.class);
-//            }
+            @Override
+            public ExecutionMode executionMode() {
+                return ExecutionMode.CLASSLOADER_ISOLATION;
+            }
+
+            @Override
+            public int parallelExecutions() {
+                return 4;
+            }
         };
     }
 
@@ -60,10 +65,10 @@ public class DeadlockingPhilosophersTest {
         philosopher(0);
     }
 
-//    @Actor
-//    public void philo2() {
-//        philosopher(2);
-//    }
+    @Actor
+    public void philo2() {
+        philosopher(2);
+    }
 
     @Actor
     public void philo1() {
@@ -71,8 +76,9 @@ public class DeadlockingPhilosophersTest {
     }
 
     public void philosopher(int index) {
-        Spoon left = spoons[index];
-        Spoon right = spoons[(index + 1) % spoons.length];
+        int other = (index + 1) % spoons.length;
+        Spoon left = spoons[Math.min(index, other)];
+        Spoon right = spoons[Math.max(index, other)];
         synchronized (left) {
             left.pickup();
             synchronized (right) {
