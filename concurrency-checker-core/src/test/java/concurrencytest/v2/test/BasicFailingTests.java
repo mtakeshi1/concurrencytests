@@ -41,4 +41,8 @@ public class BasicFailingTests extends AbstractRunnerTests {
         runExpectError(RacyIndyLambda.class, e -> e instanceof AssertionError);
     }
 
+    @Test
+    public void tryLockUnlock() {
+        runExpectError(TryLockUnlock.class, e -> e instanceof AssertionError);
+    }
 }

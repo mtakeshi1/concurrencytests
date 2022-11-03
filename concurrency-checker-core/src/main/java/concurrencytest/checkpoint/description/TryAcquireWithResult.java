@@ -1,4 +1,4 @@
-package concurrencytest.asm;
+package concurrencytest.checkpoint.description;
 
 import java.util.concurrent.locks.Lock;
 

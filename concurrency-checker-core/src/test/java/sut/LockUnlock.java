@@ -26,7 +26,6 @@ public class LockUnlock {
         } finally {
             left.unlock();
         }
-
     }
 
     @AfterActorsCompleted

@@ -119,6 +119,7 @@ public class ActorSchedulerSetup {
     }
 
     private void collectAndPrint(RunStatistics[] statistics) {
+        MDC.put("actor", "MONITOR");
         var combined = new RunStatistics(0, 0, 0);
         for (var s : statistics) {
             if (s != null) combined = combined.sum(s);
@@ -155,7 +156,6 @@ public class ActorSchedulerSetup {
                 };
                 futures.add(service.submit(task));
             }
-            //TODO add progress
             for (var fut : futures) {
                 try {
                     Optional<Throwable> optional = fut.get();
@@ -354,7 +354,7 @@ public class ActorSchedulerSetup {
             delegate = new MethodInvocationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver, SpecialMethods.DEFAULT_SPECIAL_METHODS);
         }
         if (checkpointConfiguration.lockAcquisitionCheckpointEnabled()) {
-            delegate = new LockVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
+            delegate = new LockCheckpointVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);
         }
         return delegate;
     }

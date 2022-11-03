@@ -3,11 +3,12 @@ package concurrencytest.runtime;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
+import concurrencytest.checkpoint.description.LockCheckpointReached;
 import concurrencytest.checkpoint.description.LockReleaseCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runner.CheckpointReachedCallback;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.LockAcquireReleaseCheckpointReached;
+import concurrencytest.runtime.checkpoint.LockAcquireCheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
 import concurrencytest.runtime.thread.ManagedThread;
@@ -64,8 +65,8 @@ public class MutableRuntimeState implements RuntimeState {
             public void checkpointReached(CheckpointReached checkpointReached) {
                 if (checkpointReached instanceof MonitorCheckpointReached mon) {
                     registerMonitorCheckpoint(mon);
-                } else if (checkpointReached instanceof LockAcquireReleaseCheckpointReached cp) {
-                    registerLockAcquireRelease(cp);
+                } else if (checkpointReached instanceof LockCheckpointReached lockCheckpoint) {
+                    registerLockAcquireRelease(lockCheckpoint);
                 }
             }
 
@@ -89,39 +90,35 @@ public class MutableRuntimeState implements RuntimeState {
         return this.checkpointRuntime.errorReported();
     }
 
-    private void registerLockAcquireRelease(LockAcquireReleaseCheckpointReached checkpointReached) {
+    private void registerLockAcquireRelease(LockCheckpointReached checkpointReached) {
         int lockId = lockIdFor(checkpointReached.theLock());
         String actorName = checkpointReached.actorName();
-        ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));
-        if (checkpointReached.checkpoint().description() instanceof LockAcquireCheckpointDescription lacq) {
+        ThreadState state = removeThreadStateForUpdate(actorName);
+        if (checkpointReached instanceof LockAcquireCheckpointReached reached && checkpointReached.checkpoint().description() instanceof LockAcquireCheckpointDescription lacq) {
             if (lacq.injectionPoint() == InjectionPoint.BEFORE) {
                 allActors.put(actorName, state.beforeLockAcquisition(lockId, checkpointReached.theLock(), lacq));
             } else {
-                //TODO actually  find a way to communicate if the tryAcquire failed or succeeded
-                allActors.put(actorName, state.lockTryAcquire(lockId, true, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber()));
+                allActors.put(actorName, state.lockTryAcquire(lockId, reached.result().acquired(), checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber()));
             }
         } else if (checkpointReached.checkpoint().description() instanceof LockReleaseCheckpointDescription lr && lr.injectionPoint() == InjectionPoint.AFTER) {
             allActors.put(actorName, state.lockReleased(lockId));
+        } else {
+            allActors.put(actorName, state);
         }
     }
 
-//    private void registerNewActor(ThreadStartCheckpointReached checkpointReached) {
-//        String brandNewActor = checkpointReached.newActorName();
-//        ThreadState old = allActors.putIfAbsent(brandNewActor, new ThreadState(brandNewActor));
-//        if (old != null) {
-//            throw new IllegalArgumentException("actor named %s was already registered? ".formatted(brandNewActor));
-//        }
-//    }
+    private ThreadState removeThreadStateForUpdate(String actorName) {
+        return Objects.requireNonNull(allActors.remove(actorName), "actor state for name '%s' not found".formatted(actorName));
+    }
 
     private void registerMonitorCheckpoint(MonitorCheckpointReached mon) {
         int monitorId = monitorIdFor(mon.monitorOwner());
         String actorName = mon.actorName();
-        ThreadState state = Objects.requireNonNull(allActors.remove(actorName), "actor with name %s not found".formatted(actorName));
+        ThreadState state = removeThreadStateForUpdate(actorName);
         MonitorCheckpointDescription description = (MonitorCheckpointDescription) mon.checkpoint().description();
         if (description.monitorAcquire()) {
             if (mon.checkpoint().injectionPoint() == InjectionPoint.BEFORE) {
                 allActors.put(actorName, state.beforeMonitorAcquire(monitorId, mon.monitorOwner(), description));
-//                rendezvouCallback.
             } else {
                 allActors.put(actorName, state.monitorAcquired(monitorId, description.sourceFile(), description.lineNumber()));
             }
@@ -176,7 +173,7 @@ public class MutableRuntimeState implements RuntimeState {
             before.add(ts.newActorName());
             rendezvouCallback.waitForActors(maxWaitTime, before);
         }
-        ThreadState oldActorState = Objects.requireNonNull(allActors.remove(selected.actorName()), "actor state for %s not found".formatted(selected.actorName()));
+        ThreadState oldActorState = removeThreadStateForUpdate(selected.actorName());
         ThreadState newActorState = oldActorState.newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
         allActors.put(selected.actorName(), newActorState);
         if (newActorState.finished()) {

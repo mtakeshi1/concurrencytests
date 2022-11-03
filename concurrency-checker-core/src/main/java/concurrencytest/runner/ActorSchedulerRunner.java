@@ -32,14 +32,12 @@ public class ActorSchedulerRunner extends Runner {
     };
 
     public ActorSchedulerRunner(Class<?> testClass) {
-        this.testClass = testClass;
-        this.testName = Arrays.stream(testClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(Method::getName).collect(Collectors.joining("_"));
-        this.configuration = parseConfiguration(testClass, new Class[0]);
+        this(testClass, new Class[0]);
     }
 
     public ActorSchedulerRunner(Class<?> testClass, Class<?>... additionalClasses) {
         this.testClass = testClass;
-        this.testName = Arrays.stream(testClass.getMethods()).filter(m -> m.isAnnotationPresent(Actor.class)).map(Method::getName).collect(Collectors.joining("_"));
+        this.testName = String.join("+", ActorSchedulerSetup.parseInitialActorNames(testClass));
         this.configuration = parseConfiguration(testClass, additionalClasses);
     }
 

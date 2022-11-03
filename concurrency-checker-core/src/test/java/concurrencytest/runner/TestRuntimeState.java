@@ -12,8 +12,8 @@ import java.util.concurrent.locks.Lock;
 
 public record TestRuntimeState(CheckpointRegister checkpointRegister, Collection<? extends ThreadState> allActors) implements RuntimeState {
 
-    public TestRuntimeState(ThreadState singleThread) {
-        this(new StandardCheckpointRegister(), List.of(singleThread));
+    public TestRuntimeState(ThreadState... threads) {
+        this(new StandardCheckpointRegister(), Arrays.asList(threads));
     }
 
     @Override

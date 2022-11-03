@@ -3,6 +3,7 @@ package concurrencytest.asm;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
+import concurrencytest.checkpoint.description.TryAcquireWithResult;
 import concurrencytest.reflection.ClassResolver;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -11,9 +12,9 @@ import org.objectweb.asm.Type;
 
 import java.util.concurrent.locks.Lock;
 
-public class LockVisitor extends BaseClassVisitor {
+public class LockCheckpointVisitor extends BaseClassVisitor {
 
-    public LockVisitor(ClassVisitor delegate, CheckpointRegister register, Class<?> classUnderEnhancement, ClassResolver classResolver) {
+    public LockCheckpointVisitor(ClassVisitor delegate, CheckpointRegister register, Class<?> classUnderEnhancement, ClassResolver classResolver) {
         super(delegate, register, classUnderEnhancement, classResolver);
     }
 
@@ -40,7 +41,6 @@ public class LockVisitor extends BaseClassVisitor {
                 super.visitInsn(Opcodes.DUP);
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 Checkpoint checkpoint = checkpointRegister.newLockReleasedCheckpoint(InjectionPoint.AFTER, classUnderEnhancement, methodName, methodDescriptor, sourceName, latestLineNumber);
-                invokeTryAcquireStaticConstructorSingleArg();
                 invokeGenericCheckpointWithContext(checkpoint);
             }
 
@@ -59,7 +59,7 @@ public class LockVisitor extends BaseClassVisitor {
                 //stack should be Lock
                 super.visitInsn(Opcodes.DUP);
                 //stack should be Lock, Lock
-                Checkpoint checkpoint = checkpointRegister.newLockAcquireCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, methodName, methodDescriptor, sourceName, latestLineNumber);
+                Checkpoint checkpoint = checkpointRegister.newLockAcquireCheckpoint(InjectionPoint.BEFORE, classUnderEnhancement, name, descriptor, sourceName, latestLineNumber);
                 invokeTryAcquireStaticConstructorSingleArg();
                 invokeGenericCheckpointWithContext(checkpoint);
                 //stack should be Lock
@@ -69,7 +69,7 @@ public class LockVisitor extends BaseClassVisitor {
                 //stack should be Lock, params
                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 // stack should be either empty or boolean
-                Type returnType = Type.getReturnType(methodDescriptor);
+                Type returnType = Type.getReturnType(descriptor);
                 if (returnType == Type.BOOLEAN_TYPE) {
                     super.visitInsn(Opcodes.DUP);
                     super.visitVarInsn(Opcodes.ALOAD, lockLocalVar);
