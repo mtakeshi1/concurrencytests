@@ -1,10 +1,7 @@
 package concurrencytest.v2.test;
 
 import org.junit.Test;
-import sut.ExceptionalRacingCondition;
-import sut.NewThreadTest;
-import sut.RacyIndySynchronizedMethodRef;
-import sut.SynchronizedValueHolderActors;
+import sut.*;
 
 /**
  * Basic sanity checks to see if the runner is not throwing errors on cases where it should run to completion.
@@ -40,5 +37,11 @@ public class BasicPassingTests extends AbstractRunnerTests {
     public void synchronizedBlocks() {
         runToCompletion(ExceptionalRacingCondition.class);
     }
+
+    @Test
+    public void lockUnlock() {
+        runToCompletion(LockUnlock.class);
+    }
+
 
 }

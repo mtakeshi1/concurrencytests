@@ -2,6 +2,7 @@ package concurrencytest.runner;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Actors;
+import concurrencytest.annotations.MultipleActors;
 import concurrencytest.asm.*;
 import concurrencytest.asm.utils.ReadClassesVisitor;
 import concurrencytest.asm.utils.SpecialClassLoader;
@@ -72,6 +73,15 @@ public class ActorSchedulerSetup {
                 }
             }
         }));
+        ReflectionHelper.forEachAnnotatedMethod(MultipleActors.class, mainTestClass, (ma, met) -> {
+            for (int i = 0; i < ma.numberOfActors(); i++) {
+                String actorName = (ma.actorPreffix().isEmpty() ? met.getName() : ma.actorPreffix()) + "_" + i;
+                Method old = map.put(actorName, met);
+                if (old != null) {
+                    throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, met));
+                }
+            }
+        });
         return map;
     }
 

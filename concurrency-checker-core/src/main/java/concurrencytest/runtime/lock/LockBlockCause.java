@@ -17,13 +17,13 @@ public record LockBlockCause(int resourceId, Lock lock, CheckpointDescription ac
     @Override
     public boolean isBlocked(ThreadState actor, RuntimeState state) {
         if(actor.ownedResources().contains(new BlockingResource(LockType.LOCK, resourceId, Lock.class, "", 1))) {
-            return true;
+            return false;
         }
         if(lock.tryLock()) {
             lock.unlock();
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     @Override

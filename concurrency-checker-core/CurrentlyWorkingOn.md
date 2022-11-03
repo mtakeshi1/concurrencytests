@@ -5,7 +5,6 @@
 - add checkpoint for exception catching
 - callbacks should be invoked by the scheduler thread and not by the actor threads
 - Unsafe?
-- @Actors (numActor = XXX)
 - off-heap graph - allows forking
 - Fork to another jvm
   - we could export the classes to the other jvm via standard classpath mechanism
