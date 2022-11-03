@@ -4,11 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class ReflectionHelper implements ClassResolver {
 
@@ -55,7 +57,7 @@ public class ReflectionHelper implements ClassResolver {
         PRIMITIVE_CLASS_NAMES = Collections.unmodifiableMap(m);
         PRIMITIVE_INTERNAL_NAMES = Collections.unmodifiableMap(n);
         Map<Integer, String> map = new HashMap<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(ReflectionHelper.class.getResourceAsStream("/opcodes.properties")))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ReflectionHelper.class.getResourceAsStream("/opcodes.properties"), "opcodes.properties file not found?")))) {
             reader.lines().map(s -> s.split("=")).forEach(arr -> map.put(Integer.parseInt(arr[0]), arr[1]));
         } catch (IOException | UncheckedIOException e) {
             throw new ExceptionInInitializerError(e);
@@ -78,6 +80,7 @@ public class ReflectionHelper implements ClassResolver {
             try {
                 return Class.forName(className, false, contextClassLoader);
             } catch (ClassNotFoundException cnfe) {
+                //ignored
             }
         }
         return Class.forName(className);
@@ -143,4 +146,19 @@ public class ReflectionHelper implements ClassResolver {
         }
         throw new RuntimeException(String.format("Could not find field %s on type: %s", name, ownerType.getName()));
     }
+
+    public static <A extends Annotation> void forEachAnnotatedMethod(Class<A> annotationType, Class<?> hostClass, BiConsumer<A, Method> action) {
+        for(var m : hostClass.getMethods()) {
+            doWithAnnotatedMethod(annotationType, m, action);
+        }
+    }
+
+
+    public static <A extends Annotation> void doWithAnnotatedMethod(Class<A> annotationType, Method method, BiConsumer<A, Method> action) {
+        A annotation = method.getAnnotation(annotationType);
+        if (annotation != null) {
+            action.accept(annotation, method);
+        }
+    }
+
 }

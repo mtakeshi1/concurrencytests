@@ -1,6 +1,5 @@
 package concurrencytest.runner;
 
-import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.checkpoint.CheckpointRegister;
@@ -69,7 +68,7 @@ public class ActorSchedulerEntryPoint {
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
                 executeOnce(stat);
-                TreeNode node = explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister);
+                TreeNode node = explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister);
                 treeObserver.accept(node);
             }
             return Optional.ofNullable(actorError);
@@ -115,7 +114,7 @@ public class ActorSchedulerEntryPoint {
     }
 
     private boolean hasMorePathsToExplore() {
-        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(parseActorNames().keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
+        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
         return !node.map(TreeNode::isFullyExplored).orElse(false);
     }
 
@@ -139,7 +138,7 @@ public class ActorSchedulerEntryPoint {
         MDC.put("actor", "scheduler");
         long t0 = System.nanoTime();
         Object mainTestObject = instantiateMainTestClass();
-        var initialActorNames = parseActorNames();
+        var initialActorNames = ActorSchedulerSetup.parseActorMethods(mainTestClass);
         RuntimeState runtime = initialState(initialActorNames);
 
         try {
@@ -227,27 +226,6 @@ public class ActorSchedulerEntryPoint {
         invokeMethodsWithAnnotation(mainTestObject, runtime, Invariant.class);
     }
 
-
-    private Map<String, Method> parseActorNames() {
-        Map<String, Method> map = new HashMap<>();
-        for (var m : mainTestClass.getMethods()) {
-            Actor actor = m.getAnnotation(Actor.class);
-            if (actor == null) {
-                continue;
-            }
-            String actorName;
-            if (actor.actorName().isEmpty()) {
-                actorName = m.getName();
-            } else {
-                actorName = actor.actorName();
-            }
-            Method old = map.put(actorName, m);
-            if (old != null) {
-                throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
-            }
-        }
-        return map;
-    }
 
     private CheckpointRuntime checkpointRuntime() {
         throw new RuntimeException("not yet implemented");

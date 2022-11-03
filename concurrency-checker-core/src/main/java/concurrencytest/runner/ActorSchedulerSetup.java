@@ -1,6 +1,7 @@
 package concurrencytest.runner;
 
 import concurrencytest.annotations.Actor;
+import concurrencytest.annotations.Actors;
 import concurrencytest.asm.*;
 import concurrencytest.asm.utils.ReadClassesVisitor;
 import concurrencytest.asm.utils.SpecialClassLoader;
@@ -26,6 +27,7 @@ import org.slf4j.MDC;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -50,6 +52,37 @@ public class ActorSchedulerSetup {
 
     public ActorSchedulerSetup(Configuration configuration) {
         this.configuration = configuration;
+    }
+
+    public static Map<String, Method> parseActorMethods(Class<?> mainTestClass) {
+        Map<String, Method> map = new HashMap<>();
+        ReflectionHelper.forEachAnnotatedMethod(Actor.class, mainTestClass, ((actor, m) -> {
+            String actorName = baseActorName(m, actor);
+            Method old = map.put(actorName, m);
+            if (old != null) {
+                throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
+            }
+        }));
+        ReflectionHelper.forEachAnnotatedMethod(Actors.class, mainTestClass, ((actors, m) -> {
+            for (int i = 0; i < actors.value().length; i++) {
+                String actorName = baseActorName(m, actors.value()[i]) + "_" + i;
+                Method old = map.put(actorName, m);
+                if (old != null) {
+                    throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
+                }
+            }
+        }));
+        return map;
+    }
+
+    private static String baseActorName(Method m, Actor actor) {
+        String actorName;
+        if (actor.actorName().isEmpty()) {
+            actorName = m.getName();
+        } else {
+            actorName = actor.actorName();
+        }
+        return actorName;
     }
 
     public Optional<Throwable> run(Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
@@ -94,7 +127,7 @@ public class ActorSchedulerSetup {
             return thread;
         });
 
-        List<List<String>> tasks = buildTaskList(parseInitialActorNames(), configuration.parallelExecutions(), preselectedPath);
+        List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions(), preselectedPath);
         RunStatistics[] statistics = new RunStatistics[tasks.size()];
         scheduledExecutorService.scheduleWithFixedDelay(() -> this.collectAndPrint(statistics), 1, 1, TimeUnit.MINUTES);
         try {
@@ -145,7 +178,7 @@ public class ActorSchedulerSetup {
         }
     }
 
-    public static List<List<String>> buildTaskList(List<String> actorNames, int executions, Collection<? extends String> preselectedPath) {
+    public static List<List<String>> buildTaskList(Collection<String> actorNames, int executions, Collection<? extends String> preselectedPath) {
         List<List<String>> soFar = new ArrayList<>();
         soFar.add(new ArrayList<>(preselectedPath));
         while (soFar.size() < executions) {
@@ -162,15 +195,8 @@ public class ActorSchedulerSetup {
         return soFar;
     }
 
-    private List<String> parseInitialActorNames() {
-        List<String> list = new ArrayList<>();
-        for (var m : configuration.mainTestClass().getMethods()) {
-            Actor actor = m.getAnnotation(Actor.class);
-            if (actor != null) {
-                list.add(actor.actorName().isEmpty() ? m.getName() : actor.actorName());
-            }
-        }
-        return list;
+    public static Collection<String> parseInitialActorNames(Class<?> mainTestClass) {
+        return parseActorMethods(mainTestClass).keySet();
     }
 
     private Class<?> loadMainTestClass(ExecutionMode mode) throws MalformedURLException, ClassNotFoundException {
