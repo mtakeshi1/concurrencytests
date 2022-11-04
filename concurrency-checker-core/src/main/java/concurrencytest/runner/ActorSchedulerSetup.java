@@ -264,8 +264,7 @@ public class ActorSchedulerSetup {
         Set<Class<?>> set = new HashSet<>(configuration.classesToInstrument());
         set.add(configuration.mainTestClass());
         if (isSelfContained(set)) {
-//        if (configuration.classesToInstrument().size() == 1 && configuration.classesToInstrument().contains(configuration.mainTestClass())) {
-            return ExecutionMode.RENAMING;
+            return ExecutionMode.CLASSLOADER_ISOLATION;
         }
         return ExecutionMode.FORK;
     }

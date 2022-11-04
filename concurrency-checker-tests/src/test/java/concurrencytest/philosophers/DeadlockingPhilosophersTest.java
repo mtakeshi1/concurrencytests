@@ -8,6 +8,7 @@ import concurrencytest.asm.ArrayElementMatcher;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;
 import concurrencytest.config.Configuration;
+import concurrencytest.config.ExecutionMode;
 import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,10 +40,15 @@ public class DeadlockingPhilosophersTest {
                 };
             }
 
-//            @Override
-//            public Collection<Class<?>> classesToInstrument() {
-//                return List.of(Spoon.class);
-//            }
+            @Override
+            public Collection<Class<?>> classesToInstrument() {
+                return List.of(DeadlockingPhilosophersTest.class, Spoon.class);
+            }
+
+            @Override
+            public ExecutionMode executionMode() {
+                return ExecutionMode.CLASSLOADER_ISOLATION;
+            }
         };
     }
 
@@ -59,11 +65,6 @@ public class DeadlockingPhilosophersTest {
     public void philo0() {
         philosopher(0);
     }
-
-//    @Actor
-//    public void philo2() {
-//        philosopher(2);
-//    }
 
     @Actor
     public void philo1() {

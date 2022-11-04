@@ -16,7 +16,7 @@ public class ThreadStateTest {
 
     @Test
     public void testMonitorReentrant() {
-        MonitorCheckpointImpl mon = new MonitorCheckpointImpl(InjectionPoint.BEFORE, "", "", 1, "a", true);
+        MonitorCheckpointImpl mon = new MonitorCheckpointImpl(InjectionPoint.BEFORE, "", "", 1, true);
         var ts = new ThreadState("actor").beforeMonitorAcquire(1, new Object(), mon);
         ThreadState locked = ts.monitorAcquired(1, "a", 1);
         TestRuntimeState state = new TestRuntimeState(locked);

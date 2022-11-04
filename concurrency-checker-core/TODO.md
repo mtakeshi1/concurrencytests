@@ -3,6 +3,8 @@
 - Documentation
 
 # Before I consider 'usable':
+- Merge CheckpointReached with Checkpoint
+- Cleanup of Checkpoint context
 - Injection on java rt classes
 - Random execution with max time 
   - random exploration for when tests are taking too long
