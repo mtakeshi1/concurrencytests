@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -55,11 +57,11 @@ public class ActorSchedulerSetup {
         this.configuration = configuration;
     }
 
-    public static Map<String, Method> parseActorMethods(Class<?> mainTestClass) {
-        Map<String, Method> map = new HashMap<>();
+    public static Map<String, Function<Object, Throwable>> parseActorMethods(Class<?> mainTestClass) {
+        Map<String, Function<Object, Throwable>> map = new HashMap<>();
         ReflectionHelper.forEachAnnotatedMethod(Actor.class, mainTestClass, ((actor, m) -> {
             String actorName = baseActorName(m, actor);
-            Method old = map.put(actorName, m);
+            var old = map.put(actorName, adaptMethod(m, 0, actorName));
             if (old != null) {
                 throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
             }
@@ -67,22 +69,57 @@ public class ActorSchedulerSetup {
         ReflectionHelper.forEachAnnotatedMethod(Actors.class, mainTestClass, ((actors, m) -> {
             for (int i = 0; i < actors.value().length; i++) {
                 String actorName = baseActorName(m, actors.value()[i]) + "_" + i;
-                Method old = map.put(actorName, m);
+                var old = map.put(actorName, adaptMethod(m, i, actorName));
                 if (old != null) {
                     throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
                 }
             }
         }));
-        ReflectionHelper.forEachAnnotatedMethod(MultipleActors.class, mainTestClass, (ma, met) -> {
+        ReflectionHelper.forEachAnnotatedMethod(MultipleActors.class, mainTestClass, (ma, m) -> {
             for (int i = 0; i < ma.numberOfActors(); i++) {
-                String actorName = (ma.actorPreffix().isEmpty() ? met.getName() : ma.actorPreffix()) + "_" + i;
-                Method old = map.put(actorName, met);
+                String actorName = (ma.actorPreffix().isEmpty() ? m.getName() : ma.actorPreffix()) + "_" + i;
+                var old = map.put(actorName, adaptMethod(m, i, actorName));
                 if (old != null) {
-                    throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, met));
+                    throw new IllegalArgumentException("Two methods have the same actor name '%s': %s and %s".formatted(actorName, old, m));
                 }
             }
         });
         return map;
+    }
+
+    private static Function<Object, Throwable> adaptMethod(Method method, int actorIndex, String actorName) {
+        try {
+            MethodHandle base = MethodHandles.publicLookup().unreflect(method);
+            for (int i = base.type().parameterCount() - 1; i > 0; i--) { //0 should be the invocation target
+                if (base.type().parameterType(i) == int.class) {
+                    base = MethodHandles.insertArguments(base, i, actorIndex);
+                } else if (base.type().parameterType(i) == String.class) {
+                    base = MethodHandles.insertArguments(base, i, actorName);
+                } else {
+                    throw new IllegalArgumentException("Cannot insert argument of type: %s to actor method: %s".formatted(base.type().parameterType(i), method));
+                }
+            }
+            MethodHandle adapted = base;
+            return new Function<>() {
+                @Override
+                public Throwable apply(Object o) {
+                    try {
+                        adapted.invoke(o);
+                        return null;
+                    } catch (Throwable e) {
+                        return e;
+                    }
+                }
+
+
+                @Override
+                public String toString() {
+                    return "Actor '%s' for method: '%s'".formatted(actorName, method);
+                }
+            };
+        } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("actor method: %s cannot be used due to IllegalAccessException".formatted(method), e);
+        }
     }
 
     private static String baseActorName(Method m, Actor actor) {

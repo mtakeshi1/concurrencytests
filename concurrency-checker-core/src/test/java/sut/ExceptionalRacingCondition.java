@@ -10,7 +10,7 @@ public class ExceptionalRacingCondition {
     public void errorActor() {
         synchronized (monitor) {
             try {
-                throw new RuntimeException("bla");
+                throw new RuntimeException("please ignore");
             } catch (RuntimeException e) {
                 e.printStackTrace();
             }

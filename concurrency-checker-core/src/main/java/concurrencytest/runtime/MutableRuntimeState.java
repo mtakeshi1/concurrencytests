@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class MutableRuntimeState implements RuntimeState {
@@ -37,12 +38,13 @@ public class MutableRuntimeState implements RuntimeState {
 
     private final AtomicInteger monitorLockSeed;
     private final Map<String, ThreadState> allActors;
-    private final Map<String, Consumer<Object>> threads;
+    private final Map<String, Function<Object, Throwable>> threads;
     private final ThreadRendezvouCheckpointCallback rendezvouCallback;
 
     private final List<String> executionPath = new ArrayList<>();
+    private final Consumer<Throwable> errorReporter;
 
-    public MutableRuntimeState(CheckpointRegister register, Map<String, Consumer<Object>> managedThreadMap) {
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Function<Object, Throwable>> managedThreadMap, Consumer<Throwable> errorReporter) {
         this.register = register;
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
@@ -51,6 +53,7 @@ public class MutableRuntimeState implements RuntimeState {
         this.threads = managedThreadMap;
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
+        this.errorReporter = errorReporter;
 
         this.checkpointRuntime.addCheckpointCallback(cb -> {
             if (cb.checkpointId() == register.taskStartingCheckpoint().checkpointId()) {
@@ -154,7 +157,13 @@ public class MutableRuntimeState implements RuntimeState {
         Collection<ManagedThread> list = new ArrayList<>(this.threads.size());
         Set<String> actorsStarted = new HashSet<>();
         threads.forEach((actor, task) -> {
-            ManagedThread m = new ManagedThread(() -> task.accept(testInstance), checkpointRuntime, actor);
+            ManagedThread m = new ManagedThread(() -> {
+//                task.accept(testInstance);
+                Throwable error = task.apply(testInstance);
+                if (error != null) {
+                    errorReporter.accept(error);
+                }
+            }, checkpointRuntime, actor);
             m.start();
             list.add(m);
             actorsStarted.add(actor);

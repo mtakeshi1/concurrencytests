@@ -2,6 +2,7 @@ package concurrencytest.philosophers;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
+import concurrencytest.annotations.MultipleActors;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.asm.ArrayElementMatcher;
@@ -61,16 +62,17 @@ public class DeadlockingPhilosophersTest {
         }
     }
 
-    @Actor
+//    @Actor
     public void philo0() {
         philosopher(0);
     }
 
-    @Actor
+//    @Actor
     public void philo1() {
         philosopher(1);
     }
 
+    @MultipleActors(numberOfActors = NUM)
     public void philosopher(int index) {
         Spoon left = spoons[index];
         Spoon right = spoons[(index + 1) % spoons.length];

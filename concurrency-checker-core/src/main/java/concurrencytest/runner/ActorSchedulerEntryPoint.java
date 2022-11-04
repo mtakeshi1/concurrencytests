@@ -28,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -313,25 +314,25 @@ public class ActorSchedulerEntryPoint {
         }
     }
 
-    private RuntimeState initialState(Map<String, Method> initialActorNames) {
-        Map<String, Consumer<Object>> managedThreadRunnables = new HashMap<>();
-        initialActorNames.forEach((actor, method) -> {
-            Object[] params = collectParametersForActorRun();
-            Consumer<Object> wrapped = callTarget -> {
-                try {
-                    method.invoke(callTarget, params);
-                } catch (IllegalAccessException e) {
-                    reportActorError(e);
-                } catch (InvocationTargetException e) {
-                    reportActorError(e.getTargetException());
-                } catch (RuntimeException | Error e) {
-                    reportActorError(e);
-                    throw e;
-                }
-            };
-            managedThreadRunnables.put(actor, wrapped);
-        });
-        return new MutableRuntimeState(this.checkpointRegister, managedThreadRunnables);
+    private RuntimeState initialState(Map<String, Function<Object, Throwable>> initialActorNames) {
+//        Map<String, Consumer<Object>> managedThreadRunnables = new HashMap<>();
+//        initialActorNames.forEach((actor, method) -> {
+//            Object[] params = collectParametersForActorRun();
+//            Consumer<Object> wrapped = callTarget -> {
+//                try {
+//                    method.invoke(callTarget, params);
+//                } catch (IllegalAccessException e) {
+//                    reportActorError(e);
+//                } catch (InvocationTargetException e) {
+//                    reportActorError(e.getTargetException());
+//                } catch (RuntimeException | Error e) {
+//                    reportActorError(e);
+//                    throw e;
+//                }
+//            };
+//            managedThreadRunnables.put(actor, wrapped);
+//        });
+        return new MutableRuntimeState(this.checkpointRegister, initialActorNames, this::reportActorError);
 
     }
 
