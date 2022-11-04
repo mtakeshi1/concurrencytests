@@ -6,12 +6,25 @@ import java.util.function.Function;
 
 public interface ByteBufferManager {
 
+    /**
+     * A record entry is a piece of a larger chunk that may or may not be split between multiple files. Users don't need to know details of how
+     * the file is split.
+     */
     interface RecordEntry {
-        int HEADER_LENGTH = 6;
 
-        long offset();
+        int MAX_RECORD_LENGTH = 10 * 1024;
 
-//        int size();
+        int HEADER_LENGTH = 4;
+
+        int FOOTER_LENGTH = 2;
+
+        long absoluteOffset();
+
+        int contentSize();
+
+        default int recordSize() {
+            return contentSize() + HEADER_LENGTH + FOOTER_LENGTH;
+        }
 
         default <T> T readFromRecord(Function<ByteBuffer, T> bufferFunction) {
             return readFromRecord(0, bufferFunction);
@@ -35,6 +48,8 @@ public interface ByteBufferManager {
     }
 
     RecordEntry getExisting(long offset, int size);
+
+    RecordEntry getExisting(long offset);
 
     RecordEntry allocateNewSlice(int size);
 

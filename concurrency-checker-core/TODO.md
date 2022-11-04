@@ -1,5 +1,4 @@
 # Before public release
-- A bit more tests (specially Lock)
 - More examples
 - Documentation
 

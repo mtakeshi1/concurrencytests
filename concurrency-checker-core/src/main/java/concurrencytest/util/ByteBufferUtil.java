@@ -132,4 +132,12 @@ public class ByteBufferUtil {
         }
         return c;
     }
+
+    public static void writeInt2Bytes(ByteBuffer buffer, int val) {
+        throw new RuntimeException();
+    }
+
+    public static int readInt2Bytes(ByteBuffer slice) {
+        throw new RuntimeException();
+    }
 }
