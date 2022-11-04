@@ -21,7 +21,6 @@ public class BasicFailingTests extends AbstractRunnerTests {
     }
 
     @Test
-//    @Ignore("this test is currently taking a long time")
     public void nestedSyncBlocks() {
         runExpectError(NestedSyncBlocks.class, e -> e instanceof DeadlockFoundException, SessionManager.class, Session.class, SessionState.class);
     }
