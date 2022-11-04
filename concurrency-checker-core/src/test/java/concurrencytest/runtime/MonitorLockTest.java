@@ -8,7 +8,7 @@ import concurrencytest.runtime.lock.LockBlockCause;
 import concurrencytest.runtime.lock.LockType;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.ActorInformation;
-import concurrencytest.runtime.tree.ByteBufferBackedTreeNode;
+import concurrencytest.runtime.tree.offheap.ByteBufferBackedTreeNode;
 import org.junit.Assert;
 import org.junit.Test;
 

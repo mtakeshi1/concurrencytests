@@ -1,6 +1,8 @@
-package concurrencytest.runtime.tree;
+package concurrencytest.runtime.tree.offheap;
 
 import concurrencytest.checkpoint.CheckpointRegister;
+import concurrencytest.runtime.tree.Tree;
+import concurrencytest.runtime.tree.TreeNode;
 
 import java.util.Collection;
 import java.util.Optional;

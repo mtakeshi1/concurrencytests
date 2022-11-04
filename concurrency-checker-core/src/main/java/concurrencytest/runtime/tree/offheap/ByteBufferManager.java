@@ -1,4 +1,6 @@
-package concurrencytest.runtime.tree;
+package concurrencytest.runtime.tree.offheap;
+
+import concurrencytest.util.Utils;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
@@ -17,6 +19,14 @@ public interface ByteBufferManager {
         int HEADER_LENGTH = 4;
 
         int FOOTER_LENGTH = 2;
+
+        static boolean isValidHeader(byte[] buffer) {
+            return Utils.todo();
+        }
+
+        static boolean isValidFooter(byte[] buffer) {
+            return Utils.todo();
+        }
 
         long absoluteOffset();
 

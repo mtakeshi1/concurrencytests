@@ -18,6 +18,7 @@ import concurrencytest.runtime.tree.HeapTree;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.util.ASMUtils;
+import concurrencytest.util.Utils;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.SimpleRemapper;
@@ -139,7 +140,7 @@ public class ActorSchedulerSetup {
         }
         ExecutionMode mode = prepare();
         if (mode == ExecutionMode.FORK) {
-            throw new RuntimeException("not yet implemented");
+            return Utils.todo();
         } else {
             return runInVm(mode, configuration, checkpointRegister, treeObserver, preselectedPath);
         }
@@ -270,7 +271,7 @@ public class ActorSchedulerSetup {
     }
 
     private Tree createFileTree() throws IOException {
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     private void saveConfiguration() throws IOException {

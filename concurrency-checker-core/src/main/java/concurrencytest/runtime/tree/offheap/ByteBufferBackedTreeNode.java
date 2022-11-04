@@ -1,11 +1,16 @@
-package concurrencytest.runtime.tree;
+package concurrencytest.runtime.tree.offheap;
 
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.lock.BlockingResource;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.thread.ThreadState;
-import concurrencytest.runtime.tree.ByteBufferManager.RecordEntry;
+import concurrencytest.runtime.tree.ActorInformation;
+import concurrencytest.runtime.tree.BlockingCause;
+import concurrencytest.runtime.tree.ResourceInformation;
+import concurrencytest.runtime.tree.TreeNode;
+import concurrencytest.runtime.tree.offheap.ByteBufferManager.RecordEntry;
 import concurrencytest.util.ByteBufferUtil;
+import concurrencytest.util.Utils;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -134,7 +139,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     @Override
     public Map<String, ActorInformation> threads() {
 //        return childNodeLinks().stream().collect(Collectors.toMap(nodeLink -> nodeLink.information().actorName(), NodeLink::information));
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     private record NodeLink(long currentOffset, long childNodeOffset, ActorInformation information) {
@@ -152,22 +157,22 @@ public class ByteBufferBackedTreeNode implements TreeNode {
 //            }
 //        }
 //        return map;
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     private Collection<? extends NodeLink> childNodeLinks() {
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     @Override
     public Stream<String> unexploredPaths() {
 //        return childNodeLinks().stream().filter(NodeLink::canAdvance).filter(n -> !n.isFullyExplored(byteBufferManager)).map(nl -> nl.information.actorName());
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     @Override
     public Optional<Supplier<TreeNode>> childNode(String nodeName) {
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     @Override
@@ -193,7 +198,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
 //            }
 //            throw new IllegalArgumentException("child node with name %s not found".formatted(selectedToProceed.actorName()));
 //        });
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     @Override
@@ -212,6 +217,6 @@ public class ByteBufferBackedTreeNode implements TreeNode {
 
     @Override
     public void checkAllChildrenExplored() {
-        throw new RuntimeException("not yet implemented");
+        Utils.todo();
     }
 }

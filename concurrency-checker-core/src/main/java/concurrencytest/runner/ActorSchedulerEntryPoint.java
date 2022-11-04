@@ -11,6 +11,7 @@ import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
+import concurrencytest.util.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -229,7 +230,7 @@ public class ActorSchedulerEntryPoint {
 
 
     private CheckpointRuntime checkpointRuntime() {
-        throw new RuntimeException("not yet implemented");
+        return Utils.todo();
     }
 
     private Object instantiateMainTestClass() {

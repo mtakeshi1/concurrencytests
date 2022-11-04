@@ -62,16 +62,6 @@ public class DeadlockingPhilosophersTest {
         }
     }
 
-//    @Actor
-    public void philo0() {
-        philosopher(0);
-    }
-
-//    @Actor
-    public void philo1() {
-        philosopher(1);
-    }
-
     @MultipleActors(numberOfActors = NUM)
     public void philosopher(int index) {
         Spoon left = spoons[index];

@@ -1,7 +1,6 @@
 package concurrencytest.philosophers;
 
-import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.Invariant;
+import concurrencytest.annotations.MultipleActors;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.asm.ArrayElementMatcher;
@@ -47,10 +46,15 @@ public class LockingPhilosophersTest {
                 };
             }
 
-//            @Override
-//            public Collection<Class<?>> classesToInstrument() {
-//                return List.of(Spoon.class);
-//            }
+            @Override
+            public int parallelExecutions() {
+                return Runtime.getRuntime().availableProcessors();
+            }
+
+            @Override
+            public int maxLoopIterations() {
+                return 2;
+            }
         };
     }
 
@@ -63,44 +67,19 @@ public class LockingPhilosophersTest {
         }
     }
 
-    @Actor
-    public void philo0() {
-        philosopher(0);
-    }
-
-//    @Actor
-//    public void philo2() {
-//        philosopher(2);
-//    }
-
-    @Actor
-    public void philo1() {
-        philosopher(1);
-    }
-
+    @MultipleActors(numberOfActors = NUM)
     public void philosopher(int index) {
         var left = spoons[index];
-        var right = spoons[(index+1) % spoons.length];
-        while (true) {
-            if(left.tryLock()) {
-                try {
-                    if(right.tryLock()) {
-                        eaten[index] = true;
-                        right.unlock();
-                        return;
-                    }
-                } finally {
-                    left.unlock();
+        var right = spoons[(index + 1) % spoons.length];
+        while (!eaten[index]) {
+            if (left.tryLock()) {
+                if (right.tryLock()) {
+                    eaten[index] = true;
+                    right.unlock();
                 }
+                left.unlock();
             }
         }
-    }
-
-    @Invariant
-    public void spoonsShouldBeUsedByOne() {
-//        for (Spoon spoon : spoons) {
-//            Assert.assertTrue(spoon.getUsed() <= 1);
-//        }
     }
 
     @AfterActorsCompleted

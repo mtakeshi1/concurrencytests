@@ -3,6 +3,7 @@ package concurrencytest.runtime.tree;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.thread.ThreadState;
+import concurrencytest.runtime.tree.offheap.ByteBufferBackedTreeNode;
 
 import java.util.Collection;
 import java.util.Map;

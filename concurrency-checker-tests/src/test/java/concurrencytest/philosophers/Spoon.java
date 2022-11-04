@@ -2,7 +2,7 @@ package concurrencytest.philosophers;
 
 public class Spoon {
 
-    private int used;
+    private volatile int used;
 
     public void pickup() {
         used++;
