@@ -12,6 +12,8 @@ import concurrencytest.runtime.tree.offheap.ByteBufferManager.RecordEntry;
 import concurrencytest.util.ByteBufferUtil;
 import concurrencytest.util.Utils;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Supplier;
@@ -56,19 +58,19 @@ public class ByteBufferBackedTreeNode implements TreeNode {
     }
 
     private long parentOffset() {
-        return recordEntry.readFromRecord(ByteBufferUtil::readLong6Bytes);
+        try {
+            return recordEntry.readFromRecord(ByteBufferUtil::readLong6Bytes);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
-    public static ByteBufferBackedTreeNode rootNode(long parentOffset, Collection<? extends String> actorNames, CheckpointRegister register, ByteBufferManager byteBufferManager) {
+    public static ByteBufferBackedTreeNode rootNode(long parentOffset, Collection<? extends String> actorNames, CheckpointRegister register, ByteBufferManager byteBufferManager) throws IOException {
         ByteBuffer tempBuffer = initializeStates(parentOffset, actorNames.stream().map(actor -> new ActorInformation(actor, register.taskStartingCheckpoint().checkpointId())).toList());
-        try {
-            int size = tempBuffer.remaining();
-            RecordEntry recordEntry = byteBufferManager.allocateNewSlice(size);
-            recordEntry.overwriteRecord(tempBuffer);
-            return new ByteBufferBackedTreeNode(byteBufferManager, recordEntry);
-        } finally {
-            byteBufferManager.returnBuffer(tempBuffer);
-        }
+        int size = tempBuffer.remaining();
+        RecordEntry recordEntry = byteBufferManager.allocateNewSlice(size);
+        recordEntry.overwriteRecord(tempBuffer);
+        return new ByteBufferBackedTreeNode(byteBufferManager, recordEntry);
     }
 
     /**
@@ -203,16 +205,24 @@ public class ByteBufferBackedTreeNode implements TreeNode {
 
     @Override
     public boolean isFullyExplored() {
-        return (recordEntry.readFromRecord(bb -> bb.get(FLAGS_OFFSET)) & ALL_VISITED_FLAG) != 0;
+        try {
+            return (recordEntry.readFromRecord(bb -> bb.get(FLAGS_OFFSET)) & ALL_VISITED_FLAG) != 0;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
     public void markFullyExplored() {
-        this.recordEntry.writeToRecordNoReturn(bb -> {
-            byte b = bb.get(FLAGS_OFFSET);
-            bb.put(FLAGS_OFFSET, (byte) (b | FULLY_EXPLORED));
+        try {
+            this.recordEntry.writeToRecordNoReturn(bb -> {
+                byte b = bb.get(FLAGS_OFFSET);
+                bb.put(FLAGS_OFFSET, (byte) (b | FULLY_EXPLORED));
 
-        });
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

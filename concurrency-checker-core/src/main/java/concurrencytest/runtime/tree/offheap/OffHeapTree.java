@@ -4,6 +4,8 @@ import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -26,7 +28,11 @@ public class OffHeapTree implements Tree {
         if (root != null) {
             return root;
         }
-        this.root = ByteBufferBackedTreeNode.rootNode(0, actorNames, register, byteBufferManager);
+        try {
+            this.root = ByteBufferBackedTreeNode.rootNode(0, actorNames, register, byteBufferManager);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         return root;
     }
 

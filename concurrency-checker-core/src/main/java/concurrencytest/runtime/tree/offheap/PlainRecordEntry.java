@@ -2,7 +2,9 @@ package concurrencytest.runtime.tree.offheap;
 
 import concurrencytest.runtime.tree.offheap.ByteBufferManager.RecordEntry;
 import concurrencytest.util.ByteBufferUtil;
+import concurrencytest.util.Utils;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
@@ -23,8 +25,16 @@ public record PlainRecordEntry(long absoluteOffset, int totalEntrySize, OffHeapB
 
     static final int FIXED_PADDING = RECORD_ENTRY_PREFFIX_LENGTH + RECORD_FOOTER_LENGTH;
 
+    public static boolean isValidHeader(byte[] buffer) {
+        return Utils.todo();
+    }
+
+    public static boolean isValidFooter(byte[] buffer) {
+        return Utils.todo();
+    }
+
     int pageIndex() {
-        return (int) (absoluteOffset / OffHeapByteBufferManager.BUFFER_PAGE_SIZE);
+        return (int) (absoluteOffset / man.getBufferPageSize());
     }
 
     long begginingOfContentOffset() {
@@ -32,7 +42,7 @@ public record PlainRecordEntry(long absoluteOffset, int totalEntrySize, OffHeapB
     }
 
     int offsetInPage() {
-        return (int) (absoluteOffset % OffHeapByteBufferManager.BUFFER_PAGE_SIZE);
+        return (int) (absoluteOffset % man.getBufferPageSize());
     }
 
     int contentOffsetInPage() {
@@ -52,15 +62,15 @@ public record PlainRecordEntry(long absoluteOffset, int totalEntrySize, OffHeapB
     }
 
     @Override
-    public <T> T readFromRecord(int contentOffset, Function<ByteBuffer, T> bufferFunction) {
-        return man.executeLocked(this.begginingOfContentOffset(), contentSize(), bb -> {
+    public <T> T readFromRecord(int contentOffset, Function<ByteBuffer, T> bufferFunction) throws IOException {
+        return man.executeLocked(this.absoluteOffset(), totalEntrySize, bb -> {
             bb.position(contentOffset);
             return bufferFunction.apply(bb);
         }, true);
     }
 
     @Override
-    public <T> T writeToRecord(Function<ByteBuffer, T> bufferFunction) {
-        return man.executeLocked(this.absoluteOffset() + RECORD_ENTRY_PREFFIX_LENGTH, totalEntrySize - FIXED_PADDING, bufferFunction, false);
+    public <T> T writeToRecord(Function<ByteBuffer, T> bufferFunction) throws IOException {
+        return man.executeLocked(this.absoluteOffset(), totalEntrySize, bufferFunction, false);
     }
 }

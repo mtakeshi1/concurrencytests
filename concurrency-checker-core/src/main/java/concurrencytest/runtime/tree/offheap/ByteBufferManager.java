@@ -1,7 +1,6 @@
 package concurrencytest.runtime.tree.offheap;
 
-import concurrencytest.util.Utils;
-
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -20,14 +19,6 @@ public interface ByteBufferManager {
 
         int FOOTER_LENGTH = 2;
 
-        static boolean isValidHeader(byte[] buffer) {
-            return Utils.todo();
-        }
-
-        static boolean isValidFooter(byte[] buffer) {
-            return Utils.todo();
-        }
-
         long absoluteOffset();
 
         int contentSize();
@@ -36,22 +27,22 @@ public interface ByteBufferManager {
             return contentSize() + HEADER_LENGTH + FOOTER_LENGTH;
         }
 
-        default <T> T readFromRecord(Function<ByteBuffer, T> bufferFunction) {
+        default <T> T readFromRecord(Function<ByteBuffer, T> bufferFunction) throws IOException {
             return readFromRecord(0, bufferFunction);
         }
 
-        <T> T readFromRecord(int offset, Function<ByteBuffer, T> bufferFunction);
+        <T> T readFromRecord(int offset, Function<ByteBuffer, T> bufferFunction) throws IOException;
 
-        <T> T writeToRecord(Function<ByteBuffer, T> bufferFunction);
+        <T> T writeToRecord(Function<ByteBuffer, T> bufferFunction) throws IOException;
 
-        default void writeToRecordNoReturn(Consumer<ByteBuffer> bufferConsumer) {
+        default void writeToRecordNoReturn(Consumer<ByteBuffer> bufferConsumer) throws IOException {
             writeToRecord(bb -> {
                 bufferConsumer.accept(bb);
                 return null;
             });
         }
 
-        default void overwriteRecord(ByteBuffer buffer) {
+        default void overwriteRecord(ByteBuffer buffer) throws IOException {
             writeToRecordNoReturn(bb -> bb.put(buffer));
         }
 
@@ -61,7 +52,7 @@ public interface ByteBufferManager {
 
     RecordEntry getExisting(long offset);
 
-    RecordEntry allocateNewSlice(int size);
+    RecordEntry allocateNewSlice(int size) throws IOException;
 
     default ByteBuffer allocateTemporaryBuffer(int size) {
         return ByteBuffer.allocate(size);

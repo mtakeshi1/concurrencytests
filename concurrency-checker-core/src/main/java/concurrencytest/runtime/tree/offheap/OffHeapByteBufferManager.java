@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.channels.FileLock;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -19,6 +20,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,17 +36,26 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
 
     private final File baseFolder;
 
+    public static final int DEFAULT_BUFFER_PAGE_SIZE = 1024 * 1024 * 1024;
+
     public static final String PAGE_FILE_PREFFIX = "dataFile.";
 
     public static final Pattern PATTERN = Pattern.compile(Pattern.quote(PAGE_FILE_PREFFIX) + "([0-9]+)$");
 
-    public static final int BUFFER_PAGE_SIZE = 1024 * 1024 * 1024; // 2gb
+    private final int bufferPageSize; // 1gb
+
     private final ConcurrentMap<Integer, ChannelAndBuffer> allocatedBuffers = new ConcurrentHashMap<>();
+
+    private final ConcurrentMap<Integer, PageLock> pageLockMap = new ConcurrentHashMap<>();
 
     private final AtomicLong unusedOffset = new AtomicLong();
 
-    public OffHeapByteBufferManager(File baseFolder) throws IOException {
-        this.baseFolder = baseFolder;
+    public OffHeapByteBufferManager(File baseFolder, int bufferPageSize) throws IOException {
+        if (bufferPageSize % 4096 != 0) {
+            throw new IllegalArgumentException("bufferPageSize should be divisable by 4k but was: " + bufferPageSize);
+        }
+        this.baseFolder = Objects.requireNonNull(baseFolder, "baseFolder cannot be null");
+        this.bufferPageSize = bufferPageSize;
         if (!baseFolder.exists()) {
             Files.createDirectories(baseFolder.toPath());
         } else if (!baseFolder.isDirectory()) {
@@ -66,8 +79,16 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
         advanceToLastUnusedOffset();
     }
 
-    private static int pageNumberForAbsoluteOffset(long offset) {
-        return (int) (offset / BUFFER_PAGE_SIZE);
+    public OffHeapByteBufferManager(File baseFolder) throws IOException {
+        this(baseFolder, DEFAULT_BUFFER_PAGE_SIZE);
+    }
+
+    public int getBufferPageSize() {
+        return bufferPageSize;
+    }
+
+    private int pageNumberForAbsoluteOffset(long offset) {
+        return (int) (offset / bufferPageSize);
     }
 
     interface RegionLock {
@@ -77,7 +98,7 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
 
         int size();
 
-        boolean isShared();
+        boolean shared();
 
         default boolean overlaps(RegionLock other) {
             if (this.pageIndex() != other.pageIndex()) {
@@ -89,20 +110,24 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
             return this.offsetInPage() + this.size() < other.offsetInPage();
         }
 
-        void lock();
+        void lock() throws IOException;
 
-        void unlock();
+        void unlock() throws IOException;
+    }
+
+    record PageLock(int pageIndex, ReadWriteLock lock, FileChannel channel) {
     }
 
     @Override
     public RecordEntry getExisting(long offset, int size) {
         if (offset > unusedOffset.get()) {
+            FileChannel channel = null;
             advanceToLastUnusedOffset();
             return getExisting(offset, size);
         }
         int page = pageNumberForAbsoluteOffset(offset);
         ByteBuffer buffer = allocatedBuffers.computeIfAbsent(page, this::allocateChannelAndbuffer).buffer();
-        int offsetInPage = (int) (offset % BUFFER_PAGE_SIZE);
+        int offsetInPage = (int) (offset % bufferPageSize);
         ByteBuffer slice = buffer.slice(offsetInPage, size + PlainRecordEntry.FIXED_PADDING);
         validateRecordEntry(slice, size);
         return new PlainRecordEntry(offset, size + PlainRecordEntry.FIXED_PADDING, this);
@@ -116,7 +141,7 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
         }
         int page = pageNumberForAbsoluteOffset(offset);
         ByteBuffer buffer = allocatedBuffers.computeIfAbsent(page, this::allocateChannelAndbuffer).buffer();
-        int offsetInPage = (int) (offset % BUFFER_PAGE_SIZE);
+        int offsetInPage = (int) (offset % bufferPageSize);
         byte[] sizeBytes = new byte[2];
         buffer.get(offsetInPage + 2, sizeBytes);
         int size = intFrom2Bytes(sizeBytes);
@@ -154,7 +179,7 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
         }
     }
 
-    public <T> T executeLocked(long offset, int size, Function<ByteBuffer, T> function, boolean readLock) {
+    public <T> T executeLocked(long offset, int size, Function<ByteBuffer, T> function, boolean readLock) throws IOException {
         RegionLock regionLock = allocateRegionLock(offset, size, readLock);
         regionLock.lock();
         try {
@@ -202,10 +227,10 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
                 }
             }
         }
-        long localMaxOffset = ((long) maxPage) * BUFFER_PAGE_SIZE;
+        long localMaxOffset = ((long) maxPage) * bufferPageSize;
         ByteBuffer bbuffer = Objects.requireNonNull(chanAndBuf, "did not find any buffer on page: " + maxPage).buffer();
         int pageOffset = 0;
-        while (pageOffset < BUFFER_PAGE_SIZE) {
+        while (pageOffset < bufferPageSize) {
             RecordEntry recordEntry = readFrom(bbuffer, pageOffset, maxPage);
             if (recordEntry == null) {
                 if (unusedOffset.compareAndSet(expectedLastOffset, localMaxOffset + pageOffset)) {
@@ -232,7 +257,7 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
         if (bbuffer.remaining() > offset + RecordEntry.HEADER_LENGTH + RecordEntry.FOOTER_LENGTH + 1) {
             byte[] buffer = new byte[2];
             bbuffer.get(offset, buffer);
-            if (RecordEntry.isValidHeader(buffer)) {
+            if (PlainRecordEntry.isValidHeader(buffer)) {
                 // we know somebody is writing here. We wait until
                 while (true) {
                     bbuffer.get(offset + 2, buffer);
@@ -242,8 +267,8 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
                         continue;
                     }
                     bbuffer.get(offset + size - 2, buffer);
-                    if (RecordEntry.isValidFooter(buffer)) {
-                        return new PlainRecordEntry((long) pageNumber * BUFFER_PAGE_SIZE + offset, size, this);
+                    if (PlainRecordEntry.isValidFooter(buffer)) {
+                        return new PlainRecordEntry((long) pageNumber * bufferPageSize + offset, size, this);
                     }
                 }
             } else {
@@ -260,23 +285,23 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
      * @return freshly empty RecordEntry
      */
     @Override
-    public RecordEntry allocateNewSlice(int size) {
+    public RecordEntry allocateNewSlice(int size) throws IOException {
         advanceToLastUnusedOffset();
         long offset = unusedOffset.get();
         int page = pageNumberForAbsoluteOffset(offset);
         int offsetInPage = offsetInPage(offset, page);
-        while (offsetInPage > BUFFER_PAGE_SIZE) {
+        while (offsetInPage > bufferPageSize) {
             page++;
             offsetInPage = offsetInPage(offset, page);
         }
-        offset = ((long) page) * BUFFER_PAGE_SIZE + offsetInPage;
+        offset = ((long) page) * bufferPageSize + offsetInPage;
         ChannelAndBuffer buffer = getOrInitializeBlankPage(size);
         RegionLock lock = allocateRegionLock(offset, size, false);
         lock.lock();
         try {
             byte[] tmp = new byte[2];
             buffer.buffer().get(offsetInPage, tmp);
-            if (!RecordEntry.isValidHeader(tmp)) {
+            if (!PlainRecordEntry.isValidHeader(tmp)) {
                 buffer.buffer().put(offsetInPage, PlainRecordEntry.HEADER);
                 buffer.buffer().put(offsetInPage + 2, putInt2Bytes(tmp, size));
                 buffer.buffer().put(offsetInPage + size - RecordEntry.FOOTER_LENGTH, PlainRecordEntry.FOOTER);
@@ -290,8 +315,10 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
         return allocateNewSlice(size);
     }
 
-    private static byte[] putInt2Bytes(byte[] tmp, int size) {
-        return Utils.todo();
+    private static byte[] putInt2Bytes(byte[] tmp, int value) {
+        tmp[0] = (byte) ((value >>> 8) & 0xff);
+        tmp[1] = (byte) (value & 0xff);
+        return tmp;
     }
 
     private void updateUnusedOffsetIfNecessary(long offset) {
@@ -303,14 +330,14 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
         }
     }
 
-    public static int offsetInPage(long offset, int page) {
-        return (int) (offset - page * BUFFER_PAGE_SIZE);
+    public int offsetInPage(long offset, int page) {
+        return (int) (offset - page * bufferPageSize);
     }
 
     private ChannelAndBuffer allocateChannelAndBuffer(int pageIndex, File file) {
         try {
             var channel = FileChannel.open(file.toPath(), StandardOpenOption.DSYNC, StandardOpenOption.WRITE, StandardOpenOption.READ);
-            MappedByteBuffer buffer = channel.map(MapMode.READ_WRITE, 0, BUFFER_PAGE_SIZE);
+            MappedByteBuffer buffer = channel.map(MapMode.READ_WRITE, 0, bufferPageSize);
             return new ChannelAndBuffer(pageIndex, file, channel, buffer);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -329,36 +356,32 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
             return present;
         }
         File file = new File(PAGE_FILE_PREFFIX + pageIndex);
-        if (file.exists()) {
-            try {
+        try {
+            if (file.exists()) {
                 var channel = FileChannel.open(file.toPath(), StandardOpenOption.DSYNC, StandardOpenOption.WRITE, StandardOpenOption.READ);
-                MappedByteBuffer buffer = channel.map(MapMode.READ_WRITE, 0, BUFFER_PAGE_SIZE);
+                MappedByteBuffer buffer = channel.map(MapMode.READ_WRITE, 0, bufferPageSize);
                 return new ChannelAndBuffer(pageIndex, file, channel, buffer);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } else {
-            try {
+            } else {
                 var channel = FileChannel.open(file.toPath(), StandardOpenOption.DSYNC, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
-                var tmpBuffer = ByteBuffer.allocateDirect(BUFFER_PAGE_SIZE / 1024);
+                var tmpBuffer = ByteBuffer.allocateDirect(bufferPageSize / 1024);
                 tmpBuffer.mark();
-                for (int i = 0; i < BUFFER_PAGE_SIZE / tmpBuffer.remaining(); i++) {
+                for (int i = 0; i < bufferPageSize / tmpBuffer.remaining(); i++) {
                     channel.write(tmpBuffer);
                     tmpBuffer.reset();
                 }
-                MappedByteBuffer buffer = channel.map(MapMode.READ_WRITE, 0, BUFFER_PAGE_SIZE);
+                MappedByteBuffer buffer = channel.map(MapMode.READ_WRITE, 0, bufferPageSize);
                 return new ChannelAndBuffer(pageIndex, file, channel, buffer);
-            } catch (FileAlreadyExistsException e) {
-                // we will try again, as someone else beat me to this
-                return getOrInitializeBlankPage(pageIndex);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
             }
+        } catch (FileAlreadyExistsException e) {
+            // we will try again, as someone else beat me to this
+            return getOrInitializeBlankPage(pageIndex);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     /**
-     * Initializes a new page file, with size {@link OffHeapByteBufferManager#BUFFER_PAGE_SIZE}
+     * Initializes a new page file, with size {@link OffHeapByteBufferManager#bufferPageSize}
      *
      * @param pageIndex the index
      * @return MappedByteBuffer for the entire file
@@ -369,6 +392,68 @@ public class OffHeapByteBufferManager implements ByteBufferManager {
     }
 
     private RegionLock allocateRegionLock(long offset, int size, boolean readLock) {
-        return Utils.todo();
+        int page = pageNumberForAbsoluteOffset(offset);
+        int end = pageNumberForAbsoluteOffset(offset + size);
+        if (page != end) {
+            throw new RuntimeException("region lock would exceed a single page =(");
+        }
+        int offsetInPage = offsetInPage(offset, page);
+        ChannelAndBuffer cnb = getOrInitializeBlankPage(page);
+        var existing = pageLockMap.computeIfAbsent(page, ignored -> new PageLock(page, new ReentrantReadWriteLock(), cnb.channel()));
+
+        return new RegionLock() {
+
+            FileLock regionLock = null;
+
+            @Override
+            public int pageIndex() {
+                return page;
+            }
+
+            @Override
+            public int offsetInPage() {
+                return offsetInPage;
+            }
+
+            @Override
+            public int size() {
+                return size;
+            }
+
+            @Override
+            public boolean shared() {
+                return readLock;
+            }
+
+            @Override
+            public void lock() throws IOException {
+                if (regionLock == null) {
+                    throw new IllegalStateException("this region is already locked!");
+                }
+                if (readLock) {
+                    existing.lock().readLock().lock();
+                } else {
+                    existing.lock().writeLock().lock();
+                }
+                try {
+                    regionLock = existing.channel.lock(offsetInPage, size, readLock);
+                } catch (IOException e) {
+                    unlock();
+                    throw e;
+                }
+            }
+
+            @Override
+            public void unlock() throws IOException {
+                if (readLock) {
+                    existing.lock().readLock().unlock();
+                } else {
+                    existing.lock().writeLock().unlock();
+                }
+                if (regionLock != null) {
+                    regionLock.release();
+                }
+            }
+        };
     }
 }
