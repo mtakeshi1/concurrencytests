@@ -8,7 +8,6 @@ public class LockTest implements Runnable {
 
     private final Lock lock = new ReentrantLock();
 
-
     @Override
     public void run() {
         try {

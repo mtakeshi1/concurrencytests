@@ -42,6 +42,10 @@ public abstract class BaseMethodVisitor extends MethodVisitor {
         if (!Modifier.isStatic(modifiers)) {
             this.nextFreeLocalVariable = 1;
         }
+        Type[] args = Type.getArgumentTypes(descriptor);
+        for (Type t : args) {
+            this.nextFreeLocalVariable += t.getSize();
+        }
         this.modifiers = BehaviourModifier.unreflect(modifiers);
         this.accessModifier = AccessModifier.unreflect(modifiers);
         this.classResolver = resolver;
