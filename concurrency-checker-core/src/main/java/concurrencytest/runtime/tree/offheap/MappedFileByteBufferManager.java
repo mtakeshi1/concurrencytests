@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,7 +25,7 @@ import java.util.regex.Pattern;
  * <p>
  * Each RecordEntry has a fixed header of 2 bytes, followed by the entire record size in 2 bytes, content and them finally 2-bytes footer
  */
-public class OffHeapByteBufferManager extends AbstractByteBufferManager implements ByteBufferManager {
+public class MappedFileByteBufferManager extends AbstractByteBufferManager implements ByteBufferManager {
 
     private final File baseFolder;
 
@@ -39,7 +37,7 @@ public class OffHeapByteBufferManager extends AbstractByteBufferManager implemen
 
     private final ConcurrentMap<Integer, ChannelAndBuffer> allocatedBuffers = new ConcurrentHashMap<>();
 
-    public OffHeapByteBufferManager(File baseFolder, int bufferPageSize) throws IOException {
+    public MappedFileByteBufferManager(File baseFolder, int bufferPageSize) throws IOException {
         super(bufferPageSize);
         if (bufferPageSize % 4096 != 0) {
             throw new IllegalArgumentException("bufferPageSize should be divisable by 4k but was: " + bufferPageSize);
@@ -52,7 +50,7 @@ public class OffHeapByteBufferManager extends AbstractByteBufferManager implemen
         }
     }
 
-    public OffHeapByteBufferManager(File baseFolder) throws IOException {
+    public MappedFileByteBufferManager(File baseFolder) throws IOException {
         this(baseFolder, DEFAULT_BUFFER_PAGE_SIZE);
     }
 

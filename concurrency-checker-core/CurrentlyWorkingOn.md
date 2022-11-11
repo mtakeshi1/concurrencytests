@@ -1,7 +1,9 @@
 # Currently working on:
 
 - callbacks should be invoked by the scheduler thread and not by the actor threads
-- off-heap graph - allows forking
+- bytebuffer backed trees 
+  - direct  byte buffer trees allow smaller heap, with the OS managing swapping memory in / out of disk
+  - mapped (files) bytebuffer trees allow forking 
 - injection of ExecutorService / ScheduledExecutorService into @Before and actors
 - better test infrastructure - mostly to detect which classes to inject for the basic tests
 - writing README.md

@@ -11,6 +11,10 @@ public interface ByteBufferManager {
 
     int getPageSize();
 
+    int numberOfPages();
+
+    long knownFreeOffset();
+
     <T> T executeLocked(long offset, int size, Function<ByteBuffer, T> function, boolean readLock) throws IOException;
 
     /**
@@ -70,15 +74,13 @@ public interface ByteBufferManager {
      *
      * @param contentSize size should be less than {@link RecordEntry#MAX_RECORD_LENGTH}
      * @return RecordEntry
-     * @throws IOException if an IOException occurs while allocating a new file region or a new file
+     * @throws IllegalArgumentException if the content size is > than {@link ByteBufferManager#getPageSize()} or  {@link RecordEntry#MAX_RECORD_LENGTH} or <= 0
      */
-    RecordEntry allocateNewSlice(int contentSize) throws IOException;
+    RecordEntry allocateNewSlice(int contentSize) ;
 
     default ByteBuffer allocateTemporaryBuffer(int size) {
         return ByteBuffer.allocate(size);
     }
-
-//    <T> T executeLocked(long offset, int size, Function<ByteBuffer, T> function);
 
     default void returnBuffer(ByteBuffer buffer) {
     }

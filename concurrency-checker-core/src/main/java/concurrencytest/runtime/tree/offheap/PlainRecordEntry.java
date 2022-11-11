@@ -16,12 +16,12 @@ import java.util.function.Function;
  * Include also an end of record two bytes - 0XACAC
  */
 public record PlainRecordEntry(long absoluteOffset, int totalEntrySize, ByteBufferManager man) implements RecordEntry {
-    static byte[] HEADER = new byte[]{(byte) 0xAA, (byte) 0xFE};
-    static byte[] FOOTER = new byte[]{(byte) 0xAC, (byte) 0xDC};
+    public static byte[] HEADER = new byte[]{(byte) 0xAA, (byte) 0xFE};
+    public static byte[] FOOTER = new byte[]{(byte) 0xAC, (byte) 0xDC};
 
 
-    static final int RECORD_ENTRY_PREFFIX_LENGTH = 4;
-    static final int RECORD_FOOTER_LENGTH = 2;
+    public static final int RECORD_ENTRY_PREFFIX_LENGTH = 4;
+    public static final int RECORD_FOOTER_LENGTH = 2;
 
     static final int FIXED_PADDING = RECORD_ENTRY_PREFFIX_LENGTH + RECORD_FOOTER_LENGTH;
 

@@ -1,6 +1,5 @@
 package concurrencytest.runtime.tree.offheap;
 
-import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -34,6 +33,16 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
         tmp[0] = (byte) ((value >>> 8) & 0xff);
         tmp[1] = (byte) (value & 0xff);
         return tmp;
+    }
+
+    @Override
+    public int numberOfPages() {
+        return knownPages().size();
+    }
+
+    @Override
+    public long knownFreeOffset() {
+        return freeOffset.get();
     }
 
     public static int intFrom2Bytes(byte[] sizeBytes) {
@@ -81,7 +90,16 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
     }
 
     @Override
-    public RecordEntry allocateNewSlice(int contentSize) throws IOException {
+    public RecordEntry allocateNewSlice(int contentSize) {
+        if (contentSize > RecordEntry.MAX_RECORD_LENGTH) {
+            throw new IllegalArgumentException("requested content size (%d) > MAX_RECORD_LENGTH".formatted(contentSize));
+        }
+        if (contentSize + RecordEntry.HEADER_LENGTH + RecordEntry.FOOTER_LENGTH > pageSize) {
+            throw new IllegalArgumentException("requested content size (%d) > usefull pageSize (%d)".formatted(contentSize, pageSize - RecordEntry.HEADER_LENGTH - RecordEntry.FOOTER_LENGTH));
+        }
+        if (contentSize <= 0) {
+            throw new IllegalArgumentException("requested content size cannot be <= 0");
+        }
         long freeOffset = getLastUnusedOffset();
         int offsetInPage = (int) (freeOffset % pageSize);
         int page = offsetInPage / pageSize;
@@ -153,13 +171,16 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
 
     public <T> T executeLocked(long offset, int size, Function<ByteBuffer, T> function, boolean readLock) {
         int offsetInPage = (int) (offset % pageSize);
-        int page = offsetInPage / pageSize;
+        int page = (int) (offset / pageSize);
         ByteBuffer buffer = getOrAllocateBufferForPage(page);
         ByteBuffer slice = buffer.slice(offsetInPage, size);
         RegionLock regionLock = getOrAllocateRegionLock(offset, size, offsetInPage, page);
         return doWithLock(function, readLock, slice, regionLock);
     }
 
+    /*
+     * TODO check all overlapping region locks instead of exact match
+     */
     private RegionLock getOrAllocateRegionLock(long offset, int size, int offsetInPage, int page) {
         RegionLock regionLock = allocateNewRegionLock(page, offsetInPage, size); // this should prevent the inner soft reference from being collected
         SoftReference<RegionLock> reference = allocatedLocks.computeIfAbsent(offset, ignored -> new SoftReference<>(regionLock));
@@ -169,26 +190,6 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
             return getOrAllocateRegionLock(offset, size, offsetInPage, page);
         }
         return cached;
-//        SoftReference<RegionLock> ref = allocatedLocks.get(offset);
-//        if (ref != null) {
-//            RegionLock lock = ref.get();
-//            if (lock == null) {
-//                allocatedLocks.remove(offset, ref);
-//            } else {
-//                return lock;
-//            }
-//        }
-//        var existing = allocatedLocks.putIfAbsent(offset, new SoftReference<>(regionLock));
-//        if (existing != null) {
-//            RegionLock lock = existing.get();
-//            if (lock != null) {
-//
-//            } else {
-//                allocatedLocks.remove(offset, existing);
-//            }
-//
-//        }
-//        return regionLock;
     }
 
     private <T> T doWithLock(Function<ByteBuffer, T> function, boolean readLock, ByteBuffer slice, RegionLock lock) {
