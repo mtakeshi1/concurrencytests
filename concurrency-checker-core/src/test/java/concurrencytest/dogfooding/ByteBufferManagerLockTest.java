@@ -1,8 +1,8 @@
 package concurrencytest.dogfooding;
 
 
+import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
-import concurrencytest.annotations.MultipleActors;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;
@@ -27,8 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RunWith(ActorSchedulerRunner.class)
 public class ByteBufferManagerLockTest {
 
-    private List<Pair> workingPairs = new CopyOnWriteArrayList<>();
-
+    private final List<Pair> workingPairs = new CopyOnWriteArrayList<>();
 
     private ByteBufferManager byteBufferManager;
 
@@ -37,17 +36,33 @@ public class ByteBufferManagerLockTest {
         byteBufferManager = new ByteBufferManagerImpl();
     }
 
-    @MultipleActors(numberOfActors = 2)
-    public void actor() throws IOException {
-        RecordEntry region = byteBufferManager.allocateNewSlice(1024);
-        region.writeToRecordNoReturn(b -> {
-            Pair pair = new Pair(region.absoluteOffset(), region.recordSize());
-            workingPairs.add(pair);
-            CheckpointRuntimeAccessor.manualCheckpoint("with lock maybe");
-            workingPairs.remove(pair);
-        });
+    @Actor
+    public void actorPre() throws IOException {
+        RecordEntry entry = allocateAndWork(128);
+        Assert.assertNotNull(entry);
+//        Thread.sleep(10);
+        RecordEntry entry2 = allocateAndWork(256);
+        Assert.assertNotNull(entry2);
     }
 
+    @Actor
+    public void actorPost() throws IOException {
+        RecordEntry recordEntry = allocateAndWork(2048);
+        Assert.assertNotNull(recordEntry);
+    }
+
+    private RecordEntry allocateAndWork(int size) throws IOException {
+        RecordEntry region = byteBufferManager.allocateNewSlice(256);
+        Pair pair = new Pair(region.absoluteOffset(), region.recordSize());
+        region.writeToRecordNoReturn(b -> innerThing(pair));
+        return region;
+    }
+
+    private void innerThing(Pair pair) {
+        workingPairs.add(pair);
+        CheckpointRuntimeAccessor.manualCheckpoint("with lock maybe");
+        workingPairs.remove(pair);
+    }
 
     @Invariant
     public void atMostOneActor() {
@@ -74,11 +89,16 @@ public class ByteBufferManagerLockTest {
             }
 
             @Override
+            public int parallelExecutions() {
+                return 12;
+            }
+
+            @Override
             public CheckpointConfiguration checkpointConfiguration() {
                 return new CheckpointConfiguration() {
                     @Override
                     public boolean includeStandardMethods() {
-                        return true;
+                        return false;
                     }
                 };
             }

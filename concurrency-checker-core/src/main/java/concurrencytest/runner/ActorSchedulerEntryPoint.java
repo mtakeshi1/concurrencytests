@@ -5,9 +5,11 @@ import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.config.Configuration;
+import concurrencytest.runner.statistics.MutableRunStatistics;
 import concurrencytest.runtime.CheckpointRuntime;
 import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
@@ -25,9 +27,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -44,38 +45,61 @@ public class ActorSchedulerEntryPoint {
     private final Class<?> mainTestClass;
     private final CheckpointRegister checkpointRegister;
     private final String schedulerName;
+    private final Consumer<Throwable> errorReporter;
     private volatile Throwable actorError;
-
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass) {
-        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler");
-    }
-
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClassName, int maxLoopCount, String schedulerName) {
-        this.explorationTree = explorationTree;
-        this.checkpointRegister = register;
-        this.configuration = configuration;
-        this.initialPathActorNames = initialPathActorNames;
-        this.maxLoopCount = maxLoopCount;
-        this.mainTestClass = mainTestClassName;
-        this.schedulerName = schedulerName;
-    }
+//    private final ThreadPoolExecutor executorService;
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
 
     private ScheduledExecutorService managedExecutorService;
 
-    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, RunStatistics stat) throws InterruptedException {
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass, Consumer<Throwable> errorReporter) {
+        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler", errorReporter);
+    }
+
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClass,
+                                    int maxLoopCount, String schedulerName, Consumer<Throwable> errorReporter) {
+        this.explorationTree = explorationTree;
+        this.checkpointRegister = register;
+        this.configuration = configuration;
+        this.initialPathActorNames = initialPathActorNames;
+        this.maxLoopCount = maxLoopCount;
+        this.mainTestClass = mainTestClass;
+        this.schedulerName = schedulerName;
+
+        this.errorReporter = errorReporter;
+    }
+
+    public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, MutableRunStatistics stat) throws InterruptedException {
+        ThreadFactory threadFactory = r -> {
+            ManagedThread mt = new ManagedThread(r);
+            mt.setSchedulerName(schedulerName);
+            return mt;
+        };
+
+        int size = ActorSchedulerSetup.parseInitialActorNames(mainTestClass).size();
+        ThreadPoolExecutor executorService = new ThreadPoolExecutor(size, size, Long.MAX_VALUE, TimeUnit.MINUTES, new ArrayBlockingQueue<>(size), threadFactory);
         try {
             MDC.put("actor", schedulerName);
             invokeBeforeClass();
             while (hasMorePathsToExplore() && actorError == null) {
-                executeOnce(stat);
+                executeOnce(stat, executorService);
                 TreeNode node = explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister);
                 treeObserver.accept(node);
             }
+            if (actorError != null) {
+                errorReporter.accept(actorError);
+            }
             return Optional.ofNullable(actorError);
+        } catch (Throwable t) {
+            errorReporter.accept(t);
+            return Optional.of(t);
         } finally {
             invokeCleanup();
+            List<Runnable> list = executorService.shutdownNow();
+            if (!list.isEmpty()) {
+                LOGGER.warn("Executor for scheduler: %s shutdown but %d tasks still remain".formatted(this.schedulerName, list.size()));
+            }
         }
     }
 
@@ -113,10 +137,15 @@ public class ActorSchedulerEntryPoint {
                 }
             }
         }
+
     }
 
     private boolean hasMorePathsToExplore() {
-        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
+        TreeNode rootNode = explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister);
+        if (rootNode.isFullyExplored()) {
+            return false;
+        }
+        Optional<TreeNode> node = walk(rootNode, new LinkedList<>(initialPathActorNames));
         return !node.map(TreeNode::isFullyExplored).orElse(false);
     }
 
@@ -127,24 +156,32 @@ public class ActorSchedulerEntryPoint {
         Optional<TreeNode> next = Optional.of(treeNode);
         while (!initialPathActorNames.isEmpty()) {
             var childNode = initialPathActorNames.remove();
+            if (next.map(TreeNode::isFullyExplored).orElse(false)) {
+                return Optional.of(TreeNode.EMPTY_TREE_NODE);
+            }
             next = next.flatMap(s -> s.childNode(childNode)).map(Supplier::get);
         }
         return next;
     }
 
-    public void executeOnce(RunStatistics stat) throws InterruptedException {
-        executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames), stat);
+    public void executeOnce(MutableRunStatistics stat, ThreadPoolExecutor executor) throws InterruptedException {
+        executeWithPreselectedPath(new ArrayDeque<>(initialPathActorNames), stat, executor);
     }
 
-    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames, RunStatistics stat) throws InterruptedException {
-        MDC.put("actor", "scheduler");
+    public void executeWithPreselectedPath(Queue<String> preSelectedActorNames, MutableRunStatistics stat, ThreadPoolExecutor executorService) throws InterruptedException {
+        MDC.put("actor", schedulerName);
+        Thread.currentThread().setName(schedulerName);
         long t0 = System.nanoTime();
         Object mainTestObject = instantiateMainTestClass();
         var initialActorNames = ActorSchedulerSetup.parseActorMethods(mainTestClass);
-        RuntimeState runtime = initialState(initialActorNames);
 
+        RuntimeState runtime = initialState(initialActorNames, executorService);
+        Collection<Future<Throwable>> actorTasks = Collections.emptyList();
         try {
-            runtime.start(mainTestObject, configuration.checkpointTimeout());
+            if (executorService.getActiveCount() != 0) {
+                System.out.println("threads busy?"); //FIXME
+            }
+            actorTasks = runtime.start(mainTestObject, configuration.checkpointTimeout());
             String lastActor = null;
             TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
             invokeBefore(mainTestObject);
@@ -179,10 +216,27 @@ public class ActorSchedulerEntryPoint {
             LOGGER.warn("Timing out waiting for actors to converge.");
             LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
             reportActorError(e);
+        } catch (InitialPathBlockedException e) {
+            // ignore for now
         } catch (ActorSchedulingException e) {
             LOGGER.warn("Scheduling error - either a deadlock or starvation");
             LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
             reportActorError(e);
+        } finally {
+            for (Future<?> f : actorTasks) {
+                try {
+                    f.get();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    errorReporter.accept(e.getCause());
+                }
+            }
+            for (int i = 0; i < 100 && executorService.getActiveCount() != 0; i++) {
+                LockSupport.parkNanos(100);
+            }
+            if (executorService.getActiveCount() != 0) {
+                System.out.println("wtf"); //FIXME
+            }
         }
     }
 
@@ -315,26 +369,8 @@ public class ActorSchedulerEntryPoint {
         }
     }
 
-    private RuntimeState initialState(Map<String, Function<Object, Throwable>> initialActorNames) {
-//        Map<String, Consumer<Object>> managedThreadRunnables = new HashMap<>();
-//        initialActorNames.forEach((actor, method) -> {
-//            Object[] params = collectParametersForActorRun();
-//            Consumer<Object> wrapped = callTarget -> {
-//                try {
-//                    method.invoke(callTarget, params);
-//                } catch (IllegalAccessException e) {
-//                    reportActorError(e);
-//                } catch (InvocationTargetException e) {
-//                    reportActorError(e.getTargetException());
-//                } catch (RuntimeException | Error e) {
-//                    reportActorError(e);
-//                    throw e;
-//                }
-//            };
-//            managedThreadRunnables.put(actor, wrapped);
-//        });
-        return new MutableRuntimeState(this.checkpointRegister, initialActorNames, this::reportActorError);
-
+    private RuntimeState initialState(Map<String, Function<Object, Throwable>> initialActorNames, ThreadPoolExecutor executorService) {
+        return new MutableRuntimeState(this.checkpointRegister, initialActorNames, this::reportActorError, executorService);
     }
 
     private Object[] collectParametersForActorRun() {

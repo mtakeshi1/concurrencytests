@@ -2,24 +2,21 @@ package concurrencytest.runtime;
 
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 public class CheckpointWithSemaphore {
     private final CheckpointReached checkpointReached;
-    private final Thread thread;
+    private final Future<?> future;
     private final Semaphore semaphore = new Semaphore(0);
 
-    public CheckpointWithSemaphore(CheckpointReached checkpointReached, Thread thread) {
+    public CheckpointWithSemaphore(CheckpointReached checkpointReached, Future<?> future) {
         this.checkpointReached = checkpointReached;
-        this.thread = thread;
+        this.future = future;
     }
 
     public CheckpointReached getCheckpointReached() {
         return checkpointReached;
-    }
-
-    public Thread getThread() {
-        return thread;
     }
 
     public Semaphore getSemaphore() {
@@ -30,4 +27,7 @@ public class CheckpointWithSemaphore {
         semaphore.release();
     }
 
+    public Future<?> getFuture() {
+        return future;
+    }
 }

@@ -14,6 +14,10 @@ import concurrencytest.config.Configuration;
 import concurrencytest.config.ExecutionMode;
 import concurrencytest.reflection.ClassResolver;
 import concurrencytest.reflection.ReflectionHelper;
+import concurrencytest.runner.statistics.GenericStatistics;
+import concurrencytest.runner.statistics.ImmutableRunStatistics;
+import concurrencytest.runner.statistics.MutableRunStatistics;
+import concurrencytest.runner.statistics.RunStatistics;
 import concurrencytest.runtime.tree.HeapTree;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
@@ -39,6 +43,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -156,40 +161,70 @@ public class ActorSchedulerSetup {
         return mode;
     }
 
-    private void collectAndPrint(RunStatistics[] statistics) {
-        MDC.put("actor", "MONITOR");
-        var combined = new RunStatistics(0, 0, 0);
+    private static RunStatistics collectAndReset(MutableRunStatistics[] statistics) {
+        RunStatistics combined = ImmutableRunStatistics.ZERO;
         for (var s : statistics) {
-            if (s != null) combined = combined.sum(s);
+            if (s != null) {
+                combined = combined.sumWith(s);
+                s.reset(); // yes this is not 100% accurate but hopefully it will not be too bad
+            }
         }
-        LOGGER.info(combined.toString());
+        return combined;
     }
+
+    private static Runnable monitorTask(MutableRunStatistics[] statistics, List<Future<Optional<Throwable>>> futures, int parallel) {
+        AtomicLong gcTime = new AtomicLong(GenericStatistics.totalGCTimeNanos());
+        AtomicLong cpuTime = new AtomicLong(GenericStatistics.totalCPUUsageTimeNanos());
+        AtomicLong totalRuns = new AtomicLong();
+        AtomicLong lastTimeNanos = new AtomicLong(System.nanoTime());
+        return new Runnable() {
+            @Override
+            public void run() {
+                long runningThreads = Math.min(futures.stream().filter(f -> !f.isDone()).count(), parallel);
+                double procs = Runtime.getRuntime().availableProcessors();
+                MDC.put("actor", "MONITOR");
+                RunStatistics collected = collectAndReset(statistics);
+                long total = totalRuns.addAndGet(collected.numberOfRuns());
+                long gc = GenericStatistics.totalGCTimeNanos() - gcTime.get();
+                long cpu = GenericStatistics.totalCPUUsageTimeNanos() - cpuTime.get();
+                double timeDiff = System.nanoTime() - lastTimeNanos.get(); // it should be almost impossible to be zero, but in a low resolution system maybe
+                double cpuUsage = timeDiff < 0.1 ? 0 : (100.0 * cpu / procs / timeDiff);
+                double gcUsage = timeDiff < 0.1 ? 0 : (100.0 * gc / procs / timeDiff);
+                LOGGER.info("%s - total runs: %d, running threads: %d, cpu usage: %.2f gc: %.2f".formatted(collected.format(), total, runningThreads, cpuUsage, gcUsage));
+                gcTime.set(GenericStatistics.totalGCTimeNanos());
+                cpuTime.set(GenericStatistics.totalCPUUsageTimeNanos());
+                lastTimeNanos.set(System.nanoTime());
+                MDC.clear();
+            }
+        };
+    }
+
 
     private Optional<Throwable> runInVm(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath)
             throws InterruptedException, IOException, ClassNotFoundException {
         Tree tree = new HeapTree();
-        MDC.put("actor", "coordinator");
+        MDC.put("actor", "COORDINATOR");
         ExecutorService service = Executors.newFixedThreadPool(configuration.parallelExecutions());
-        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> {
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, r -> {
             Thread thread = new Thread(r);
             thread.setDaemon(true);
             return thread;
         });
-
-        List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions(), preselectedPath);
-        RunStatistics[] statistics = new RunStatistics[tasks.size()];
-        scheduledExecutorService.scheduleWithFixedDelay(() -> this.collectAndPrint(statistics), 1, 1, TimeUnit.MINUTES);
+        List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions() + 1, preselectedPath);
+        MutableRunStatistics[] statistics = new MutableRunStatistics[tasks.size()];
+        List<Future<Optional<Throwable>>> futures = new CopyOnWriteArrayList<>();
+        Consumer<Throwable> errorReporter = t -> cancelTasks(futures);
+        Runnable command = monitorTask(statistics, futures, configuration.parallelExecutions());
+        scheduledExecutorService.scheduleWithFixedDelay(command, 10, 10, TimeUnit.SECONDS);
         try {
-            List<Future<Optional<Throwable>>> futures = new ArrayList<>(tasks.size());
             AtomicInteger actorIndex = new AtomicInteger();
-
             for (int i = 0; i < tasks.size(); i++) {
                 var preffix = tasks.get(i);
-                RunStatistics stat = new RunStatistics();
+                MutableRunStatistics stat = new MutableRunStatistics();
                 statistics[i] = stat;
                 Callable<Optional<Throwable>> task = () -> {
                     Class<?> mainTestClass = loadMainTestClass(mode);
-                    ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(), "scheduler_" + actorIndex.getAndIncrement());
+                    ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(), "scheduler_" + actorIndex.getAndIncrement(), errorReporter);
                     return entryPoint.exploreAll(treeObserver, stat);
                 };
                 futures.add(service.submit(task));
@@ -198,7 +233,7 @@ public class ActorSchedulerSetup {
                 try {
                     Optional<Throwable> optional = fut.get();
                     if (optional.isPresent()) {
-                        concelTasks(futures);
+                        cancelTasks(futures);
                         return optional;
                     }
                 } catch (ExecutionException e) {
@@ -213,20 +248,51 @@ public class ActorSchedulerSetup {
                     }
                 }
             }
-            collectAndPrint(statistics);
+            command.run();
             return Optional.empty();
         } finally {
-            service.shutdown();
+            scheduledExecutorService.shutdown();
+            service.shutdownNow();
         }
     }
 
-    private void concelTasks(List<Future<Optional<Throwable>>> futures) {
+    private void waitForTasks(List<Future<Optional<Throwable>>> futures) throws InterruptedException, IOException, ClassNotFoundException {
+        while (futures.stream().anyMatch(f -> !f.isDone())) {
+            try {
+                for (var fut : futures) {
+                    if (fut.isDone()) {
+                        Optional<Throwable> error = fut.get();
+                        if (error.isPresent()) {
+                            cancelTasks(futures);
+                        }
+                    }
+                }
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof IOException ioe) {
+                    throw ioe;
+                } else if (e.getCause() instanceof ClassNotFoundException cnfe) {
+                    throw cnfe;
+                } else if (e.getCause() instanceof RuntimeException rte) {
+                    throw rte;
+                } else {
+                    throw new RuntimeException(e.getCause());
+                }
+            }
+        }
+    }
+
+
+    private void cancelTasks(List<Future<Optional<Throwable>>> futures) {
         for (var fut : futures) {
             fut.cancel(true);
         }
     }
 
     public static List<List<String>> buildTaskList(Collection<String> actorNames, int executions, Collection<? extends String> preselectedPath) {
+        if (actorNames.size() == 1) {
+            // sorry no scheduling for you =(
+            return List.of(List.of(actorNames.iterator().next()));
+        }
         List<List<String>> soFar = new ArrayList<>();
         soFar.add(new ArrayList<>(preselectedPath));
         while (soFar.size() < executions) {

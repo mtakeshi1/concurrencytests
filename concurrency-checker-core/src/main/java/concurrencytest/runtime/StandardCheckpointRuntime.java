@@ -15,6 +15,7 @@ public class StandardCheckpointRuntime implements CheckpointRuntime {
     private final CheckpointRegister checkpointRegister;
 
     private final List<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
+
     private volatile Throwable error;
 
     public StandardCheckpointRuntime(CheckpointRegister checkpointRegister) {

@@ -43,16 +43,25 @@ public class PlainTreeNode implements TreeNode {
 
     @Override
     public Map<String, ActorInformation> threads() {
+        if (fullyExplored) {
+            return Map.of();
+        }
         return actorInformationMap;
     }
 
     @Override
     public Map<String, Optional<Supplier<TreeNode>>> childNodes() {
+        if (fullyExplored) {
+            return Map.of();
+        }
         return actorInformationMap.keySet().stream().collect(Collectors.toMap(ac -> ac, this::childNode));
     }
 
     @Override
     public Optional<Supplier<TreeNode>> childNode(String nodeName) {
+        if (fullyExplored) {
+            return Optional.empty();
+        }
         PlainTreeNode plainTreeNode = nodes.get(nodeName);
         if (plainTreeNode == null) {
             return Optional.empty();
@@ -61,6 +70,9 @@ public class PlainTreeNode implements TreeNode {
     }
 
     private boolean shouldExplore(String actorName) {
+        if (fullyExplored) {
+            return false;
+        }
         ActorInformation information = actorInformationMap.get(actorName);
         Objects.requireNonNull(information, "Path not found for actor named: %s".formatted(actorName));
         PlainTreeNode link = nodes.get(actorName);
@@ -90,14 +102,13 @@ public class PlainTreeNode implements TreeNode {
             }
         }
         markFullyExplored();
-//        if (nodes.size() == actorInformationMap.values().stream().filter(ai -> !ai.finished()).count() && nodes.values().stream().allMatch(PlainTreeNode::isFullyExplored)) {
-//            this.markFullyExplored();
-//        }
     }
 
     @Override
     public void markFullyExplored() {
         fullyExplored = true;
+        actorInformationMap.clear();
+        nodes.clear();
         if (parent != null && parent != this) {
             parent.checkAllChildrenExplored();
         }

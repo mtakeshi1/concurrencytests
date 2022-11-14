@@ -10,6 +10,52 @@ import java.util.stream.Stream;
 
 public interface TreeNode {
 
+    TreeNode EMPTY_TREE_NODE = new TreeNode() {
+        @Override
+        public TreeNode parentNode() {
+            return this;
+        }
+
+        @Override
+        public Map<String, ActorInformation> threads() {
+            return Map.of();
+        }
+
+        @Override
+        public Map<String, Optional<Supplier<TreeNode>>> childNodes() {
+            return Map.of();
+        }
+
+        @Override
+        public Optional<Supplier<TreeNode>> childNode(String nodeName) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Stream<String> unexploredPaths() {
+            return Stream.empty();
+        }
+
+        @Override
+        public TreeNode advance(ThreadState selectedToProceed, RuntimeState next) {
+            throw new IllegalArgumentException("cannot advance empty tree node");
+        }
+
+        @Override
+        public boolean isFullyExplored() {
+            return true;
+        }
+
+        @Override
+        public void markFullyExplored() {
+        }
+
+        @Override
+        public void checkAllChildrenExplored() {
+        }
+    };
+
+
     default boolean isRootNode() {
         return this == parentNode();
     }
@@ -33,7 +79,6 @@ public interface TreeNode {
     }
 
     Stream<String> unexploredPaths();
-
 
     default long maxKnownDepth() {
         return childNodes().values().stream().filter(Optional::isPresent).map(Optional::get).map(Supplier::get).mapToLong(tn -> 1 + tn.maxKnownDepth()).max().orElse(0);

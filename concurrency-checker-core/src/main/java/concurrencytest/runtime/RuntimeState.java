@@ -8,6 +8,7 @@ import concurrencytest.runtime.thread.ThreadState;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ public interface RuntimeState {
 
     Collection<? extends ThreadState> allActors();
 
-    Collection<ManagedThread> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException;
+    Collection<Future<Throwable>> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException;
 
     /**
      * Signal the given actor to advance tot he next checkpoint. The current thread waits for rendezvous for the given maxWaitTime.

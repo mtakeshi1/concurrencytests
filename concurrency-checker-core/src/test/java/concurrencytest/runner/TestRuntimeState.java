@@ -3,11 +3,12 @@ package concurrencytest.runner;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
+import concurrencytest.util.Utils;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
 public record TestRuntimeState(CheckpointRegister checkpointRegister, Collection<? extends ThreadState> allActors) implements RuntimeState {
@@ -32,8 +33,8 @@ public record TestRuntimeState(CheckpointRegister checkpointRegister, Collection
     }
 
     @Override
-    public Collection<ManagedThread> start(Object testInstance, Duration timeout) {
-        throw new RuntimeException("not implemented");
+    public Collection<Future<Throwable>> start(Object testInstance, Duration timeout) {
+        return Utils.todo();
     }
 
     @Override

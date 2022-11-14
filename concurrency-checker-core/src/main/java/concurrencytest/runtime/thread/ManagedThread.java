@@ -18,9 +18,10 @@ public class ManagedThread extends Thread {
     private final Thread parentThread = Thread.currentThread();
 
     private final AtomicInteger childIndex = new AtomicInteger();
+    private String schedulerName = "none";
 
-    public ManagedThread(Runnable target, CheckpointRuntime runtime, String actorName) {
-        super(null, target, "actor_thread_for_" + actorName);
+    public ManagedThread(Runnable target, CheckpointRuntime runtime, String actorName, ThreadGroup group) {
+        super(group, target, "actor_thread_for_" + actorName);
         this.checkpointRuntime = runtime;
         this.actorName = actorName;
     }
@@ -61,17 +62,35 @@ public class ManagedThread extends Thread {
         super(group, target, name, stackSize, inheritThreadLocals);
     }
 
-    @Override
-    public void run() {
-        String actorName = getActorName();
+    public void setup(String actorName, CheckpointRuntime checkpointRuntime) {
+        this.actorName = actorName;
+        this.checkpointRuntime = checkpointRuntime;
+        setName(schedulerName + "_actor_thread_for_" + actorName);
         MDC.put("actor", actorName);
         CheckpointRuntimeAccessor.associateRuntime(this.checkpointRuntime);
+        CheckpointRuntimeAccessor.beforeStartCheckpoint();
+    }
+
+    public void cleanup() {
+        CheckpointRuntimeAccessor.releaseRuntime();
+        MDC.remove("actor");
+        this.checkpointRuntime = null;
+
+        this.actorName = "empty_thread";
+        setName(schedulerName + "_" + actorName);
+        childIndex.set(0);
+    }
+
+    @Override
+    public void run() {
         try {
+            setName(schedulerName + "_actor_thread_for_" + actorName);
+            MDC.put("actor", actorName);
+            CheckpointRuntimeAccessor.associateRuntime(this.checkpointRuntime);
             CheckpointRuntimeAccessor.beforeStartCheckpoint();
             super.run();
         } finally {
-            CheckpointRuntimeAccessor.releaseRuntime();
-            MDC.remove("actor");
+            cleanup();
         }
     }
 
@@ -100,5 +119,9 @@ public class ManagedThread extends Thread {
 
     public AtomicInteger getChildIndex() {
         return childIndex;
+    }
+
+    public void setSchedulerName(String schedulerName) {
+        this.schedulerName = schedulerName;
     }
 }

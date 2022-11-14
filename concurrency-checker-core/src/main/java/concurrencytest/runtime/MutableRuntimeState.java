@@ -15,12 +15,13 @@ import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -43,8 +44,9 @@ public class MutableRuntimeState implements RuntimeState {
 
     private final List<String> executionPath = new ArrayList<>();
     private final Consumer<Throwable> errorReporter;
+    private final ExecutorService executorService;
 
-    public MutableRuntimeState(CheckpointRegister register, Map<String, Function<Object, Throwable>> managedThreadMap, Consumer<Throwable> errorReporter) {
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Function<Object, Throwable>> managedThreadMap, Consumer<Throwable> errorReporter, ExecutorService executorService) {
         this.register = register;
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
@@ -54,7 +56,7 @@ public class MutableRuntimeState implements RuntimeState {
         this.checkpointRuntime = new StandardCheckpointRuntime(register);
         this.rendezvouCallback = new ThreadRendezvouCheckpointCallback();
         this.errorReporter = errorReporter;
-
+        this.executorService = executorService;
         this.checkpointRuntime.addCheckpointCallback(cb -> {
             if (cb.checkpointId() == register.taskStartingCheckpoint().checkpointId()) {
                 if (cb.thread() instanceof ManagedThread mt) {
@@ -153,23 +155,29 @@ public class MutableRuntimeState implements RuntimeState {
     }
 
     @Override
-    public Collection<ManagedThread> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException {
-        Collection<ManagedThread> list = new ArrayList<>(this.threads.size());
+    public Collection<Future<Throwable>> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException {
+        Map<String, Future<Throwable>> actorTasks = new HashMap<>(this.threads.size());
         Set<String> actorsStarted = new HashSet<>();
         threads.forEach((actor, task) -> {
-            ManagedThread m = new ManagedThread(() -> {
-//                task.accept(testInstance);
-                Throwable error = task.apply(testInstance);
-                if (error != null) {
-                    errorReporter.accept(error);
+            Callable<Throwable> runnable = () -> {
+                ManagedThread mt = (ManagedThread) Thread.currentThread();
+                mt.setup(actor, checkpointRuntime);
+                try {
+                    Throwable t = task.apply(testInstance);
+                    if (t != null) {
+                        errorReporter.accept(t);
+                    }
+                    return t;
+                } finally {
+                    mt.cleanup();
                 }
-            }, checkpointRuntime, actor);
-            m.start();
-            list.add(m);
+            };
+            actorTasks.put(actor, executorService.submit(runnable));
             actorsStarted.add(actor);
         });
+        rendezvouCallback.setActorTasks(actorTasks);
         rendezvouCallback.waitForActors(timeout, actorsStarted);
-        return list;
+        return actorTasks.values();
     }
 
     @Override
@@ -180,6 +188,45 @@ public class MutableRuntimeState implements RuntimeState {
         CheckpointReached lastCheckpoint = rendezvouCallback.lastKnownCheckpoint(selected.actorName());
         if (lastCheckpoint instanceof ThreadStartCheckpointReached ts) {
             before.add(ts.newActorName());
+            ManagedThread freshThread = ts.freshThread();
+            AtomicReference<Throwable> errorReporter = new AtomicReference<>();
+            freshThread.setUncaughtExceptionHandler((t, e) -> errorReporter.set(e));
+            Future<Throwable> taskMonitor = new Future<>() {
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning) {
+                    if (mayInterruptIfRunning) {
+                        freshThread.interrupt();
+                    }
+                    return !freshThread.isAlive();
+                }
+
+                @Override
+                public boolean isCancelled() {
+                    return false;
+                }
+
+                @Override
+                public boolean isDone() {
+                    return errorReporter.get() != null || !freshThread.isAlive();
+                }
+
+                @Override
+                public Throwable get() throws InterruptedException {
+                    freshThread.join();
+                    return errorReporter.get();
+                }
+
+                @Override
+                public Throwable get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+                    freshThread.join(unit.toMillis(timeout));
+                    if (freshThread.isAlive()) {
+                        throw new TimeoutException();
+                    }
+                    return errorReporter.get();
+                }
+            };
+            rendezvouCallback.registerNewTask(ts.newActorName(), taskMonitor);
+//            ts.freshThread().setUncaughtExceptionHandler();
             rendezvouCallback.waitForActors(maxWaitTime, before);
         }
         ThreadState oldActorState = removeThreadStateForUpdate(selected.actorName());
