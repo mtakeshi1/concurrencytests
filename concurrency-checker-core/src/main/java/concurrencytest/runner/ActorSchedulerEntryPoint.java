@@ -69,10 +69,6 @@ public class ActorSchedulerEntryPoint {
         this.errorReporter = externalErrorReporter;
     }
 
-    protected void handleError(Throwable t) {
-        if (!(t instanceof InterruptedException) && !(t instanceof CancellationException) && !(t instanceof ShutdownTaskException))
-            errorReporter.accept(t);
-    }
 
     public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, MutableRunStatistics stat) {
         ThreadFactory threadFactory = r -> {
@@ -234,7 +230,7 @@ public class ActorSchedulerEntryPoint {
                     errorReporter.accept(e.getCause());
                 }
             }
-        } catch (CancellationException | ShutdownTaskException e) {
+        } catch (CancellationException | ShutdownTaskException | InterruptedException e) {
             LOGGER.trace("Task cancelled");
             cancelTasks(actorTasks);
         } catch (TimeoutException e) {
@@ -245,7 +241,7 @@ public class ActorSchedulerEntryPoint {
         } catch (InitialPathBlockedException e) {
             // ignore for now
             cancelTasks(actorTasks);
-            reportActorError(e);
+//            reportActorError(e);
         } catch (ActorSchedulingException e) {
             LOGGER.warn("Scheduling error - either a deadlock or starvation");
             LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
@@ -404,13 +400,13 @@ public class ActorSchedulerEntryPoint {
     }
 
     protected void reportActorError(Throwable t) {
-        if (!(t instanceof AssertionError)) {
-            LOGGER.debug("Error thrown", t);
-        }
-        if (actorError == null) {
-            this.actorError = t;
-        } else {
-            actorError.addSuppressed(t);
+        if (!(t instanceof InterruptedException) && !(t instanceof CancellationException) && !(t instanceof ShutdownTaskException)) {
+            errorReporter.accept(t);
+            if (actorError == null) {
+                this.actorError = t;
+            } else {
+                actorError.addSuppressed(t);
+            }
         }
     }
 
