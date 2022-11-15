@@ -60,6 +60,10 @@ public class ActorSchedulerSetup {
 
     private final CheckpointRegister checkpointRegister = new StandardCheckpointRegister();
 
+    private List<Future<Optional<Throwable>>> futures;
+
+
+
     public ActorSchedulerSetup(Configuration configuration) {
         this.configuration = configuration;
     }
@@ -213,7 +217,7 @@ public class ActorSchedulerSetup {
         });
         List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions(), preselectedPath);
         MutableRunStatistics[] statistics = new MutableRunStatistics[tasks.size()];
-        List<Future<Optional<Throwable>>> futures = new CopyOnWriteArrayList<>();
+        this.futures = new CopyOnWriteArrayList<>();
         AtomicReference<Throwable> errorHolder = new AtomicReference<>();
         Consumer<Throwable> errorReporter = t -> {
             synchronized (errorHolder) {
@@ -233,7 +237,8 @@ public class ActorSchedulerSetup {
                 statistics[i] = stat;
                 Callable<Optional<Throwable>> task = () -> {
                     Class<?> mainTestClass = loadMainTestClass(mode);
-                    ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(), "scheduler_" + actorIndex.getAndIncrement(), errorReporter);
+                    ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(),
+                            "scheduler_" + actorIndex.getAndIncrement(), errorReporter);
                     return entryPoint.exploreAll(treeObserver, stat);
                 };
                 futures.add(service.submit(task));

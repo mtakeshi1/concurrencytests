@@ -56,7 +56,7 @@ public class ByteBufferManagerLockTest {
     }
 
     private RecordEntry allocateAndWork(int size) throws IOException {
-        RecordEntry region = byteBufferManager.allocateNewSlice(256);
+        RecordEntry region = byteBufferManager.allocateNewSlice(size);
         Pair pair = new Pair(region.absoluteOffset(), region.recordSize());
         region.writeToRecordNoReturn(b -> innerThing(pair));
         return region;
