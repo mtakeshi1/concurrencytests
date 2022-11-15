@@ -4,6 +4,7 @@ package concurrencytest.dogfooding;
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.asm.ArrayElementMatcher;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;
 import concurrencytest.config.Configuration;
@@ -17,13 +18,16 @@ import concurrencytest.runtime.tree.offheap.ByteBufferManager;
 import concurrencytest.runtime.tree.offheap.ByteBufferManager.RecordEntry;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+@Ignore
 @RunWith(ActorSchedulerRunner.class)
 public class ByteBufferManagerLockTest {
 
@@ -99,6 +103,11 @@ public class ByteBufferManagerLockTest {
                     @Override
                     public boolean includeStandardMethods() {
                         return false;
+                    }
+
+                    @Override
+                    public Collection<ArrayElementMatcher> arrayCheckpoints() {
+                        return Collections.emptyList();
                     }
                 };
             }

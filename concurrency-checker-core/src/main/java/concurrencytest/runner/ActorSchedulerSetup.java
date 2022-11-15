@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -210,12 +211,20 @@ public class ActorSchedulerSetup {
             thread.setDaemon(true);
             return thread;
         });
-        List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions() + 1, preselectedPath);
+        List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions(), preselectedPath);
         MutableRunStatistics[] statistics = new MutableRunStatistics[tasks.size()];
         List<Future<Optional<Throwable>>> futures = new CopyOnWriteArrayList<>();
-        Consumer<Throwable> errorReporter = t -> cancelTasks(futures);
+        AtomicReference<Throwable> errorHolder = new AtomicReference<>();
+        Consumer<Throwable> errorReporter = t -> {
+            synchronized (errorHolder) {
+                cancelTasks(futures);
+                Throwable throwable = errorHolder.get();
+                if (throwable != null) throwable.addSuppressed(t);
+                else errorHolder.set(t);
+            }
+        };
         Runnable command = monitorTask(statistics, futures, configuration.parallelExecutions());
-        scheduledExecutorService.scheduleWithFixedDelay(command, 10, 10, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleWithFixedDelay(command, 6000, 6000, TimeUnit.SECONDS); //FIXME
         try {
             AtomicInteger actorIndex = new AtomicInteger();
             for (int i = 0; i < tasks.size(); i++) {
@@ -236,6 +245,8 @@ public class ActorSchedulerSetup {
                         cancelTasks(futures);
                         return optional;
                     }
+                } catch (CancellationException e) {
+                    //ignore
                 } catch (ExecutionException e) {
                     if (e.getCause() instanceof IOException ioe) {
                         throw ioe;
@@ -249,7 +260,7 @@ public class ActorSchedulerSetup {
                 }
             }
             command.run();
-            return Optional.empty();
+            return Optional.ofNullable(errorHolder.get());
         } finally {
             scheduledExecutorService.shutdown();
             service.shutdownNow();
@@ -333,7 +344,13 @@ public class ActorSchedulerSetup {
         try (var oout = new ObjectOutputStream(new FileOutputStream(new File(configuration.outputFolder(), "checkpoints.ser")))) {
             oout.writeObject(register);
         }
-        LOGGER.debug("Checkpoints generated: %d".formatted(register.allCheckpoints().size()));
+        LOGGER.info("Checkpoints generated: %d".formatted(register.allCheckpoints().size()));
+        if (LOGGER.isDebugEnabled()) {
+            for (var cp : register.allCheckpoints().values()) {
+                LOGGER.debug(cp.toString());
+            }
+        }
+
     }
 
     private Tree createFileTree() throws IOException {

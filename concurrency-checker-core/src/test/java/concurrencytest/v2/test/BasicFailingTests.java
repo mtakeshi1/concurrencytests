@@ -8,6 +8,8 @@ import sut.mock.Session;
 import sut.mock.SessionManager;
 import sut.mock.SessionState;
 
+import java.util.NoSuchElementException;
+
 public class BasicFailingTests extends AbstractRunnerTests {
 
     @Test
@@ -44,4 +46,10 @@ public class BasicFailingTests extends AbstractRunnerTests {
     public void tryLockUnlock() {
         runExpectError(TryLockUnlock.class, e -> e instanceof AssertionError);
     }
+
+    @Test
+    public void simpleExceptionInsideMethod() {
+        runExpectError(ActorError.class, e -> e instanceof NoSuchElementException);
+    }
+
 }

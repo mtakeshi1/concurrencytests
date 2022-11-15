@@ -1,8 +1,13 @@
 # Before public release
 - More examples
 - Documentation
+- better scheduling
+  - forking off tasks when we encouter a branch instead of spliting tasks before starting
 
 # Before I consider 'usable':
+- ConfigurationBuilder 
+  - configurable checkpoint injector per injected class
+  - 
 - Merge CheckpointReached with Checkpoint
 - Cleanup of Checkpoint context
 - Injection on java rt classes

@@ -5,6 +5,7 @@ import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runner.CheckpointReachedCallback;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.RegularCheckpointReached;
+import concurrencytest.runtime.exception.ShutdownTaskException;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +50,10 @@ public class StandardCheckpointRuntime implements CheckpointRuntime {
         for (var cb : callbacks) {
             try {
                 cb.checkpointReached(newCheckpointReached);
+            } catch (InterruptedException e) {
+                // we bail
+                Thread.currentThread().interrupt();
+                throw new ShutdownTaskException();
             } catch (Exception e) {
                 this.error = e;
             }
