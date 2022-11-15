@@ -203,7 +203,7 @@ public class ActorSchedulerSetup {
 
     private Optional<Throwable> runInVm(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath)
             throws InterruptedException, IOException, ClassNotFoundException {
-        Tree tree = new HeapTree();
+        Tree tree = new HeapTree(false);
         MDC.put("actor", "COORDINATOR");
         ExecutorService service = Executors.newFixedThreadPool(configuration.parallelExecutions());
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, r -> {

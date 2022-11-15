@@ -70,7 +70,8 @@ public class ActorSchedulerEntryPoint {
     }
 
     protected void handleError(Throwable t) {
-        if (!(t instanceof InterruptedException) && !(t instanceof CancellationException) && !(t instanceof ShutdownTaskException)) errorReporter.accept(t);
+        if (!(t instanceof InterruptedException) && !(t instanceof CancellationException) && !(t instanceof ShutdownTaskException))
+            errorReporter.accept(t);
     }
 
     public Optional<Throwable> exploreAll(Consumer<TreeNode> treeObserver, MutableRunStatistics stat) {
@@ -327,7 +328,7 @@ public class ActorSchedulerEntryPoint {
         }
     }
 
-    public static Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
+    public static Collection<String> allAvailableActors(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
         if (node.isFullyExplored()) {
             /*
              * I know this is going to bother me later, as it has many times already.
@@ -336,7 +337,7 @@ public class ActorSchedulerEntryPoint {
              * this node tried to determine if the tree is commpletely exausted. In this case, in th middle of the exploration, the conditions (fully explored)
              * can change to true so we return empty and let the upstream caller deal
              */
-            return Optional.empty();
+            return List.of();
         }
         if (!preSelectedActorNames.isEmpty()) {
             String selected = preSelectedActorNames.poll();
@@ -344,7 +345,7 @@ public class ActorSchedulerEntryPoint {
             if (!state.canProceed(currentState)) {
                 throw new InitialPathBlockedException("actor named '%s' from preselected path cannot proceed.".formatted(selected));
             }
-            return Optional.of(selected);
+            return List.of(selected);
         }
         var runnableActors = currentState.runnableActors()
                 .filter(actor -> !actor.actorName().equals(lastActor) || currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() < maxLoopCount)
@@ -367,7 +368,11 @@ public class ActorSchedulerEntryPoint {
         if (runnableActors.isEmpty()) { //FIXME
             throw new RuntimeException("BUG");
         }
-        return runnableActors.stream().findAny();
+        return runnableActors;
+    }
+
+    public static Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
+        return allAvailableActors(lastActor, node, currentState, preSelectedActorNames, maxLoopCount).stream().findAny();
     }
 
     public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {

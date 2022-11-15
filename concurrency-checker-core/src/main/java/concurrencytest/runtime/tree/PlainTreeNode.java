@@ -18,9 +18,9 @@ import java.util.stream.Stream;
 public class PlainTreeNode implements TreeNode {
 
     private final PlainTreeNode parent;
-    private final Map<String, ActorInformation> actorInformationMap;
-    private final ConcurrentMap<String, PlainTreeNode> nodes = new ConcurrentHashMap<>();
-    private volatile boolean fullyExplored;
+    protected final Map<String, ActorInformation> actorInformationMap;
+    protected final ConcurrentMap<String, TreeNode> nodes = new ConcurrentHashMap<>();
+    protected volatile boolean fullyExplored;
 
     public static TreeNode rootNode(Collection<? extends String> actorNames, CheckpointRegister register) {
         return new PlainTreeNode(null, actorNames.stream().map(actor -> new ActorInformation(actor, register.taskStartingCheckpoint().checkpointId())).collect(Collectors.toMap(ActorInformation::actorName, i -> i)));
@@ -43,26 +43,17 @@ public class PlainTreeNode implements TreeNode {
 
     @Override
     public Map<String, ActorInformation> threads() {
-        if (fullyExplored) {
-            return Map.of();
-        }
         return actorInformationMap;
     }
 
     @Override
     public Map<String, Optional<Supplier<TreeNode>>> childNodes() {
-        if (fullyExplored) {
-            return Map.of();
-        }
         return actorInformationMap.keySet().stream().collect(Collectors.toMap(ac -> ac, this::childNode));
     }
 
     @Override
     public Optional<Supplier<TreeNode>> childNode(String nodeName) {
-        if (fullyExplored) {
-            return Optional.empty();
-        }
-        PlainTreeNode plainTreeNode = nodes.get(nodeName);
+        TreeNode plainTreeNode = nodes.get(nodeName);
         if (plainTreeNode == null) {
             return Optional.empty();
         }
@@ -70,12 +61,9 @@ public class PlainTreeNode implements TreeNode {
     }
 
     private boolean shouldExplore(String actorName) {
-        if (fullyExplored) {
-            return false;
-        }
         ActorInformation information = actorInformationMap.get(actorName);
         Objects.requireNonNull(information, "Path not found for actor named: %s".formatted(actorName));
-        PlainTreeNode link = nodes.get(actorName);
+        TreeNode link = nodes.get(actorName);
         return !information.isBlocked() && (link == null || !link.isFullyExplored()) && !information.finished();
     }
 
@@ -107,8 +95,6 @@ public class PlainTreeNode implements TreeNode {
     @Override
     public void markFullyExplored() {
         fullyExplored = true;
-        actorInformationMap.clear();
-        nodes.clear();
         if (parent != null && parent != this) {
             parent.checkAllChildrenExplored();
         }

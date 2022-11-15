@@ -49,7 +49,7 @@ public abstract class BaseRunnerTest {
     }
 
     public ActorSchedulerEntryPoint prepare(Configuration configuration) {
-        HeapTree tree = new HeapTree();
+        HeapTree tree = new HeapTree(false);
         CheckpointRegister register = new StandardCheckpointRegister();
         SimpleRemapper remapper = getRemapper(configuration);
         Map<String, byte[]> bytecodes = new HashMap<>(); // classname to bytes

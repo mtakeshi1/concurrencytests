@@ -7,6 +7,16 @@ import java.util.Optional;
 
 public class HeapTree implements Tree {
 
+    private final boolean compact;
+
+    public HeapTree() {
+        this(true);
+    }
+
+    public HeapTree(boolean compact) {
+        this.compact = compact;
+    }
+
     private volatile TreeNode root;
 
 
@@ -18,7 +28,11 @@ public class HeapTree implements Tree {
     @Override
     public synchronized TreeNode getOrInitializeRootNode(Collection<? extends String> actorNames, CheckpointRegister register) {
         if (root == null) {
-            root = PlainTreeNode.rootNode(actorNames, register);
+            if (compact) {
+                root = CompactingTreeNode.rootNode(actorNames, register);
+            } else {
+                root = PlainTreeNode.rootNode(actorNames, register);
+            }
         }
         return root;
     }
