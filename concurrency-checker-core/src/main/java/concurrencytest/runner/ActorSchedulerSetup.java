@@ -224,7 +224,7 @@ public class ActorSchedulerSetup {
             }
         };
         Runnable command = monitorTask(statistics, futures, configuration.parallelExecutions());
-        scheduledExecutorService.scheduleWithFixedDelay(command, 6000, 6000, TimeUnit.SECONDS); //FIXME
+        scheduledExecutorService.scheduleWithFixedDelay(command, 60, 60, TimeUnit.SECONDS); //FIXME
         try {
             AtomicInteger actorIndex = new AtomicInteger();
             for (int i = 0; i < tasks.size(); i++) {
