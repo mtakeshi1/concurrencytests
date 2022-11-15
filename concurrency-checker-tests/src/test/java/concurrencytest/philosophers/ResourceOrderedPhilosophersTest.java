@@ -1,7 +1,7 @@
 package concurrencytest.philosophers;
 
-import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
+import concurrencytest.annotations.MultipleActors;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.asm.ArrayElementMatcher;
@@ -20,7 +20,7 @@ import java.util.Collections;
 @RunWith(ActorSchedulerRunner.class)
 public class ResourceOrderedPhilosophersTest {
 
-    private static final int NUM = 3;
+    private static final int NUM = 2;
 
     private Spoon[] spoons;
 
@@ -60,21 +60,7 @@ public class ResourceOrderedPhilosophersTest {
         }
     }
 
-    @Actor
-    public void philo0() {
-        philosopher(0);
-    }
-
-    @Actor
-    public void philo2() {
-        philosopher(2);
-    }
-
-    @Actor
-    public void philo1() {
-        philosopher(1);
-    }
-
+    @MultipleActors(numberOfActors = NUM)
     public void philosopher(int index) {
         int other = (index + 1) % spoons.length;
         Spoon left = spoons[Math.min(index, other)];
