@@ -45,6 +45,7 @@ public class ActorSchedulerEntryPoint {
     private final CheckpointRegister checkpointRegister;
     private final String schedulerName;
     private final Consumer<Throwable> errorReporter;
+    private final TaskSchedulerInterface scheduler;
     private volatile Throwable actorError;
 //    private final ThreadPoolExecutor executorService;
 
@@ -52,12 +53,12 @@ public class ActorSchedulerEntryPoint {
 
     private ScheduledExecutorService managedExecutorService;
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass, Consumer<Throwable> errorReporter) {
-        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler", errorReporter);
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass, Consumer<Throwable> errorReporter, TaskSchedulerInterface schedulerInterface) {
+        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler", errorReporter, schedulerInterface);
     }
 
     public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClass,
-                                    int maxLoopCount, String schedulerName, Consumer<Throwable> externalErrorReporter) {
+                                    int maxLoopCount, String schedulerName, Consumer<Throwable> externalErrorReporter, TaskSchedulerInterface schedulerInterface) {
         this.explorationTree = explorationTree;
         this.checkpointRegister = register;
         this.configuration = configuration;
@@ -67,6 +68,7 @@ public class ActorSchedulerEntryPoint {
         this.schedulerName = schedulerName;
 
         this.errorReporter = externalErrorReporter;
+        this.scheduler = schedulerInterface;
     }
 
 
@@ -189,27 +191,38 @@ public class ActorSchedulerEntryPoint {
             runtime.errorReported().ifPresent(this::reportActorError);
             while (!runtime.finished() && actorError == null) {
                 callInvariants(mainTestObject, runtime);
-                Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
-                if (nextActorToAdvance.isEmpty()) {
+                Collection<String> options = allAvailableActors(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
+                if (options.isEmpty()) {
                     if (node.isFullyExplored()) {
-                        // TODO check why we tried to explore a fully explored node.
-                        // if expected, cancel the tasks before moving on
-                        // premature node exploration maybe?
                         cancelTasks(actorTasks);
                         break;
                     }
-                    // we are done with this a
-                    throw new RuntimeException("?"); //FIXME I'm not sure this is correct to be honest
                 }
-                ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance.get());
-                RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
-                node = node.advance(selected, next);
-                lastActor = nextActorToAdvance.get();
-                runtime = next;
-                if (System.nanoTime() > maxTime) {
-                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
-                }
-                runtime.errorReported().ifPresent(this::reportActorError);
+//                if (options.size() > 1 && scheduler.canFork() && preSelectedActorNames.isEmpty()) {
+//                    // we will attempt to fork
+//                    Iterator<String> iterator = options.iterator();
+//                    var ourself = iterator.next();
+//                    initialPathActorNames.add(ourself);
+//                    scheduler.spawnTasks(spawner -> spawner.spawn(null));
+//
+//                    // TODO spawn tasks
+//                } else {
+                    var nextActorToAdvance = options.iterator().next();
+                    ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance);
+                    RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
+                    node = node.advance(selected, next);
+                    lastActor = nextActorToAdvance;
+                    runtime = next;
+                    if (System.nanoTime() > maxTime) {
+                        throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+                    }
+                    runtime.errorReported().ifPresent(this::reportActorError);
+//                }
+//                Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
+//                if (nextActorToAdvance.isEmpty()) {
+//                     we are done with this a
+//                    throw new RuntimeException("?"); //FIXME I'm not sure this is correct to be honest
+//                }
             }
             if (actorError == null) {
                 callEndOfActors(mainTestObject, runtime);
@@ -253,12 +266,10 @@ public class ActorSchedulerEntryPoint {
             cancelTasks(actorTasks);
         } finally {
             //FIXME insert timeout here
-            for (int i = 0; i < 10000 && executorService.getActiveCount() != 0; i++) {
-                LockSupport.parkNanos(1000);
-            }
             while (executorService.getActiveCount() != 0) {
                 LockSupport.parkNanos(100);
             }
+            scheduler.notifyTaskFinished();
         }
     }
 

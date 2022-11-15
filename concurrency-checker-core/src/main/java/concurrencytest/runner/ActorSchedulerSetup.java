@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ActorSchedulerSetup {
+public class ActorSchedulerSetup implements TaskSchedulerInterface {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActorSchedulerSetup.class);
 
@@ -60,9 +60,10 @@ public class ActorSchedulerSetup {
 
     private final CheckpointRegister checkpointRegister = new StandardCheckpointRegister();
 
-    private List<Future<Optional<Throwable>>> futures;
+    private List<Future<Optional<Throwable>>> futures = new CopyOnWriteArrayList<>();
 
-
+    private Deque<Collection<String>> pendingForks = new ConcurrentLinkedDeque<>();
+    private MutableRunStatistics stat;
 
     public ActorSchedulerSetup(Configuration configuration) {
         this.configuration = configuration;
@@ -215,9 +216,8 @@ public class ActorSchedulerSetup {
             thread.setDaemon(true);
             return thread;
         });
-        List<List<String>> tasks = buildTaskList(parseInitialActorNames(configuration.mainTestClass()), configuration.parallelExecutions(), preselectedPath);
-        MutableRunStatistics[] statistics = new MutableRunStatistics[tasks.size()];
-        this.futures = new CopyOnWriteArrayList<>();
+        this.stat = new MutableRunStatistics();
+        MutableRunStatistics[] statistics = new MutableRunStatistics[]{stat};
         AtomicReference<Throwable> errorHolder = new AtomicReference<>();
         Consumer<Throwable> errorReporter = t -> {
             synchronized (errorHolder) {
@@ -230,18 +230,19 @@ public class ActorSchedulerSetup {
         Runnable command = monitorTask(statistics, futures, configuration.parallelExecutions());
         scheduledExecutorService.scheduleWithFixedDelay(command, 60, 60, TimeUnit.SECONDS); //FIXME
         try {
+            TaskSchedulerInterface taskSchedulerInterface = this;
             AtomicInteger actorIndex = new AtomicInteger();
-            for (int i = 0; i < tasks.size(); i++) {
-                var preffix = tasks.get(i);
-                MutableRunStatistics stat = new MutableRunStatistics();
-                statistics[i] = stat;
-                Callable<Optional<Throwable>> task = () -> {
-                    Class<?> mainTestClass = loadMainTestClass(mode);
-                    ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), preffix, mainTestClass, configuration.maxLoopIterations(),
-                            "scheduler_" + actorIndex.getAndIncrement(), errorReporter);
-                    return entryPoint.exploreAll(treeObserver, stat);
-                };
-                futures.add(service.submit(task));
+            spawnFork(mode, configuration, register, treeObserver, tree, service, errorReporter, taskSchedulerInterface, actorIndex.getAndIncrement(), preselectedPath);
+            while (tasksRunning()) {
+                waitForSignal();
+                if (!pendingForks.isEmpty()) {
+                    synchronized (this) {
+                        while (!pendingForks.isEmpty()) {
+                            var task = pendingForks.poll();
+                            spawnFork(mode, configuration, register, treeObserver, tree, service, errorReporter, taskSchedulerInterface, actorIndex.getAndIncrement(), task);
+                        }
+                    }
+                }
             }
             for (var fut : futures) {
                 try {
@@ -272,29 +273,23 @@ public class ActorSchedulerSetup {
         }
     }
 
-    private void waitForTasks(List<Future<Optional<Throwable>>> futures) throws InterruptedException, IOException, ClassNotFoundException {
-        while (futures.stream().anyMatch(f -> !f.isDone())) {
-            try {
-                for (var fut : futures) {
-                    if (fut.isDone()) {
-                        Optional<Throwable> error = fut.get();
-                        if (error.isPresent()) {
-                            cancelTasks(futures);
-                        }
-                    }
-                }
-            } catch (ExecutionException e) {
-                if (e.getCause() instanceof IOException ioe) {
-                    throw ioe;
-                } else if (e.getCause() instanceof ClassNotFoundException cnfe) {
-                    throw cnfe;
-                } else if (e.getCause() instanceof RuntimeException rte) {
-                    throw rte;
-                } else {
-                    throw new RuntimeException(e.getCause());
-                }
-            }
-        }
+    private void spawnFork(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Tree tree, ExecutorService service,
+                           Consumer<Throwable> errorReporter, TaskSchedulerInterface taskSchedulerInterface, int actorIndex, Collection<? extends String> collection) {
+        Callable<Optional<Throwable>> task = () -> {
+            Class<?> mainTestClass = loadMainTestClass(mode);
+            ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), new ArrayList<>(collection), mainTestClass, configuration.maxLoopIterations(),
+                    "scheduler_" + actorIndex, errorReporter, taskSchedulerInterface);
+            return entryPoint.exploreAll(treeObserver, stat);
+        };
+        futures.add(service.submit(task));
+    }
+
+    private void waitForSignal() {
+        Utils.todo();
+    }
+
+    private boolean tasksRunning() {
+        return Utils.todo();
     }
 
 
@@ -302,27 +297,6 @@ public class ActorSchedulerSetup {
         for (var fut : futures) {
             fut.cancel(true);
         }
-    }
-
-    public static List<List<String>> buildTaskList(Collection<String> actorNames, int executions, Collection<? extends String> preselectedPath) {
-        if (actorNames.size() == 1) {
-            // sorry no scheduling for you =(
-            return List.of(List.of(actorNames.iterator().next()));
-        }
-        List<List<String>> soFar = new ArrayList<>();
-        soFar.add(new ArrayList<>(preselectedPath));
-        while (soFar.size() < executions) {
-            List<List<String>> copy = new ArrayList<>();
-            for (String actor : actorNames) {
-                for (var preffix : soFar) {
-                    var list = new ArrayList<>(preffix);
-                    list.add(actor);
-                    copy.add(list);
-                }
-            }
-            soFar = copy;
-        }
-        return soFar;
     }
 
     public static Collection<String> parseInitialActorNames(Class<?> mainTestClass) {
@@ -555,4 +529,38 @@ public class ActorSchedulerSetup {
         return remapper;
     }
 
+    @Override
+    public int numberOfRunningTasks() {
+        int c = 0;
+        for (var fut : futures) {
+            if (!fut.isDone()) {
+                c++;
+            }
+        }
+        return c + pendingForks.size();
+    }
+
+    @Override
+    public int maxRunningTasks() {
+        return this.configuration.parallelExecutions();
+    }
+
+    protected synchronized boolean addForkIfPossible(Collection<String> fork) {
+        if (numberOfRunningTasks() < maxRunningTasks()) {
+            pendingForks.add(fork);
+            return true;
+        }
+        return false;
+    }
+
+
+    @Override
+    public <E> E spawnTasks(Function<TaskSpawner, E> action) {
+        return action.apply(this::addForkIfPossible);
+    }
+
+    @Override
+    public synchronized void notifyTaskFinished() {
+        notifyAll();
+    }
 }

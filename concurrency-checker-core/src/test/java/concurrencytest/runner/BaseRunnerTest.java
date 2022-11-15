@@ -77,7 +77,7 @@ public abstract class BaseRunnerTest {
         };
         try {
             Class<?> mainTestClass = Class.forName(newClassName, true, cloader);
-            return new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass, Throwable::printStackTrace);
+            return new ActorSchedulerEntryPoint(tree, register, configuration, mainTestClass, Throwable::printStackTrace,new EmptySchedulerInterface());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

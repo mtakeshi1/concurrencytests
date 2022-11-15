@@ -1,7 +1,7 @@
 package concurrencytest.runner;
 
 import java.util.Collection;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public interface TaskSchedulerInterface {
 
@@ -13,7 +13,12 @@ public interface TaskSchedulerInterface {
 
     int maxRunningTasks();
 
-    void spawnTasks(Consumer<TaskSpawner> action);
+    default boolean canFork() {
+        return numberOfRunningTasks() < maxRunningTasks();
+    }
 
+    <E> E spawnTasks(Function<TaskSpawner, E> action);
+
+    void notifyTaskFinished();
 
 }
