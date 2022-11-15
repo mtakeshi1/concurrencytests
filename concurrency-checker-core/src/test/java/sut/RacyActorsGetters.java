@@ -43,7 +43,7 @@ public class RacyActorsGetters {
 
     @AfterActorsCompleted
     public void check() {
-//        Assert.assertEquals(2, shared.getValue());
+        Assert.assertEquals(2, shared.getValue());
     }
 
 }
