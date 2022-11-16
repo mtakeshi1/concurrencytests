@@ -60,9 +60,9 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
 
     private final CheckpointRegister checkpointRegister = new StandardCheckpointRegister();
 
-    private List<Future<Optional<Throwable>>> futures = new CopyOnWriteArrayList<>();
+    private final List<Future<Optional<Throwable>>> futures = new CopyOnWriteArrayList<>();
 
-    private Deque<Collection<String>> pendingForks = new ConcurrentLinkedDeque<>();
+    private final Deque<Collection<String>> pendingForks = new ConcurrentLinkedDeque<>();
     private MutableRunStatistics stat;
 
     public ActorSchedulerSetup(Configuration configuration) {
@@ -284,12 +284,12 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         futures.add(service.submit(task));
     }
 
-    private void waitForSignal() {
+    private void waitForSignal() throws InterruptedException {
         Utils.todo();
     }
 
     private boolean tasksRunning() {
-        return Utils.todo();
+        return numberOfRunningTasks() > 0;
     }
 
 

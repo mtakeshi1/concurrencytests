@@ -2,6 +2,7 @@ package concurrencytest.runtime.tree;
 
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.thread.ThreadState;
+import concurrencytest.util.Utils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -99,4 +100,9 @@ public interface TreeNode {
     default boolean allFinished() {
         return threads().values().stream().allMatch(ActorInformation::finished);
     }
+
+    default void markLinkAsStartingPoint(String actor) {
+        Utils.todo();
+    }
+
 }

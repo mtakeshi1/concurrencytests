@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@Ignore
+//@Ignore
 @RunWith(ActorSchedulerRunner.class)
 public class ByteBufferManagerLockTest {
 
