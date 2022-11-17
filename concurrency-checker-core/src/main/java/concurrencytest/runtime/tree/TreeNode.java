@@ -68,8 +68,7 @@ public interface TreeNode {
     Map<String, Optional<Supplier<TreeNode>>> childNodes();
 
     /**
-     * If the returned Optional is not empty, it will generate the TreeNode corresponding to selecting the given actorName to run.
-     * If it's empty(), it corresponds to an unexplored node.
+     * Returns a child node if it has been visited. If its empty, the node has not been visited.
      *
      * @param nodeName String
      */
@@ -104,5 +103,10 @@ public interface TreeNode {
     default void markLinkAsStartingPoint(String actor) {
         Utils.todo();
     }
+
+    default boolean isLinkStartingPoint(String link) {
+        return Utils.todo();
+    }
+
 
 }

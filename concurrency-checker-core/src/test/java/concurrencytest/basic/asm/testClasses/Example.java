@@ -1,4 +1,4 @@
-package concurrencytest.asm.testClasses;
+package concurrencytest.basic.asm.testClasses;
 
 public interface Example {
     void a();

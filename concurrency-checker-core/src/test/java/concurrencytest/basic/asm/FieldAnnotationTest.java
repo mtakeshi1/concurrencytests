@@ -1,8 +1,11 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
 import concurrencytest.annotations.FieldCheckpoint;
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.asm.testClasses.InjectionTarget;
+import concurrencytest.asm.AccessModifier;
+import concurrencytest.asm.BehaviourModifier;
+import concurrencytest.asm.FieldCheckpointVisitor;
+import concurrencytest.basic.asm.testClasses.InjectionTarget;
 import concurrencytest.checkpoint.FieldAccessCheckpoint;
 import concurrencytest.checkpoint.matcher.FieldAnnotationMatch;
 import concurrencytest.reflection.ReflectionHelper;

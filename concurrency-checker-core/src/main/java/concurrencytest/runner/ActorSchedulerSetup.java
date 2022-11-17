@@ -178,7 +178,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         return combined;
     }
 
-    private static Runnable monitorTask(MutableRunStatistics[] statistics, List<Future<Optional<Throwable>>> futures, int parallel) {
+    private static Runnable monitorTask(MutableRunStatistics statistics, List<Future<Optional<Throwable>>> futures, int parallel) {
         AtomicLong gcTime = new AtomicLong(GenericStatistics.totalGCTimeNanos());
         AtomicLong cpuTime = new AtomicLong(GenericStatistics.totalCPUUsageTimeNanos());
         AtomicLong totalRuns = new AtomicLong();
@@ -189,7 +189,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                 long runningThreads = Math.min(futures.stream().filter(f -> !f.isDone()).count(), parallel);
                 double procs = Runtime.getRuntime().availableProcessors();
                 MDC.put("actor", "MONITOR");
-                RunStatistics collected = collectAndReset(statistics);
+                RunStatistics collected = statistics.reset();
                 long total = totalRuns.addAndGet(collected.numberOfRuns());
                 long gc = GenericStatistics.totalGCTimeNanos() - gcTime.get();
                 long cpu = GenericStatistics.totalCPUUsageTimeNanos() - cpuTime.get();
@@ -217,7 +217,6 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
             return thread;
         });
         this.stat = new MutableRunStatistics();
-        MutableRunStatistics[] statistics = new MutableRunStatistics[]{stat};
         AtomicReference<Throwable> errorHolder = new AtomicReference<>();
         Consumer<Throwable> errorReporter = t -> {
             synchronized (errorHolder) {
@@ -227,7 +226,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                 else errorHolder.set(t);
             }
         };
-        Runnable command = monitorTask(statistics, futures, configuration.parallelExecutions());
+        Runnable command = monitorTask(stat, futures, configuration.parallelExecutions());
         scheduledExecutorService.scheduleWithFixedDelay(command, 60, 60, TimeUnit.SECONDS); //FIXME
         try {
             TaskSchedulerInterface taskSchedulerInterface = this;
@@ -239,6 +238,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                     synchronized (this) {
                         while (!pendingForks.isEmpty()) {
                             var task = pendingForks.poll();
+                            LOGGER.info("Starting fork: {}", task);
                             spawnFork(mode, configuration, register, treeObserver, tree, service, errorReporter, taskSchedulerInterface, actorIndex.getAndIncrement(), task);
                         }
                     }
@@ -284,8 +284,8 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         futures.add(service.submit(task));
     }
 
-    private void waitForSignal() throws InterruptedException {
-        Utils.todo();
+    private synchronized void waitForSignal() throws InterruptedException {
+        this.wait(1000);
     }
 
     private boolean tasksRunning() {

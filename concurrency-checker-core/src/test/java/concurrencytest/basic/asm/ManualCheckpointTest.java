@@ -1,7 +1,8 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
-import concurrencytest.asm.testClasses.InjectionTarget;
-import concurrencytest.asm.testClasses.InjectionTarget2;
+import concurrencytest.asm.ManualCheckpointVisitor;
+import concurrencytest.basic.asm.testClasses.InjectionTarget;
+import concurrencytest.basic.asm.testClasses.InjectionTarget2;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.description.ManualCheckpointImpl;
 import concurrencytest.runner.RecordingCheckpointRuntime;

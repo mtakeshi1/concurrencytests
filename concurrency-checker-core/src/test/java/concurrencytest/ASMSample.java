@@ -1,10 +1,7 @@
 package concurrencytest;
 
-import concurrencytest.asm.MethodInvocationTest;
-import concurrencytest.asm.testClasses.MinimalLambda;
-import concurrencytest.asm.testClasses.MinimalMethodReference;
-import concurrencytest.asm.testClasses.SyncBlockTarget;
-import concurrencytest.asm.testClasses.SyncCallable;
+import concurrencytest.basic.asm.testClasses.MinimalMethodReference;
+import concurrencytest.basic.asm.testClasses.SyncBlockTarget;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.TraceClassVisitor;

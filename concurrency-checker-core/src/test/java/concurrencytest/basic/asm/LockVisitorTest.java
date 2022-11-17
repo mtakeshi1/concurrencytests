@@ -1,7 +1,8 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
-import concurrencytest.asm.testClasses.LockTest;
-import concurrencytest.asm.testClasses.ReadWriteLockTest;
+import concurrencytest.asm.LockCheckpointVisitor;
+import concurrencytest.basic.asm.testClasses.LockTest;
+import concurrencytest.basic.asm.testClasses.ReadWriteLockTest;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runner.RecordingCheckpointRuntime;
 import org.junit.Assert;

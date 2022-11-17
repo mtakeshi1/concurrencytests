@@ -1,6 +1,7 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
-import concurrencytest.asm.testClasses.SyncBlockTarget;
+import concurrencytest.asm.SynchronizedBlockVisitor;
+import concurrencytest.basic.asm.testClasses.SyncBlockTarget;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
 import concurrencytest.runner.RecordingCheckpointRuntime;

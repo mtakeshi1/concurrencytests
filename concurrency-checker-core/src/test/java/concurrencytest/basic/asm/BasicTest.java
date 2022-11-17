@@ -1,7 +1,8 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
-import concurrencytest.asm.testClasses.InjectionTarget;
-import concurrencytest.asm.testClasses.SyncCallableMonitor;
+import concurrencytest.asm.BaseClassVisitor;
+import concurrencytest.basic.asm.testClasses.InjectionTarget;
+import concurrencytest.basic.asm.testClasses.SyncCallableMonitor;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;

@@ -34,8 +34,14 @@ public class CompactingTreeNode extends PlainTreeNode {
     public void markFullyExplored() {
         super.markFullyExplored();
         if (fullyExplored) {
-            super.nodes.clear();
-            super.actorInformationMap.clear();
+            for(int i = 0; i < actorNames.length; i++) {
+                //FIXME maybe set the arrays to null instead, but that would require making them mutable
+                actorInformations[i] = null;
+                actorNames[i] = null;
+            }
+//            super.nodes.clear();
+//            super.actorInformationMap.clear();
+//            super.startingPoints.clear();
         }
     }
 }

@@ -1,4 +1,4 @@
-package concurrencytest.asm.testClasses;
+package concurrencytest.basic.asm.testClasses;
 
 import concurrencytest.runtime.CheckpointRuntimeAccessor;
 

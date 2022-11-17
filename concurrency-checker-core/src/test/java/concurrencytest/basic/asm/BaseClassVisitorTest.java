@@ -1,4 +1,4 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
 import concurrencytest.asm.utils.OpenClassLoader;
 import concurrencytest.checkpoint.CheckpointRegister;
@@ -20,7 +20,6 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
-import sut.RacyIndySynchronizedMethodRef;
 
 import java.io.PrintWriter;
 

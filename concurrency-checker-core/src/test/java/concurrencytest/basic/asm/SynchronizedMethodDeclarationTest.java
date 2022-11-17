@@ -1,8 +1,10 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.asm.testClasses.SyncCallable;
+import concurrencytest.asm.SynchronizedBlockVisitor;
+import concurrencytest.asm.SynchronizedMethodDeclarationVisitor;
+import concurrencytest.basic.asm.testClasses.SyncCallable;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.reflection.ReflectionHelper;
 import org.junit.Assert;

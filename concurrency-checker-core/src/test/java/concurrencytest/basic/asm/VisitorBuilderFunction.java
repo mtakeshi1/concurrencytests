@@ -1,4 +1,4 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
 import org.objectweb.asm.ClassVisitor;
 

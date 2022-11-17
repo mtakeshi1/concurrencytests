@@ -1,8 +1,9 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.asm.testClasses.Example;
-import concurrencytest.asm.testClasses.MethodInvTestsTarget;
+import concurrencytest.asm.MethodInvocationVisitor;
+import concurrencytest.basic.asm.testClasses.Example;
+import concurrencytest.basic.asm.testClasses.MethodInvTestsTarget;
 import concurrencytest.checkpoint.MethodCallCheckpointDescription;
 import concurrencytest.config.MethodInvocationMatcher;
 import concurrencytest.reflection.ReflectionHelper;

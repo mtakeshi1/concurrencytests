@@ -8,7 +8,8 @@ import concurrencytest.config.Configuration;
 import concurrencytest.runner.statistics.MutableRunStatistics;
 import concurrencytest.runtime.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.exception.ShutdownTaskException;
+import concurrencytest.runtime.exception.RunAbortedException;
+import concurrencytest.runtime.exception.SchedulerAbortedException;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.Tree;
@@ -93,6 +94,9 @@ public class ActorSchedulerEntryPoint {
                 errorReporter.accept(actorError);
             }
             return Optional.ofNullable(actorError);
+        } catch (SchedulerAbortedException t) {
+            LOGGER.debug("scheduler: " + schedulerName + " finished");
+            return Optional.empty();
         } catch (Throwable t) {
             errorReporter.accept(t);
             return Optional.of(t);
@@ -143,11 +147,25 @@ public class ActorSchedulerEntryPoint {
     }
 
     private boolean hasMorePathsToExplore() {
-        TreeNode rootNode = explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister);
-        if (rootNode.isFullyExplored()) {
-            return false;
-        }
-        Optional<TreeNode> node = walk(rootNode, new LinkedList<>(initialPathActorNames));
+        /*
+         * FIXME
+         *  this condition is wrong. We need something to convey:
+         * - either the tree is fully explored
+         * - every non-explored node is scheduled by someone other than me
+         *
+         */
+//        var next = explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister);
+//        for(String nextLink : initialPathActorNames) {
+//            if (next.isFullyExplored()) {
+//                return false;
+//            }
+//            Optional<Supplier<TreeNode>> node = next.childNode(nextLink);
+//            if(node.isEmpty()) {
+//                return true;
+//            }
+//            next = node.get().get();
+//        }
+        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
         return !node.map(TreeNode::isFullyExplored).orElse(false);
     }
 
@@ -178,11 +196,9 @@ public class ActorSchedulerEntryPoint {
         var initialActorNames = ActorSchedulerSetup.parseActorMethods(mainTestClass);
 
         RuntimeState runtime = initialState(initialActorNames, executorService);
-        Collection<Future<Throwable>> actorTasks = Collections.emptyList();
+        Collection<Future<Throwable>> actorTasks = Collections.emptyList(); //FIXME change this to Future<Void>
+        List<String> pathSoFar = new ArrayList<>();
         try {
-            if (executorService.getActiveCount() != 0) {
-                System.out.println("threads busy?"); //FIXME
-            }
             actorTasks = runtime.start(mainTestObject, configuration.checkpointTimeout());
             String lastActor = null;
             TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
@@ -193,36 +209,35 @@ public class ActorSchedulerEntryPoint {
                 callInvariants(mainTestObject, runtime);
                 Collection<String> options = allAvailableActors(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
                 if (options.isEmpty()) {
-                    if (node.isFullyExplored()) {
-                        cancelTasks(actorTasks);
-                        break;
+//                    if (node.isFullyExplored()) {
+                    cancelTasks(actorTasks);
+                    throw new RunAbortedException();
+//                    throw new SchedulerAbortedException();
+//                    }
+                }
+                // we will attempt to fork
+                Iterator<String> iterator = options.iterator();
+                var myChosenPath = iterator.next();
+                if (scheduler.canFork()) {
+                    while (iterator.hasNext()) {
+                        var next = iterator.next();
+                        List<String> copy = new ArrayList<>(pathSoFar);
+                        copy.add(next);
+                        if (scheduler.spawnTasks(spawner -> spawner.spawn(copy))) {
+                            node.markLinkAsStartingPoint(next);
+                        }
                     }
                 }
-//                if (options.size() > 1 && scheduler.canFork() && preSelectedActorNames.isEmpty()) {
-//                    // we will attempt to fork
-//                    Iterator<String> iterator = options.iterator();
-//                    var ourself = iterator.next();
-//                    initialPathActorNames.add(ourself);
-//                    scheduler.spawnTasks(spawner -> spawner.spawn(null));
-//
-//                    // TODO spawn tasks
-//                } else {
-                    var nextActorToAdvance = options.iterator().next();
-                    ThreadState selected = runtime.actorNamesToThreadStates().get(nextActorToAdvance);
-                    RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
-                    node = node.advance(selected, next);
-                    lastActor = nextActorToAdvance;
-                    runtime = next;
-                    if (System.nanoTime() > maxTime) {
-                        throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
-                    }
-                    runtime.errorReported().ifPresent(this::reportActorError);
-//                }
-//                Optional<String> nextActorToAdvance = selectNextActor(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
-//                if (nextActorToAdvance.isEmpty()) {
-//                     we are done with this a
-//                    throw new RuntimeException("?"); //FIXME I'm not sure this is correct to be honest
-//                }
+                ThreadState selected = runtime.actorNamesToThreadStates().get(myChosenPath);
+                RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
+                node = node.advance(selected, next);
+                lastActor = myChosenPath;
+                pathSoFar.add(myChosenPath);
+                runtime = next;
+                if (System.nanoTime() > maxTime) {
+                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+                }
+                runtime.errorReported().ifPresent(this::reportActorError);
             }
             if (actorError == null) {
                 callEndOfActors(mainTestObject, runtime);
@@ -236,16 +251,17 @@ public class ActorSchedulerEntryPoint {
                 try {
                     f.get();
                 } catch (ExecutionException e) {
-                    if (e.getCause() instanceof CancellationException || e.getCause() instanceof InterruptedException) {
-                        cancelTasks(actorTasks);
-                        return;
-                    }
-                    errorReporter.accept(e.getCause());
+                    cancelTasks(actorTasks);
+                    reportActorError(e.getCause());
                 }
             }
-        } catch (CancellationException | ShutdownTaskException | InterruptedException e) {
+        } catch (CancellationException | RunAbortedException | InterruptedException e) {
             LOGGER.trace("Task cancelled");
             cancelTasks(actorTasks);
+        } catch (SchedulerAbortedException e) {
+            LOGGER.trace("Scheduler aborted");
+            cancelTasks(actorTasks);
+            throw e;
         } catch (TimeoutException e) {
             LOGGER.warn("Timing out waiting for actors to converge.");
             LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
@@ -373,13 +389,10 @@ public class ActorSchedulerEntryPoint {
          * As of now, I can't think of any.
          */
         if (runnableActors.isEmpty()) { //FIXME
-            throw new RuntimeException("BUG");
+            System.out.println("");
+//            throw new RuntimeException("BUG");
         }
         return runnableActors;
-    }
-
-    public static Optional<String> selectNextActor(String lastActor, TreeNode node, RuntimeState currentState, Queue<String> preSelectedActorNames, int maxLoopCount) throws ActorSchedulingException {
-        return allAvailableActors(lastActor, node, currentState, preSelectedActorNames, maxLoopCount).stream().findAny();
     }
 
     public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
@@ -411,7 +424,7 @@ public class ActorSchedulerEntryPoint {
     }
 
     protected void reportActorError(Throwable t) {
-        if (!(t instanceof InterruptedException) && !(t instanceof CancellationException) && !(t instanceof ShutdownTaskException)) {
+        if (!(t instanceof InterruptedException) && !(t instanceof CancellationException) && !(t instanceof RunAbortedException)) {
             errorReporter.accept(t);
             if (actorError == null) {
                 this.actorError = t;

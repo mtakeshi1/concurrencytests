@@ -1,4 +1,4 @@
-package concurrencytest.asm;
+package concurrencytest.basic.asm;
 
 import concurrencytest.util.ASMUtils;
 import org.junit.Assert;
