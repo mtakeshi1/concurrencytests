@@ -6,6 +6,7 @@ import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.offheap.ByteBufferBackedTreeNode;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +24,7 @@ public class PlainTreeNode implements TreeNode {
     protected final TreeNode[] treeNodes;
     private final boolean[] startingPoints;
 
-    protected volatile boolean fullyExplored;
+    protected final AtomicBoolean fullyExplored = new AtomicBoolean();
 
     public static TreeNode rootNode(Collection<? extends String> actorNames, CheckpointRegister register) {
         return new PlainTreeNode(null, actorNames.stream().map(actor -> new ActorInformation(actor, register.taskStartingCheckpoint().checkpointId())).collect(Collectors.toMap(ActorInformation::actorName, i -> i)));
@@ -105,7 +106,7 @@ public class PlainTreeNode implements TreeNode {
         for (int i = 0; i < actorNames.length; i++) {
             var info = Objects.requireNonNull(actorInformations[i]);
             var node = treeNodes[i];
-            if (canProceed(i)) {
+            if (shouldExplore(i)) {
                 list.add(actorNames[i]);
             }
         }
@@ -124,31 +125,34 @@ public class PlainTreeNode implements TreeNode {
 
     @Override
     public boolean isFullyExplored() {
-        return fullyExplored;
+        return fullyExplored.get();
     }
 
     @Override
     public void checkAllChildrenExplored() {
         for (int i = 0; i < actorNames.length; i++) {
-            if (canProceed(i)) {
+            if (actorInformations[i].finished()) continue;
+            if (actorInformations[i].isBlocked()) continue;
+            if (treeNodes[i] == null || !treeNodes[i].isFullyExplored()) {
                 return;
             }
         }
         markFullyExplored();
     }
 
-    private boolean canProceed(int i) {
-        return !Objects.requireNonNull(actorInformations[i]).isBlocked() &&
-                !Objects.requireNonNull(actorInformations[i]).finished() &&
-                !startingPoints[i] &&
-                (treeNodes[i] == null || !treeNodes[i].isFullyExplored());
+    private boolean shouldExplore(int index) {
+        return !Objects.requireNonNull(actorInformations[index]).isBlocked() &&
+                !Objects.requireNonNull(actorInformations[index]).finished() &&
+                !startingPoints[index] &&
+                (treeNodes[index] == null || !treeNodes[index].isFullyExplored());
     }
 
     @Override
     public void markFullyExplored() {
-        fullyExplored = true;
-        if (parent != null && parent != this) {
-            parent.checkAllChildrenExplored();
+        if (fullyExplored.compareAndSet(false, true)) {
+            if (parent != null && parent != this) {
+                parent.checkAllChildrenExplored();
+            }
         }
     }
 

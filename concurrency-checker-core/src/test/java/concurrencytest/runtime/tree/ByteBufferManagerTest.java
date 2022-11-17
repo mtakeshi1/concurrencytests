@@ -63,40 +63,42 @@ public abstract class ByteBufferManagerTest {
     }
 
     @Test
-    public void multipleRandomRecorsd() throws IOException {
-        int sampleSize = 32;
-        int[] possibleSizes = {64, 128, 256, 512};
-        byte[] initialValues = new byte[sampleSize];
-        byte[] increments = new byte[sampleSize];
-        int[] recordSizes = new int[sampleSize];
-        Random r = new Random();
-        RecordEntry[] records = new RecordEntry[sampleSize];
-        for (int i = 0; i < sampleSize; i++) {
-            initialValues[i] = (byte) (1 + r.nextInt(255));
-            increments[i] = (byte) (1 + r.nextInt(255));
-            recordSizes[i] = possibleSizes[r.nextInt(possibleSizes.length)];
-            records[i] = byteBufferManager.allocateNewSlice(recordSizes[i]);
-            int current = i;
-            records[i].writeToRecordNoReturn(buffer -> {
-                byte initial = initialValues[current];
-                byte increment = increments[current];
-                while (buffer.hasRemaining()) {
-                    buffer.put(initial);
-                    initial += increment;
-                }
-            });
-        }
-        for (int i = 0; i < sampleSize; i++) {
-            int current = i;
-            records[i].readFromRecordNoReturn(buffer -> {
-                byte initial = initialValues[current];
-                byte increment = increments[current];
-                while (buffer.hasRemaining()) {
-                    byte found = buffer.get();
-                    Assert.assertEquals(initial, found);
-                    initial += increment;
-                }
-            });
+    public void multipleRandomRecors() throws IOException {
+        for (int seed = 0; seed < 1000; seed++) {
+            int sampleSize = 32;
+            int[] possibleSizes = {64, 128, 256, 512};
+            byte[] initialValues = new byte[sampleSize];
+            byte[] increments = new byte[sampleSize];
+            int[] recordSizes = new int[sampleSize];
+            Random r = new Random(seed);
+            RecordEntry[] records = new RecordEntry[sampleSize];
+            for (int i = 0; i < sampleSize; i++) {
+                initialValues[i] = (byte) (1 + r.nextInt(255));
+                increments[i] = (byte) (1 + r.nextInt(255));
+                recordSizes[i] = possibleSizes[r.nextInt(possibleSizes.length)];
+                records[i] = byteBufferManager.allocateNewSlice(recordSizes[i]);
+                int current = i;
+                records[i].writeToRecordNoReturn(buffer -> {
+                    byte initial = initialValues[current];
+                    byte increment = increments[current];
+                    while (buffer.hasRemaining()) {
+                        buffer.put(initial);
+                        initial += increment;
+                    }
+                });
+            }
+            for (int i = 0; i < sampleSize; i++) {
+                int current = i;
+                records[i].readFromRecordNoReturn(buffer -> {
+                    byte initial = initialValues[current];
+                    byte increment = increments[current];
+                    while (buffer.hasRemaining()) {
+                        byte found = buffer.get();
+                        Assert.assertEquals(initial, found);
+                        initial += increment;
+                    }
+                });
+            }
         }
     }
 

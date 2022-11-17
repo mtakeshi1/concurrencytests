@@ -383,15 +383,11 @@ public class ActorSchedulerEntryPoint {
             findCircularDependency(currentState);
             throw maxLoopViolation.map(actor -> (ActorSchedulingException) new MaxLoopCountViolationException(actor, maxLoopCount)).orElse(new NoRunnableActorFoundException(unexploredNodes, Collections.emptyList()));
         }
-        runnableActors.retainAll(unexploredNodes);
-        /*
-         * Maybe the condition below should blow up? Maybe there are legitimate cases where the tree and the current states disagrees on what can proceed.
-         * As of now, I can't think of any.
-         */
-        if (runnableActors.isEmpty()) { //FIXME
-            System.out.println("");
-//            throw new RuntimeException("BUG");
+        if (unexploredNodes.isEmpty()) {
+            node.checkAllChildrenExplored(); // help marking the node and parent nodes as
+            throw new RunAbortedException();
         }
+        runnableActors.retainAll(unexploredNodes);
         return runnableActors;
     }
 

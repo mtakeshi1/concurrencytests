@@ -102,7 +102,7 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
         }
         long freeOffset = getLastUnusedOffset();
         int offsetInPage = (int) (freeOffset % pageSize);
-        int page = offsetInPage / pageSize;
+        int page = (int) (freeOffset / pageSize);
         int totalEntrySize = contentSize + RecordEntry.HEADER_LENGTH + RecordEntry.FOOTER_LENGTH;
         if (offsetInPage + totalEntrySize >= pageSize) {
             page++;
@@ -136,6 +136,9 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
             }
         }
         int page = maxPage + 1;
+        if (page < 0) {
+            throw new IllegalArgumentException("page number cannot be negative");
+        }
         getOrAllocateBufferForPage(page); // force initialization of next page
         updateFreeOffset((long) page * pageSize);
     }
@@ -170,6 +173,9 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
 
 
     public <T> T executeLocked(long offset, int size, Function<ByteBuffer, T> function, boolean readLock) {
+        if (offset < 0 || size <= 0) {
+            throw new RuntimeException("offset or size cannot be < 0");
+        }
         int offsetInPage = (int) (offset % pageSize);
         int page = (int) (offset / pageSize);
         ByteBuffer buffer = getOrAllocateBufferForPage(page);
@@ -206,6 +212,9 @@ public abstract class AbstractByteBufferManager implements ByteBufferManager {
     protected abstract Collection<Integer> knownPages();
 
     protected void updateFreeOffset(long newFreeOffset) {
+        if (newFreeOffset < 0) {
+            throw new IllegalArgumentException("free offset cannot be < 0");
+        }
         long l = freeOffset.get();
         while (l < newFreeOffset) {
             if (freeOffset.compareAndSet(l, newFreeOffset)) {

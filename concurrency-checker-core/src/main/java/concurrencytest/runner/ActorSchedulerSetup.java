@@ -222,8 +222,8 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
             synchronized (errorHolder) {
                 cancelTasks(futures);
                 Throwable throwable = errorHolder.get();
-                if (throwable != null) throwable.addSuppressed(t);
-                else errorHolder.set(t);
+                if (throwable != null && throwable != t) throwable.addSuppressed(t);
+                else if(throwable == null) errorHolder.set(t);
             }
         };
         Runnable command = monitorTask(stat, futures, configuration.parallelExecutions());
