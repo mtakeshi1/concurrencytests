@@ -94,7 +94,7 @@ public class ByteBufferManagerLockTest {
 
             @Override
             public int parallelExecutions() {
-                return 8;
+                return 6;
             }
 
             @Override

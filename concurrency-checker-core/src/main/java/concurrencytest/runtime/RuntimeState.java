@@ -14,18 +14,48 @@ import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Runtime state represents a particular state in the system.
+ * It should have information on what the actors are, where are they parked, the path taken so far and the various ids for locks and monitors
+ * to keep track of resources used to block threads.
+ *
+ * Currently the only version is {@link MutableRuntimeState} but a unmodifiable one should be much better
+ */
 public interface RuntimeState {
 
+    /**
+     * The checkpoint register containing all the checkpoints that actors can reach
+     */
     CheckpointRegister checkpointRegister();
 
+    /**
+     * Returns an int that can be used to identify monitors. Its akin to {@link System#identityHashCode(Object)} in that it is unique per object.
+     */
     int monitorIdFor(Object object);
 
-    List<String> getExecutionPath();
-
+    /**
+     * Same as {@link RuntimeState#monitorIdFor(Object)} except for {@link Lock}
+     */
     int lockIdFor(Lock lock);
 
+    /**
+     * Returns a list of strings representing a trace of what threads reached which checkpoint. Should be used to try to find causes of error.
+     */
+    List<String> getExecutionPath();
+
+    /**
+     * @return all of the actors currently active
+     */
     Collection<? extends ThreadState> allActors();
 
+    /**
+     * Starts this {@link RuntimeState} using the given Object as owner of the actors and using the given timeout as a maximum time to wait
+     * for actors to reach a checkpoint.
+     *
+     * @return a collection of futures holding exceptions happening inside the actor methods.
+     * @throws InterruptedException if this thread is interrupted while waiting for actors to reach their checkpoints
+     * @throws TimeoutException if the time to wait for actors to reach checkpoints exceeded the specified {@link Duration}
+     */
     Collection<Future<Throwable>> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException;
 
     /**

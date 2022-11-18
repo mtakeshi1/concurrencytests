@@ -9,9 +9,38 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+/**
+ * A tree node represents a state that reached at some point. The root tree node represents the begginning of all possible reachable states.
+ *
+ * Tree nodes are linked to their children by 'actor name' and each link represents what happens when you select that actor to resume from that state.
+ *
+ * TreeNodes marked as starting point represent TreeNodes that have a scheduler started on them and will eventually explore all of its children.
+ * In other words, they shouldn't be selected to be scheduled except by the scheduler that has marked the TreeNode as a starting point. This is to support
+ * 'forking' of new schedulers to mantain a certain level of parallelism
+ *
+ * Within each tree node, we have the following information
+ * - state of each actor
+ * - if this tree node is fully explored
+ * - unexplored paths - meaning, actors that can still be resumed to find new states
+ * - if this node is marked as a Starting point.
+ *
+ * A treeNode that is fully explored is allowed to 'clean up', meaning no longer hold the actor states and links and therefore may not be able to traverse further.
+ *
+ * TODO: {@link TreeNode#advance(ThreadState, RuntimeState)} should be enough to {@link TreeNode#markFullyExplored()} and should not depend on external actors to do so
+ *
+ */
 public interface TreeNode {
 
+    /**
+     * Constant to be used when a tree node is fully explored.
+     */
     TreeNode EMPTY_TREE_NODE = new TreeNode() {
+
+        @Override
+        public boolean isRootNode() {
+            return false;
+        }
+
         @Override
         public TreeNode parentNode() {
             return this;
@@ -57,14 +86,26 @@ public interface TreeNode {
     };
 
 
+    /**
+     * @return true if this is a root node
+     */
     default boolean isRootNode() {
         return this == parentNode();
     }
 
+    /**
+     * @return TreeNode that represents the parent, or this
+     */
     TreeNode parentNode();
 
+    /**
+     * @return A map with the actor states, in a persistable representation (a representation that does not depend on external information)
+     */
     Map<String, ActorInformation> threads();
 
+    /**
+     * Return a map with all known child nodes, as per {@link TreeNode#childNode(String)}
+     */
     Map<String, Optional<Supplier<TreeNode>>> childNodes();
 
     /**
@@ -74,28 +115,63 @@ public interface TreeNode {
      */
     Optional<Supplier<TreeNode>> childNode(String nodeName);
 
+    /**
+     * Checks if a particular link was initialized
+     * @param nodeName the actor name
+     */
     default boolean isInitialized(String nodeName) {
         return childNode(nodeName).isPresent();
     }
 
+    /**
+     * @return a Stream of actors whose paths are not completely explored
+     */
     Stream<String> unexploredPaths();
 
+    /**
+     * This method tries to discover the max known depth starting from this node. It should give an indication of the number of scheduling necessary until all of the threads are finished.
+     *
+     * This method is a best-effort and its results should only be used for statistical pourposes
+     */
     default long maxKnownDepth() {
         return childNodes().values().stream().filter(Optional::isPresent).map(Optional::get).map(Supplier::get).mapToLong(tn -> 1 + tn.maxKnownDepth()).max().orElse(0);
     }
 
+    /**
+     * @return true if this node has unexplored children
+     */
     default boolean hasUnexploredChildren() {
         return !isFullyExplored() && unexploredPaths().findAny().isPresent();
     }
 
+    /**
+     * Initializes a child tree node that represents resuming the given thread, resulting in the given state.
+     * @param selectedToProceed the actor that resumed
+     * @param next the system state resulting of resuming the actor
+     * @return the freshly created TreeNode
+     */
     TreeNode advance(ThreadState selectedToProceed, RuntimeState next);
 
+    /**
+     * If true, this tree node is already exausted and should no longer be selected as part of a scheduling
+     */
     boolean isFullyExplored();
 
+    /**
+     * Marks this node as fully explored. This method can recursively mark parent nodes that are fully explored and may also
+     * clear state (to free some memory)
+     */
     void markFullyExplored();
 
+    /**
+     * Tries to check if all of this TreeNode's children are marked as explored. There's a race condition between different scheduling competing to see
+     * who marks a TreeNode as completed, so this method helps competing threads to finish the marking
+     */
     void checkAllChildrenExplored();
 
+    /**
+     * @return true for terminal state tree nodes.
+     */
     default boolean allFinished() {
         return threads().values().stream().allMatch(ActorInformation::finished);
     }
