@@ -34,7 +34,7 @@ public class LinkedListTest {
 
             @Override
             public int parallelExecutions() {
-                return 8;
+                return 12;
             }
         };
     }

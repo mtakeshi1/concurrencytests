@@ -4,7 +4,7 @@ import concurrencytest.asm.SynchronizedBlockVisitor;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.runner.statistics.MutableRunStatistics;
-import concurrencytest.runtime.MutableRuntimeState;
+import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.tree.ActorInformation;
 import concurrencytest.runtime.tree.TreeNode;

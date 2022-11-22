@@ -62,8 +62,8 @@ public class StandardCheckpointRuntime implements CheckpointRuntime {
 
 
     @Override
-    public void addCheckpointCallback(CheckpointReachedCallback basicRuntimeState) {
-        callbacks.add(basicRuntimeState);
+    public void addCheckpointCallback(CheckpointReachedCallback callback) {
+        callbacks.add(callback);
     }
 
     @Override

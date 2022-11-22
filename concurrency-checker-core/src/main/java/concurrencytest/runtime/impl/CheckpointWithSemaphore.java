@@ -1,4 +1,4 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.impl;
 
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 

@@ -1,12 +1,34 @@
 package concurrencytest.runtime;
 
+/**
+ * Entrypoint for signalling checkpoints.
+ * <p>
+ * The methods here shouldn't be invoked by user code, except {@link CheckpointRuntimeAccessor#manualCheckpoint()} and {@link CheckpointRuntimeAccessor#manualCheckpoint(String)}
+ * <p>
+ * These methods are meant to be called by modified bytecode.
+ */
 public class CheckpointRuntimeAccessor {
 
+    /**
+     * Holds the CheckpointRuntime associated with the current thread, responsible for actually invoking the checkpoints
+     */
     private static final ThreadLocal<CheckpointRuntime> runtimeThreadLocal = new ThreadLocal<>();
 
+    /**
+     * User code can use these two methods to inject checkpoints manually. They will be rewritten into the proper methods
+     * by the bytecode enhancer, therefore these methods should impose almost no performance penalty when running
+     * the plain version
+     */
     public static void manualCheckpoint() {
     }
 
+    /**
+     * User code can use these two methods to inject checkpoints manually. They will be rewritten into the proper methods
+     * by the bytecode enhancer, therefore these methods should impose almost no performance penalty when running
+     * the plain version
+     *
+     * @param details details to be attached to the checkpoint to help identifying issues
+     */
     public static void manualCheckpoint(String details) {
     }
 

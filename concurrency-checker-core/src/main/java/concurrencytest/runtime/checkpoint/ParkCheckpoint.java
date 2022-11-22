@@ -1,4 +1,4 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.description.CheckpointDescription;

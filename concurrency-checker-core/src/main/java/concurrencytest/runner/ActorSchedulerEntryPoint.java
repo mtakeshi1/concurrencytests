@@ -6,7 +6,7 @@ import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.runner.statistics.MutableRunStatistics;
-import concurrencytest.runtime.MutableRuntimeState;
+import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.exception.RunAbortedException;
 import concurrencytest.runtime.exception.SchedulerAbortedException;

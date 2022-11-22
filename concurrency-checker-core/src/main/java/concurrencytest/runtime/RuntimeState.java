@@ -1,9 +1,8 @@
 package concurrencytest.runtime;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.runtime.lock.BlockCause;
+import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.lock.BlockingResource;
-import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 
 import java.time.Duration;
@@ -11,14 +10,13 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Runtime state represents a particular state in the system.
  * It should have information on what the actors are, where are they parked, the path taken so far and the various ids for locks and monitors
  * to keep track of resources used to block threads.
- *
+ * <p>
  * Currently the only version is {@link MutableRuntimeState} but a unmodifiable one should be much better
  */
 public interface RuntimeState {
@@ -54,7 +52,7 @@ public interface RuntimeState {
      *
      * @return a collection of futures holding exceptions happening inside the actor methods.
      * @throws InterruptedException if this thread is interrupted while waiting for actors to reach their checkpoints
-     * @throws TimeoutException if the time to wait for actors to reach checkpoints exceeded the specified {@link Duration}
+     * @throws TimeoutException     if the time to wait for actors to reach checkpoints exceeded the specified {@link Duration}
      */
     Collection<Future<Throwable>> start(Object testInstance, Duration timeout) throws InterruptedException, TimeoutException;
 
@@ -69,8 +67,16 @@ public interface RuntimeState {
      */
     RuntimeState advance(ThreadState selected, Duration maxWaitTime) throws InterruptedException, TimeoutException;
 
+    /**
+     * If an error happens on actor methods, it will be contained here
+     */
     Optional<Throwable> errorReported();
 
+    /**
+     * Collects all owned possibly blocking resources.
+     * The returned Map is a snapshot of a particular state at a point in time. Modifications to the returned map
+     * are not reflected anywhere.
+     */
     default Map<BlockingResource, ? extends Collection<? extends ThreadState>> ownedResources() {
         Map<BlockingResource, Set<ThreadState>> owned = new HashMap<>();
         for (ThreadState ts : allActors()) {
@@ -82,12 +88,9 @@ public interface RuntimeState {
     }
 
 
-    static <E> ArrayList<E> singleton(E element) {
-        ArrayList<E> list = new ArrayList<>();
-        list.add(element);
-        return list;
-    }
-
+    /**
+     * Collects all actors and sort them into names
+     */
     default Map<String, ThreadState> actorNamesToThreadStates() {
         Map<String, ThreadState> map = new HashMap<>();
         for (ThreadState state : allActors()) {
@@ -96,10 +99,16 @@ public interface RuntimeState {
         return map;
     }
 
+    /**
+     * Returns a Stream of ThreadState of actors that are runnable - ie: not blocked by other actors and also not finished
+     */
     default Stream<? extends ThreadState> runnableActors() {
         return allActors().stream().filter(e -> e.canProceed(this));
     }
 
+    /**
+     * @return true if all actors are finished (or about to finish)
+     */
     default boolean finished() {
         return allActors().stream().allMatch(ts -> ts.checkpoint() == checkpointRegister().taskFinishedCheckpoint().checkpointId());
     }

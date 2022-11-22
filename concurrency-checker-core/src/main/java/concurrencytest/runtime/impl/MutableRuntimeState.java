@@ -1,4 +1,4 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.impl;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
@@ -7,6 +7,8 @@ import concurrencytest.checkpoint.description.LockCheckpointReached;
 import concurrencytest.checkpoint.description.LockReleaseCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runner.CheckpointReachedCallback;
+import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.StandardCheckpointRuntime;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
 import concurrencytest.runtime.checkpoint.LockAcquireCheckpointReached;
 import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
@@ -15,7 +17,6 @@ import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.time.Duration;
 import java.util.*;

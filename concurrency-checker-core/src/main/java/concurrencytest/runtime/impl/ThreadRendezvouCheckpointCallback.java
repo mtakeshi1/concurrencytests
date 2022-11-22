@@ -1,7 +1,8 @@
-package concurrencytest.runtime;
+package concurrencytest.runtime.impl;
 
 import concurrencytest.runner.CheckpointReachedCallback;
 import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.runtime.impl.CheckpointWithSemaphore;
 
 import java.time.Duration;
 import java.util.Collection;
