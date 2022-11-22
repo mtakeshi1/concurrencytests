@@ -371,15 +371,15 @@ public class ActorSchedulerEntryPoint {
             return List.of(selected);
         }
         var runnableActors = currentState.runnableActors()
-                .filter(actor -> !actor.actorName().equals(lastActor) || currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() < maxLoopCount)
+                .filter(actor -> currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() < maxLoopCount)
                 .filter(ts -> !ts.finished())
                 .map(ThreadState::actorName).collect(Collectors.toSet());
         var unexploredNodes = node.unexploredPaths().collect(Collectors.toSet());
         if (runnableActors.isEmpty()) {
             //we've reached a deadlock
             Optional<String> maxLoopViolation = currentState.runnableActors()
-                    .filter(actor -> !actor.actorName().equals(lastActor) || currentState.actorNamesToThreadStates().get(actor.actorName()).loopCount() >= maxLoopCount)
-                    .map(ThreadState::actorName).findAny();
+                    .map(ThreadState::actorName)
+                    .filter(key -> currentState.actorNamesToThreadStates().get(key).loopCount() >= maxLoopCount).findAny();
             findCircularDependency(currentState);
             throw maxLoopViolation.map(actor -> (ActorSchedulingException) new MaxLoopCountViolationException(actor, maxLoopCount)).orElse(new NoRunnableActorFoundException(unexploredNodes, Collections.emptyList()));
         }
