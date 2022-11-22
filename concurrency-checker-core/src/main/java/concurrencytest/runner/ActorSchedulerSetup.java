@@ -144,7 +144,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         return actorName;
     }
 
-    public Optional<Throwable> run(Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public Optional<Throwable> run(Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException, TimeoutException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
@@ -207,7 +207,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
 
 
     private Optional<Throwable> runInVm(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath)
-            throws InterruptedException, IOException, ClassNotFoundException {
+            throws InterruptedException, IOException, ClassNotFoundException, TimeoutException {
         Tree tree = new HeapTree(false);
         MDC.put("actor", "COORDINATOR");
         ExecutorService service = Executors.newFixedThreadPool(configuration.parallelExecutions());
@@ -223,16 +223,17 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                 cancelTasks(futures);
                 Throwable throwable = errorHolder.get();
                 if (throwable != null && throwable != t) throwable.addSuppressed(t);
-                else if(throwable == null) errorHolder.set(t);
+                else if (throwable == null) errorHolder.set(t);
             }
         };
         Runnable command = monitorTask(stat, futures, configuration.parallelExecutions());
         scheduledExecutorService.scheduleWithFixedDelay(command, 60, 60, TimeUnit.SECONDS); //FIXME
+        long timeout = System.nanoTime() + configuration.durationConfiguration().maxTotalDuration().toNanos();
         try {
             TaskSchedulerInterface taskSchedulerInterface = this;
             AtomicInteger actorIndex = new AtomicInteger();
             spawnFork(mode, configuration, register, treeObserver, tree, service, errorReporter, taskSchedulerInterface, actorIndex.getAndIncrement(), preselectedPath);
-            while (tasksRunning()) {
+            while (tasksRunning() && System.nanoTime() < timeout) {
                 waitForSignal();
                 if (!pendingForks.isEmpty()) {
                     synchronized (this) {
@@ -244,8 +245,13 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                     }
                 }
             }
+            boolean taskRunning = false;
             for (var fut : futures) {
                 try {
+                    if (!fut.isDone()) {
+                        fut.cancel(true);
+                        taskRunning = true;
+                    }
                     Optional<Throwable> optional = fut.get();
                     if (optional.isPresent()) {
                         cancelTasks(futures);
@@ -264,6 +270,14 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                         throw new RuntimeException(e.getCause());
                     }
                 }
+            }
+            if (taskRunning) {
+                try {
+                    cancelTasks(futures);
+                } catch (Exception e) {
+                    // ignore
+                }
+                throw new TimeoutException("max duration exceeded: " + configuration.durationConfiguration().maxTotalDuration());
             }
             command.run();
             return Optional.ofNullable(errorHolder.get());

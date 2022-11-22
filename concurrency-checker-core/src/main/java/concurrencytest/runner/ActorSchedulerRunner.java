@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -65,7 +66,7 @@ public class ActorSchedulerRunner extends Runner {
             notifier.fireTestStarted(description);
             Optional<Throwable> error = setup.run(treeObserver, preselectedPath);
             error.ifPresent(t -> notifier.fireTestFailure(new Failure(description, t)));
-        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException | ActorSchedulingException e) {
+        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException | ActorSchedulingException | TimeoutException e) {
             // infrastructure error =(
             notifier.fireTestFailure(new Failure(description, e));
         } catch (InvocationTargetException e) {
