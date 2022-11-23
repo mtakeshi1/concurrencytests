@@ -6,6 +6,7 @@ import concurrencytest.annotations.v2.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.config.ExecutionMode;
+import concurrencytest.config.TreeMode;
 import concurrencytest.runner.ActorSchedulerRunner;
 import linkedList.NonBlockingLinkedList.Node;
 import org.junit.Assert;
@@ -34,7 +35,12 @@ public class LinkedListTest {
 
             @Override
             public int parallelExecutions() {
-                return 12;
+                return 1;
+            }
+
+            @Override
+            public TreeMode treeMode() {
+                return TreeMode.COMPACT_HEAP;
             }
         };
     }

@@ -23,7 +23,7 @@ public class CompactingTreeNode extends AbstractHeapTreeNode {
         int i = 0;
         for (var name : actorNames) {
             var info = Objects.requireNonNull(actorInformationMap.get(name));
-            shouldProceed[i++] = !info.finished() && info.isBlocked();
+            shouldProceed[i++] = !info.finished() && !info.isBlocked();
         }
     }
 

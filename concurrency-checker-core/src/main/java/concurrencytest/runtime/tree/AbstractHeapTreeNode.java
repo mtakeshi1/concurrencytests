@@ -22,7 +22,7 @@ public abstract class AbstractHeapTreeNode implements TreeNode {
         this.parent = parent;
         this.actorNames = new String[names.size()];
         int i = 0;
-        for(var actor : names) {
+        for (var actor : names) {
             actorNames[i++] = actor.intern();
         }
         this.treeNodes = new TreeNode[actorNames.length];
@@ -71,7 +71,7 @@ public abstract class AbstractHeapTreeNode implements TreeNode {
     public Stream<String> unexploredPaths() {
         List<String> list = new ArrayList<>();
         for (int i = 0; i < actorNames.length; i++) {
-            if (shouldExplore(i)) {
+            if ((treeNodes[i] == null || !treeNodes[i].isFullyExplored()) && shouldExplore(i)) {
                 list.add(actorNames[i]);
             }
         }
@@ -85,7 +85,7 @@ public abstract class AbstractHeapTreeNode implements TreeNode {
     @Override
     public void checkAllChildrenExplored() {
         for (int i = 0; i < actorNames.length; i++) {
-            if(!shouldExplore(i)) continue;
+            if (!shouldExplore(i)) continue;
             if (treeNodes[i] == null || !treeNodes[i].isFullyExplored()) {
                 return;
             }

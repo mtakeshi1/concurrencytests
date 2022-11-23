@@ -85,6 +85,15 @@ So many... For starter:
 - Temporal properties (a la TLA+)
 - 
 
+# Related work
+Or as I like to say: if you're interested in this library, you may want to check these ones below, which are in a much more mature state:
+- https://github.com/Kotlin/kotlinx-lincheck
+  - a model checker + probabilistic checker written in kotlin. It can derive post-conditions automatically by comparing different execution scenarios
+- https://github.com/openjdk/jcstress
+  - a checker for concurrency issues. Its specially usefull for testing issues regarding the java memory model, which this library (and possibly lincheck above) cannot do by definition
+- https://github.com/javapathfinder
+    - a model checker for jvm programs written by NASA. It looks powerfull, but I couldn't make it work.
+  
 # Beware of exponential growth
 
 Beware that the number of different runs and the time it takes for each one to complete grows exponential to the number of threads and checkpoints.

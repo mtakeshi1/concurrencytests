@@ -12,6 +12,7 @@ import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.config.CheckpointConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.config.ExecutionMode;
+import concurrencytest.config.TreeMode;
 import concurrencytest.reflection.ClassResolver;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runner.statistics.GenericStatistics;
@@ -208,7 +209,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
 
     private Optional<Throwable> runInVm(ExecutionMode mode, Configuration configuration, CheckpointRegister register, Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath)
             throws InterruptedException, IOException, ClassNotFoundException, TimeoutException {
-        Tree tree = new HeapTree(false);
+        Tree tree = configuration.treeMode().instantiateTree();
         MDC.put("actor", "COORDINATOR");
         ExecutorService service = Executors.newFixedThreadPool(configuration.parallelExecutions());
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, r -> {

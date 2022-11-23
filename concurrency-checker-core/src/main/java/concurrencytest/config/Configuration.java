@@ -18,8 +18,8 @@ public interface Configuration extends Serializable {
         return 1;
     }
 
-    default boolean offHeapTree() {
-        return false;
+    default TreeMode treeMode() {
+        return TreeMode.HEAP;
     }
 
     default int maxLoopIterations() {
