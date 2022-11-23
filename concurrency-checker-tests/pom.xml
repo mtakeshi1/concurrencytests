@@ -8,11 +8,11 @@
     <version>1.0-SNAPSHOT</version>
     <name>concurrencytests</name>
     <url>https://github.com/mtakeshi1/concurrencytests</url>
-<!--    <parent>-->
-<!--      <groupId>concurrency.checker</groupId>-->
-<!--      <artifactId>concurrency-checker-parent</artifactId>-->
-<!--      <version>1.0-SNAPSHOT</version>-->
-<!--    </parent>-->
+    <!--    <parent>-->
+    <!--      <groupId>concurrency.checker</groupId>-->
+    <!--      <artifactId>concurrency-checker-parent</artifactId>-->
+    <!--      <version>1.0-SNAPSHOT</version>-->
+    <!--    </parent>-->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
@@ -30,11 +30,18 @@
             <artifactId>byte-buddy</artifactId>
             <version>1.12.6</version>
         </dependency>
-	<dependency>
-	  <groupId>${project.groupId}</groupId>
-	  <artifactId>concurrency-checker-core</artifactId>
-	  <version>${project.version}</version>
-	</dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>concurrency-checker-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+<!--        testImplementation("org.jetbrains.kotlinx:lincheck:2.15")-->
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>lincheck-jvm</artifactId>
+            <version>2.16</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
