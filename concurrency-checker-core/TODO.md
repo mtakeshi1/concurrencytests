@@ -5,6 +5,7 @@
   - a path that gets selcted multiple times in a row should just be squashed
 
 # Before I consider 'usable':
+- wait / notify
 - ConfigurationBuilder 
   - configurable checkpoint injector per injected class
   - per method / checkpoint timeout?

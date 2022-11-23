@@ -22,7 +22,15 @@ public class WaitParkWakeupVisitor extends BaseClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                 String callTarget = Type.getObjectType(owner).getClassName();
                 if (isWaitOrPark(owner, name, descriptor)) {
-                    dropArguments(descriptor);
+                    for (Type arg : Type.getArgumentTypes(descriptor)) {
+                        if (arg.getSize() == 2) {
+                            super.visitInsn(Opcodes.POP2);
+                        } else {
+                            super.visitInsn(Opcodes.POP);
+                        }
+                    }
+                    super.visitInsn(Opcodes.POP);
+                    // top of the stack should be the wait target. We unlock maybe?
                     invokeEmptyCheckpoint(checkpointRegister.newParkCheckpoint(callTarget + "." + name, sourceName, latestLineNumber));
                 } else if (isNotifyOrUnpark(owner, name, descriptor)) {
                     invokeEmptyCheckpoint(checkpointRegister.newManualCheckpoint(callTarget + "." + name, sourceName, latestLineNumber));
