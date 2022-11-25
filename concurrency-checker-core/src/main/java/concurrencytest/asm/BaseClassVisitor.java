@@ -53,8 +53,8 @@ public class BaseClassVisitor extends ClassVisitor {
         try {
             return callTarget.getDeclaredMethod(methodName, params);
         } catch (NoSuchMethodException e) {
-            for(var m : callTarget.getDeclaredMethods()) {
-                if(m.getName().equals(methodName) && paramsMatch(m, params)) {
+            for (var m : callTarget.getDeclaredMethods()) {
+                if (m.getName().equals(methodName) && paramsMatch(m, params)) {
                     return m;
                 }
             }
@@ -79,7 +79,29 @@ public class BaseClassVisitor extends ClassVisitor {
     }
 
     private static boolean paramsMatch(Method m, Class<?>[] params) {
-        return false;
+        if (m.getParameterCount() > params.length) {
+            return false;
+        }
+        int count = m.getParameterCount();
+        if (m.isVarArgs()) {
+            count--;
+        }
+        Class<?>[] types = m.getParameterTypes();
+        int i;
+        for (i = 0; i < count; i++) {
+            if(!types[i].isAssignableFrom(params[i])) {
+                return false;
+            }
+        }
+        if (m.isVarArgs()) {
+            Class<?> lastType = types[types.length - 1].componentType();
+            for(; i < params.length; i++) {
+                if(!lastType.isAssignableFrom(params[i])) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     protected final Class<?> resolveType(Class<?> maybeResolved, String owner) {

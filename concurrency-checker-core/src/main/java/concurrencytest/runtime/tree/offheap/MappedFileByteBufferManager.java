@@ -136,7 +136,7 @@ public class MappedFileByteBufferManager extends AbstractByteBufferManager imple
             } catch (Exception e) {
                 if (error == null) {
                     error = e;
-                } else {
+                } else if (e != error) {
                     error.addSuppressed(e);
                 }
             }

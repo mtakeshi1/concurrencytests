@@ -255,7 +255,7 @@ public class ActorSchedulerEntryPoint {
                     reportActorError(e.getCause());
                 }
             }
-        } catch (CancellationException | RunAbortedException | InterruptedException e) {
+        } catch (CancellationException | RunAbortedException | InterruptedException | RejectedExecutionException e) {
             LOGGER.trace("Task cancelled");
             cancelTasks(actorTasks);
         } catch (SchedulerAbortedException e) {
@@ -424,7 +424,7 @@ public class ActorSchedulerEntryPoint {
             errorReporter.accept(t);
             if (actorError == null) {
                 this.actorError = t;
-            } else {
+            } else if(actorError != t){
                 actorError.addSuppressed(t);
             }
         }

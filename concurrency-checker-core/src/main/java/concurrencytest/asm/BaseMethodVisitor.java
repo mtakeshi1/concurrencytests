@@ -103,7 +103,7 @@ public abstract class BaseMethodVisitor extends MethodVisitor {
                 resolvedParameterTypes[i] = classResolver.resolveName(argumentTypes[i].getClassName());
             }
             try {
-                this.method = classUnderEnhancement.getMethod(methodName, resolvedParameterTypes);
+                this.method = classUnderEnhancement.getDeclaredMethod(methodName, resolvedParameterTypes);
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
