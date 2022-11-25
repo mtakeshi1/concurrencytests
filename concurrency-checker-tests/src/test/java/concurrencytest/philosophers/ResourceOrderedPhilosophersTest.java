@@ -2,8 +2,8 @@ package concurrencytest.philosophers;
 
 import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.MultipleActors;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
-import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.annotations.AfterActorsCompleted;
+import concurrencytest.annotations.ConfigurationSource;
 import concurrencytest.asm.ArrayElementMatcher;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;

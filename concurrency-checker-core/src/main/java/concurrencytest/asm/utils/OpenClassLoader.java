@@ -3,6 +3,9 @@ package concurrencytest.asm.utils;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Classloader that can load classes out of bytecode generated in memory
+ */
 public class OpenClassLoader extends ClassLoader {
 
     private final Map<String, byte[]> userDefinedClasses = new HashMap<>();

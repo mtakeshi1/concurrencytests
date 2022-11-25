@@ -2,10 +2,7 @@ package concurrencytest.v2.test;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
-import concurrencytest.annotations.v2.ConfigurationSource;
-import concurrencytest.config.BasicConfiguration;
-import concurrencytest.config.Configuration;
+import concurrencytest.annotations.AfterActorsCompleted;
 import org.junit.Assert;
 
 //@RunWith(ActorSchedulerRunner.class)

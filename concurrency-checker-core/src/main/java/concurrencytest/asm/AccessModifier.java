@@ -2,6 +2,9 @@ package concurrencytest.asm;
 
 import java.lang.reflect.Modifier;
 
+/**
+ * Enum to mirror java level access modifiers - and not mix up with other type of modifiers, like abstract, static, etc
+ */
 public enum AccessModifier {
 
     PUBLIC(Modifier.PUBLIC), PROTECTED(Modifier.PROTECTED), DEFAULT(0), PRIVATE(Modifier.PRIVATE);

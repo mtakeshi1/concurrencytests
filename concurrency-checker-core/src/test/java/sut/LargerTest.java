@@ -1,11 +1,9 @@
 package sut;
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
-import org.junit.After;
+import concurrencytest.annotations.AfterActorsCompleted;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

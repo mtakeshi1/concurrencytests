@@ -1,7 +1,7 @@
 package concurrencytest.runner;
 
 import concurrencytest.annotations.Invariant;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
+import concurrencytest.annotations.AfterActorsCompleted;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.config.Configuration;

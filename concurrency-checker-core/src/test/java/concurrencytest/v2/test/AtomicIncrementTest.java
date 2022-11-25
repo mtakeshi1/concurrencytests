@@ -1,7 +1,7 @@
 package concurrencytest.v2.test;
 
 import concurrencytest.annotations.MultipleActors;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
+import concurrencytest.annotations.AfterActorsCompleted;
 import org.junit.Assert;
 
 import java.util.concurrent.atomic.AtomicInteger;

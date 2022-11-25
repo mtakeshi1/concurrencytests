@@ -47,13 +47,10 @@ Because the runner acts like a scheduler allowing a single actor to proceed at a
 
 ### ClassLoaderIsolation
 Works like renaming, except that the classes will have the same name as the original but they will be loaded by a fresh classloader for each parallel execution.
-It should be the prefered mode, as it will provide better isolation.
+It should be the prefered mode, as it will provide better isolation, while being the fastest to start.
 
 ### Fork
 (**currently not implemented**) Fork will spawn a fresh jvm instance for each scheduler. Forking allows injecting checkpoints in classes in the JRE
-
-### ForkAll
-(**currently not implemented**) ForkAll will spawn a fresh jvm instance for each run. This will be usefull for tests that may leave state without cleanup due to code not under the writer's control.
 
 # Configuration options
 
@@ -101,9 +98,6 @@ public class SimpleSharedCounter {
 In this code, we have two actors that do the exact same thing: increment a shared (volatile) counter. 
 It also contains an invariant (the counter cannot have a value that is not between 0 and 2) that will be checked at every step. For this particular example, the invariant will never be broken.
 Finally, after all the threads finish, there's a post-condition check that verifies that no updates were missed. This post-condition will fail with some scheduling
-
-
-
 
 
 # Examples

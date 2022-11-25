@@ -2,8 +2,8 @@ package scheduledjobs;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
-import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.annotations.AfterActorsCompleted;
+import concurrencytest.annotations.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.config.ExecutionMode;

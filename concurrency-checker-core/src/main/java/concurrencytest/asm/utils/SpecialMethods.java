@@ -5,6 +5,9 @@ import concurrencytest.config.MethodInvocationMatcher;
 
 import java.lang.invoke.VarHandle;
 
+/**
+ * Some utility matcher for JDK methods marked as 'special' - that could / should have special treatment.
+ */
 public class SpecialMethods {
 
     private SpecialMethods() {

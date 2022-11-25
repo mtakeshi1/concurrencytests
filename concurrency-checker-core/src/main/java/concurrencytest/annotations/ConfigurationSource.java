@@ -1,4 +1,4 @@
-package concurrencytest.annotations.v2;
+package concurrencytest.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

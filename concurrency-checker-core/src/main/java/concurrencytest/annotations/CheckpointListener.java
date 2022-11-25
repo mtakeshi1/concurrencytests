@@ -12,6 +12,8 @@ import java.lang.annotation.Target;
  * - {@link concurrencytest.runtime.thread.ManagedThread} the thread reaching the checkpoint
  * - String - the actor name
  * - {@link concurrencytest.runtime.checkpoint.CheckpointReached}
+ *
+ * Currently not implemented
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

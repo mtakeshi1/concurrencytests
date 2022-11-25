@@ -3,7 +3,7 @@ package concurrencytest.dogfooding;
 
 import concurrencytest.annotations.Actor;
 import concurrencytest.annotations.Invariant;
-import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.annotations.ConfigurationSource;
 import concurrencytest.asm.ArrayElementMatcher;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.CheckpointConfiguration;

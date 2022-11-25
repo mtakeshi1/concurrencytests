@@ -1,7 +1,6 @@
 package concurrencytest.runner;
 
-import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.annotations.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.runtime.tree.TreeNode;
@@ -20,7 +19,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class ActorSchedulerRunner extends Runner {
     private final Class<?> testClass;

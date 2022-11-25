@@ -1,12 +1,10 @@
 package concurrencytest.v2.test;
 
 import concurrencytest.annotations.Actor;
-import concurrencytest.annotations.v2.AfterActorsCompleted;
-import concurrencytest.annotations.v2.ConfigurationSource;
+import concurrencytest.annotations.AfterActorsCompleted;
+import concurrencytest.annotations.ConfigurationSource;
 import concurrencytest.config.*;
-import concurrencytest.runner.ActorSchedulerRunner;
 import org.junit.Assert;
-import org.junit.runner.RunWith;
 
 import java.time.Duration;
 

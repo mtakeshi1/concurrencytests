@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Works kind of like a regular {@link java.net.URLClassLoader} except that it gives priority to classes that it can find on
+ * its own 'classpath' as opposed to the regular classloader that prioritizes parent classloader
+ */
 public class SpecialClassLoader extends ClassLoader {
 
     private final File rootPath;
