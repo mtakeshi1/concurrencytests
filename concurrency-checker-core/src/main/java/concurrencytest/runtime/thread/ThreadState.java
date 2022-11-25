@@ -102,7 +102,6 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
 
     public ThreadState monitorReleased(int monitorId) {
         assertNotFinished();
-        assertNotFinished();
         List<BlockingResource> newResources = CollectionUtils.removeFirst(ownedResources, res -> res.lockType() == LockType.MONITOR && res.resourceId() == monitorId);
         if (newResources.size() == ownedResources.size()) {
             throw new IllegalStateException("actor %s tried to release a lock (%d) that it did not held (%s)".formatted(actorName, monitorId, ownedResources));

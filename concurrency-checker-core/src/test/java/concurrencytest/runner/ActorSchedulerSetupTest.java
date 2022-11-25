@@ -45,24 +45,6 @@ public class ActorSchedulerSetupTest {
         Assert.assertTrue(dependencies.contains(AA.class));
     }
 
-
-    @Test
-    public void testIsSelfContained() throws IOException {
-        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(Object.class)));
-        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(RacyActorsGetters.class, SynchronizedValueHolder.class)));
-        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(RacyActorsGetters.class)));
-        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(SynchronizedValueHolder.class)));
-        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(A.class, B.class)));
-
-        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(A.class)));
-        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(B.class)));
-
-        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(AA.class)));
-        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(AA.class, BB.class)));
-        Assert.assertFalse(ActorSchedulerSetup.isSelfContained(List.of(AA.class, CC.class)));
-        Assert.assertTrue(ActorSchedulerSetup.isSelfContained(List.of(AA.class, BB.class, CC.class, DD.class)));
-    }
-
     public static class A {
         private B b;
     }

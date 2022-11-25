@@ -15,5 +15,8 @@
     </root>
 <!--    <logger name="concurrencytest.runtime.impl.MutableRuntimeState" level="TRACE"/>-->
 <!--    <logger name="concurrencytest.runner.ActorSchedulerEntryPoint" level="TRACE"/>-->
+<!--        <logger name="concurrencytest.runtime.impl.MutableRuntimeState" level="TRACE"/>-->
+<!--        <logger name="concurrencytest.runner.ActorSchedulerEntryPoint" level="TRACE"/>-->
+    <logger name="concurrencytest.runner.ActorSchedulerSetup" level="DEBUG" />
 
 </configuration>

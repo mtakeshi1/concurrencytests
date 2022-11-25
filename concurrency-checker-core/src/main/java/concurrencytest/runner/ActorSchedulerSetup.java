@@ -12,14 +12,12 @@ import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.config.CheckpointConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.config.ExecutionMode;
-import concurrencytest.config.TreeMode;
 import concurrencytest.reflection.ClassResolver;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runner.statistics.GenericStatistics;
 import concurrencytest.runner.statistics.ImmutableRunStatistics;
 import concurrencytest.runner.statistics.MutableRunStatistics;
 import concurrencytest.runner.statistics.RunStatistics;
-import concurrencytest.runtime.tree.HeapTree;
 import concurrencytest.runtime.tree.Tree;
 import concurrencytest.runtime.tree.TreeNode;
 import concurrencytest.util.ASMUtils;
@@ -372,42 +370,18 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         return checkpointRegister;
     }
 
-    private ExecutionMode selectMode() throws IOException {
+    private ExecutionMode selectMode() {
         if (configuration.executionMode() != ExecutionMode.AUTO) {
             return configuration.executionMode();
         }
-        Set<Class<?>> set = new HashSet<>(configuration.classesToInstrument());
-        set.add(configuration.mainTestClass());
-        if (isSelfContained(set)) {
-            return ExecutionMode.CLASSLOADER_ISOLATION;
-        }
-        return ExecutionMode.FORK;
-    }
-
-    public static boolean isSelfContained(Collection<? extends Class<?>> toInstrument) throws IOException {
-        for (Class<?> toRename : toInstrument) {
-            Collection<? extends Class<?>> dependencies = findAllDependencies(toRename);
-            for (Class<?> dep : dependencies) {
-                for (Class<?> secondLevelDep : findAllDependencies(dep)) {
-                    if (toInstrument.contains(secondLevelDep) && !toInstrument.contains(dep)) {
-                        return false;
-                    }
-                }
+        for (var c : configuration.classesToInstrument()) {
+            if (c.getName().startsWith("java.") || c.getName().startsWith("javax.") || c.getName().startsWith("sun.")) {
+                return ExecutionMode.FORK;
             }
         }
-        //TODO find a way to find out if renaming all of these classes would be enough
-        return true;
+        return ExecutionMode.CLASSLOADER_ISOLATION;
     }
 
-    private static Collection<? extends Class<?>> findDirectDependencies(Class<?> type) throws IOException {
-        ClassReader reader = ASMUtils.readClass(type);
-        if (reader == null) {
-            return Collections.emptyList();
-        }
-        ReadClassesVisitor visitor = new ReadClassesVisitor();
-        reader.accept(visitor, ClassReader.EXPAND_FRAMES);
-        return visitor.getDiscoveredClasses();
-    }
 
     public static Collection<? extends Class<?>> findAllDependencies(Class<?> type) throws IOException {
         Set<Class<?>> known = new HashSet<>();
@@ -434,9 +408,6 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
     }
 
     public static ClassVisitor createCheckpointsVisitor(Configuration configuration, ClassVisitor delegate, CheckpointRegister checkpointRegister, ClassResolver classResolver, Class<?> classUnderEnhancement) {
-//        if (configuration.checkClassesBytecode()) {
-//            delegate = new CheckClassAdapter(delegate, true);
-//        }
         CheckpointConfiguration checkpointConfiguration = configuration.checkpointConfiguration();
         if (checkpointConfiguration.manualCheckpointsEnabled()) {
             delegate = new ManualCheckpointVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver);

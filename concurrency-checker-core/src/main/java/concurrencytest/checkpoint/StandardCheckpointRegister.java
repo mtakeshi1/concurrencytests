@@ -52,7 +52,8 @@ public class StandardCheckpointRegister implements CheckpointRegister, Serializa
     }
 
     private Checkpoint registerCheckpoint(CheckpointDescription description) {
-        return allCheckpoints.computeIfAbsent(description, desc -> new Checkpoint(idGenerator.incrementAndGet(), desc));
+        Checkpoint cp = allCheckpoints.computeIfAbsent(description, desc -> new Checkpoint(idGenerator.incrementAndGet(), desc));
+        return cp;
     }
 
     @Override

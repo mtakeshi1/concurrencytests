@@ -13,13 +13,6 @@ public class SimpleSharedCounter {
 
     private volatile int counter;
 
-    @ConfigurationSource
-    public static Configuration config() {
-        return new BasicConfiguration(SimpleSharedCounter.class) {
-
-        };
-    }
-
     @Actor
     public void actor1() {
         counter++;
@@ -39,6 +32,5 @@ public class SimpleSharedCounter {
     public void check() {
         Assert.assertEquals(2, counter);
     }
-
 
 }

@@ -3,15 +3,13 @@ package linkedList;
 import concurrencytest.annotations.MultipleActors;
 import concurrencytest.annotations.v2.AfterActorsCompleted;
 import concurrencytest.annotations.v2.ConfigurationSource;
-import concurrencytest.config.BasicConfiguration;
-import concurrencytest.config.Configuration;
-import concurrencytest.config.ExecutionMode;
-import concurrencytest.config.TreeMode;
+import concurrencytest.config.*;
 import concurrencytest.runner.ActorSchedulerRunner;
 import linkedList.NonBlockingLinkedList.Node;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 
@@ -34,8 +32,13 @@ public class LinkedListTest {
             }
 
             @Override
+            public CheckpointDurationConfiguration durationConfiguration() {
+                return new CheckpointDurationConfiguration(Duration.ofMinutes(1), Duration.ofMinutes(10), Duration.ofHours(24));
+            }
+
+            @Override
             public int parallelExecutions() {
-                return 1;
+                return 12;
             }
 
             @Override
