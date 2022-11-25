@@ -1,6 +1,6 @@
 # Intro
 
-This project aims to be a library to run tests, prooving that a concurrent algorithm or data structure behaves correctly (in regards to thread scheduling) or to find a thread scheduling order that breaks some invariant.
+This project aims to be a library to run tests, proving that a concurrent algorithm or data structure behaves correctly (in regards to thread scheduling) or to find a thread scheduling order that breaks some invariant.
 
 To do that, it injects 'checkpoints' into the code (according to user specifications) and starts each thread, untill all of them reaches a Checkpoint. After that, it will select one of the threads to proceed until all the threads are completed.
 If there was another thread that could be selected at that point, the test runner will later restart and select another thread, until all combinations have been exausted or an error occurs.
@@ -11,6 +11,8 @@ In addition, you can add customized invariants that will be checked at each 'ren
 
 Check the examples as they help clear up the air.
 
+Its main inspiration was TLA+ and its model checker TLC.
+
 # Concepts
 
 ## Scheduler
@@ -20,15 +22,17 @@ A scheduler is responsible for controlling the execution of the actors, making s
 ## Test Scenario
 A test scenrio is a class sort of like a JUnit test case class, except that it uses a special runner (ActorSchedulerRunner) and have one or more methods annotated as Actors (@Actor, @Actors or @MultipleActors). Each of those will be executed by a separate thread and the test runner will try to find all possible scheduling combinations.
 
+
+
 ## Run
-A run is a scheduling combination until all of the actors terminate.
+A run is a scheduling combination until all of the actors terminate. Equivalent to a 'history' in this definition of [Link linearizability](https://en.wikipedia.org/wiki/Linearizability)
 
 ## Path
-A path of a run is a description of a single run, in terms of what thread run at each point.
+A path of a run is a description of a single run, in terms of what thread run at each point. Basically the description of the run.
 
 ## Execution Tree
 In order to fully find all scheduling options, the runner mantains a tree where each node is a state that was reached and each 'link' represents selecting a particular actor to proceed leading to another node with the updated states.
-
+The execution tree contain all of the explored runs or histories.
 
 ## Actor
 An actor is basically a thread, managed by the scheduler. The actors are the basic working unit for the test, and you indicate them by the @Actor annotation. The scheduler will start the threads corresponding to each actor. (It is more clear looking at the examples).
@@ -101,9 +105,6 @@ Finally, after all the threads finish, there's a post-condition check that verif
 
 
 # Examples
-
-
-
 
 ## Dining Philosophers
 https://en.wikipedia.org/wiki/Dining_philosophers_problem

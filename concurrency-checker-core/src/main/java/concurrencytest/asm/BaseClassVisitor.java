@@ -9,6 +9,7 @@ import org.objectweb.asm.Type;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 
 public class BaseClassVisitor extends ClassVisitor {
 
@@ -52,6 +53,11 @@ public class BaseClassVisitor extends ClassVisitor {
         try {
             return callTarget.getDeclaredMethod(methodName, params);
         } catch (NoSuchMethodException e) {
+            for(var m : callTarget.getDeclaredMethods()) {
+                if(m.getName().equals(methodName) && paramsMatch(m, params)) {
+                    return m;
+                }
+            }
             if (callTarget.getSuperclass() == null && callTarget.getInterfaces().length == 0) {
                 throw e;
             }
@@ -70,6 +76,10 @@ public class BaseClassVisitor extends ClassVisitor {
             }
             return null;
         }
+    }
+
+    private static boolean paramsMatch(Method m, Class<?>[] params) {
+        return false;
     }
 
     protected final Class<?> resolveType(Class<?> maybeResolved, String owner) {

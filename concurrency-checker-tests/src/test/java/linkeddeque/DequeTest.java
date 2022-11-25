@@ -1,34 +1,66 @@
-package linkedList;
+package linkeddeque;
 
-import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.annotations.MultipleActors;
-import concurrencytest.annotations.AfterActorsCompleted;
-import concurrencytest.annotations.ConfigurationSource;
+import concurrencytest.annotations.*;
 import concurrencytest.asm.AccessModifier;
 import concurrencytest.asm.BehaviourModifier;
+import concurrencytest.asm.ManualCheckpointVisitor;
 import concurrencytest.config.*;
 import concurrencytest.runner.ActorSchedulerRunner;
-import linkedList.NonBlockingLinkedList.Node;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
+import linkeddeque.CopyConcurrentLinkedDeque.CopyNode;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 import org.objectweb.asm.Type;
 
+import java.lang.invoke.VarHandle;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Test to check if we can detect this bug
+ *
+ * https://bugs.openjdk.org/browse/JDK-8256833
+ */
 @RunWith(ActorSchedulerRunner.class)
-public class LinkedListTest {
+public class DequeTest {
 
-    private final NonBlockingLinkedList<Integer> list = new NonBlockingLinkedList<>();
+    private final CopyConcurrentLinkedDeque<Integer> queue = new CopyConcurrentLinkedDeque<>();
+
+    private int actor1Result;
+    private int actor2Result;
+
+    public void setup() {
+        queue.addFirst(1);
+    }
+
+    @Actor
+    public void actor1() {
+        actor1Result = queue.pollFirst();
+    }
+
+    @Actor
+    public void actor2() {
+        queue.addFirst(2);
+        CheckpointRuntimeAccessor.manualCheckpoint();
+        actor2Result = queue.peekLast();
+    }
+
+    @AfterActorsCompleted
+    public void observations() {
+        if(actor1Result == 1) {
+            Assert.assertEquals(2, actor2Result);
+        } else if(actor1Result == 2) {
+            Assert.assertEquals(1, actor2Result);
+        }
+    }
 
     @ConfigurationSource
     public static Configuration configuration() {
-        return new BasicConfiguration(LinkedListTest.class) {
+        return new BasicConfiguration(DequeTest.class) {
             @Override
             public Collection<Class<?>> classesToInstrument() {
-                return List.of(NonBlockingLinkedList.class, Node.class);
+                return List.of(CopyConcurrentLinkedDeque.class, CopyNode.class);
             }
 
             @Override
@@ -55,7 +87,7 @@ public class LinkedListTest {
                             @Override
                             public boolean matches(Class<?> classUnderEnhancement, Class<?> invocationTargetType, String methodName, Type methodDescriptorType, AccessModifier accessModifier, Collection<BehaviourModifier> behaviourModifiers, InjectionPoint injectionPoint) {
 //                                return methodName.equals("compareAndSet") && injectionPoint == InjectionPoint.BEFORE;
-                                return invocationTargetType.equals(AtomicReference.class) && injectionPoint == InjectionPoint.AFTER;
+                                return invocationTargetType.equals(VarHandle.class) && injectionPoint == InjectionPoint.AFTER;
                             }
                         });
                     }
@@ -73,17 +105,5 @@ public class LinkedListTest {
             }
         };
     }
-
-    @MultipleActors(numberOfActors = 2)
-    public void actor(int index) {
-        list.prepend(index);
-        Assert.assertNotNull(list.removeFirst());
-    }
-
-    @AfterActorsCompleted
-    public void listEmpty() {
-        Assert.assertEquals(0, list.size());
-    }
-
 
 }

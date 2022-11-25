@@ -432,7 +432,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                     delegate, checkpointRegister, classUnderEnhancement, classResolver, matcher
             );
         }
-        for (var matcher : checkpointConfiguration.methodsToInstrument()) {
+        for (var matcher : checkpointConfiguration.methodsCallsToInstrument()) {
             delegate = new MethodInvocationVisitor(delegate, checkpointRegister, classUnderEnhancement, classResolver, matcher);
         }
         if (configuration.checkpointConfiguration().includeStandardMethods()) {

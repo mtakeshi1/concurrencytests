@@ -1,5 +1,7 @@
 package linkedList;
 
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
+
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,6 +29,7 @@ public class NonBlockingLinkedList<T> {
         Node<T> nextHead = new Node<>(t, previousHead);
         while (!head.compareAndSet(previousHead, nextHead)) {
             previousHead = head.get();
+            CheckpointRuntimeAccessor.manualCheckpoint();
             nextHead = new Node<>(t, previousHead);
         }
     }
@@ -39,6 +42,7 @@ public class NonBlockingLinkedList<T> {
         Node<T> nextHead = previousHead.next().get();
         while (!head.compareAndSet(previousHead, nextHead)) {
             previousHead = head.get();
+            CheckpointRuntimeAccessor.manualCheckpoint();
             if (previousHead == null) {
                 return null;
             }

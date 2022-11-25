@@ -19,7 +19,7 @@ public interface CheckpointConfiguration {
     /**
      * Injection points for method calss
      */
-    default Collection<MethodInvocationMatcher> methodsToInstrument() {
+    default Collection<MethodInvocationMatcher> methodsCallsToInstrument() {
         return Collections.emptyList();
     }
 
