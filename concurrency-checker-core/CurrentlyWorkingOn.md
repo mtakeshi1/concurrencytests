@@ -16,7 +16,7 @@ More detailed listing of what I'm currently looking at
 - better test infrastructure - mostly to detect which classes to inject for the basic tests
 - run tests against mutable runtime state
   - it seems that mutable runtime state callbacks can be called from multiple threads?
-- wait and notify
+- Config / ConfigBuilder 
 
 # planned
 - add checkpoint for exception catching

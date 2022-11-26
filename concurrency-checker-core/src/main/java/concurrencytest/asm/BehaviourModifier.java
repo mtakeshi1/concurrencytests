@@ -8,6 +8,11 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
+/**
+ * Modifiers for 'behavior' of fields, methods, classes, etc
+ *
+ * Basically group modifiers that are not access level related.
+ */
 public enum BehaviourModifier {
 
     STATIC(Modifier.STATIC), VOLATILE(Modifier.VOLATILE), TRANSIENT(Modifier.TRANSIENT), SYNCHRONIZED(Modifier.SYNCHRONIZED), INSTANCE_MEMBER(0), FINAL(Modifier.FINAL),

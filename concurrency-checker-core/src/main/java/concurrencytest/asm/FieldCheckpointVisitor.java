@@ -13,10 +13,12 @@ import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
 
+/**
+ * A ClassVisitor that matches field reads / writes on methods declared inside.
+ */
 public class FieldCheckpointVisitor extends BaseClassVisitor {
     //TODO check if we need something like a classresolver
     private final FieldAccessMatch checkpointMatchConfiguration;
-
 
     public FieldCheckpointVisitor(FieldAccessMatch fieldCheckpoint, ClassVisitor delegate, CheckpointRegister checkpointRegister, Class<?> classUnderEnhancement, ClassResolver classResolver) {
         super(delegate, checkpointRegister, classUnderEnhancement, classResolver);
@@ -27,7 +29,6 @@ public class FieldCheckpointVisitor extends BaseClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         return new FieldCheckpointMethodVisitor(sourceName, super.visitMethod(access, name, descriptor, signature, exceptions), access, name, descriptor);
     }
-
 
     private class FieldCheckpointMethodVisitor extends BaseMethodVisitor {
 

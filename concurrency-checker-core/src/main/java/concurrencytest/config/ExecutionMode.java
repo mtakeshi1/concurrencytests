@@ -10,10 +10,16 @@ public enum ExecutionMode {
      */
     AUTO,
     /**
-     * Creates copy of classes with the checkpoints injected, but delegate the classloading to standard classpath.
+     * Creates copy of classes with the checkpoints injected, but delegate the classloading to standard classpath mechanism.
+     * The forked java process will run all of the parallel executions
      * Can be used to inject checkpoints in JRE classes.
      */
     FORK,
+
+    /**
+     * Behave the same as {@link ExecutionMode#FORK} except that each parallel execution will fork another java process.
+     */
+    FORK_ALL,
 
     /**
      * Creates copy of classes to be enhanced with different names, loads them in a {@link concurrencytest.asm.utils.OpenClassLoader}
