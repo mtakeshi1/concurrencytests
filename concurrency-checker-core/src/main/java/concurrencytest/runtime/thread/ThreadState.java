@@ -11,6 +11,14 @@ import concurrencytest.util.CollectionUtils;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 
+/**
+ * Unmutable thread state snapshot
+ *
+ * TODO add information about how many times it has waited. Not sure how we will reset that
+ *
+ * after another thread has been selected
+ *
+ */
 public record ThreadState(String actorName, int checkpoint, int loopCount,
                           List<BlockingResource> ownedResources, Optional<BlockCause> blockedBy, boolean finished) {
 
@@ -37,14 +45,6 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
             throw new IllegalArgumentException("At most %d resources can be held, but was: %d".formatted(MAX_OWNED_RESOURCES, ownedResources.size()));
         }
         Objects.requireNonNull(blockedBy, "blockedBy cannot be null. Use an Optional.empty() instead");
-    }
-
-    public Collection<ThreadState> dependencies(RuntimeState state) {
-//        var monitor = waitingForMonitor.map(LockMonitorAcquisition::lockOrMonitorId).filter(monId -> !state.ownedMonitors().containsKey(monId)).map(mon -> state.ownedMonitors().get(mon)).stream();
-//        var locks = waitingForLock.map(LockMonitorAcquisition::lockOrMonitorId).filter(monId -> !state.lockedLocks().containsKey(monId)).map(mon -> state.lockedLocks().get(mon)).stream();
-//        var conditionalWait = waitingForThread.map(actor -> state.actorNamesToThreadStates().get(actor)).stream();
-//        return Stream.concat(monitor, Stream.concat(locks, conditionalWait)).toList();
-        return Collections.emptyList(); //TODO
     }
 
     public boolean canProceed(RuntimeState state) {

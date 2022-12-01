@@ -39,6 +39,11 @@ public class WaitParkWakeupVisitor extends BaseClassVisitor {
                     // monitor_target
                     // here we should have a Object.wait, but we will just force a context switch.
                     super.visitInsn(Opcodes.DUP);
+
+                    invokeGenericCheckpointWithContext(checkpointRegister.newObjectWaitCheckpoint(sourceName, latestLineNumber));
+
+                    super.visitInsn(Opcodes.DUP);
+
                     // monitor_target, monitor_target
                     invokeGenericCheckpointWithContext(checkpointRegister.newMonitorEnterCheckpoint(classUnderEnhancement, methodName, methodDescriptor, peekStackType(), sourceName, latestLineNumber, InjectionPoint.BEFORE));
                     // monitor_target

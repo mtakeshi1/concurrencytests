@@ -77,4 +77,8 @@ public interface Configuration extends Serializable {
      */
     File outputFolder();
 
+    default int maxWaitsOnSameObject() {
+        return 2;
+    }
+
 }
