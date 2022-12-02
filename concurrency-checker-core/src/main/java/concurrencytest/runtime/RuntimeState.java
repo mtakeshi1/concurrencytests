@@ -1,6 +1,8 @@
 package concurrencytest.runtime;
 
 import concurrencytest.checkpoint.CheckpointRegister;
+import concurrencytest.checkpoint.description.CheckpointDescription;
+import concurrencytest.config.Configuration;
 import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.lock.BlockingResource;
 import concurrencytest.runtime.thread.ThreadState;
@@ -20,6 +22,8 @@ import java.util.stream.Stream;
  * Currently the only version is {@link MutableRuntimeState} but a unmodifiable one should be much better
  */
 public interface RuntimeState {
+
+    Configuration configuration();
 
     /**
      * The checkpoint register containing all the checkpoints that actors can reach
@@ -113,4 +117,7 @@ public interface RuntimeState {
         return allActors().stream().allMatch(ts -> ts.checkpoint() == checkpointRegister().taskFinishedCheckpoint().checkpointId());
     }
 
+    int getWaitCount(ThreadState actor, CheckpointDescription acquisitionPoint, int resourceId);
+
+    boolean isNotifySignalAvailable(RuntimeState state, int resourceId);
 }
