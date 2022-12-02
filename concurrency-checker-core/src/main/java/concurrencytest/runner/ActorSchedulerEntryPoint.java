@@ -48,7 +48,6 @@ public class ActorSchedulerEntryPoint {
     private final Consumer<Throwable> errorReporter;
     private final TaskSchedulerInterface scheduler;
     private volatile Throwable actorError;
-//    private final ThreadPoolExecutor executorService;
 
     private final Collection<CheckpointReachedCallback> callbacks = new CopyOnWriteArrayList<>();
 
@@ -143,7 +142,6 @@ public class ActorSchedulerEntryPoint {
                 }
             }
         }
-
     }
 
     private boolean hasMorePathsToExplore() {
@@ -152,20 +150,10 @@ public class ActorSchedulerEntryPoint {
          *  this condition is wrong. We need something to convey:
          * - either the tree is fully explored
          * - every non-explored node is scheduled by someone other than me
-         *
          */
-//        var next = explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister);
-//        for(String nextLink : initialPathActorNames) {
-//            if (next.isFullyExplored()) {
-//                return false;
-//            }
-//            Optional<Supplier<TreeNode>> node = next.childNode(nextLink);
-//            if(node.isEmpty()) {
-//                return true;
-//            }
-//            next = node.get().get();
-//        }
-        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister), new LinkedList<>(initialPathActorNames));
+        Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(
+                ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister),
+                new LinkedList<>(initialPathActorNames));
         return !node.map(TreeNode::isFullyExplored).orElse(false);
     }
 
@@ -209,11 +197,8 @@ public class ActorSchedulerEntryPoint {
                 callInvariants(mainTestObject, runtime);
                 Collection<String> options = allAvailableActors(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
                 if (options.isEmpty()) {
-//                    if (node.isFullyExplored()) {
                     cancelTasks(actorTasks);
                     throw new RunAbortedException();
-//                    throw new SchedulerAbortedException();
-//                    }
                 }
                 // we will attempt to fork
                 Iterator<String> iterator = options.iterator();

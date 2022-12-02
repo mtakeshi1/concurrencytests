@@ -77,7 +77,7 @@ public interface Configuration extends Serializable {
      */
     File outputFolder();
 
-    default int maxWaitsOnSameObject() {
+    default int maxSpuriousWakeups() {
         return 2;
     }
 
