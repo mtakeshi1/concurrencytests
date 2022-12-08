@@ -1,6 +1,6 @@
-package concurrencytest.runtime.checkpoint;
+package concurrencytest.checkpoint.instance;
 
-import concurrencytest.checkpoint.description.LockCheckpointReached;
+import concurrencytest.checkpoint.instance.LockCheckpointReached;
 import concurrencytest.checkpoint.description.TryAcquireWithResult;
 import concurrencytest.checkpoint.Checkpoint;
 

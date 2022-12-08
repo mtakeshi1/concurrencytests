@@ -3,7 +3,7 @@ package concurrencytest.runtime.thread;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runtime.RuntimeState;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
 import concurrencytest.runtime.lock.*;
 import concurrencytest.runtime.lock.BlockCauseType;
 import concurrencytest.util.CollectionUtils;

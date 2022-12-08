@@ -3,16 +3,16 @@ package concurrencytest.runtime.impl;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
-import concurrencytest.checkpoint.description.LockCheckpointReached;
+import concurrencytest.checkpoint.instance.LockCheckpointReached;
 import concurrencytest.checkpoint.description.LockReleaseCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
 import concurrencytest.runner.CheckpointReachedCallback;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.StandardCheckpointRuntime;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.LockAcquireCheckpointReached;
-import concurrencytest.runtime.checkpoint.MonitorCheckpointReached;
-import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
+import concurrencytest.checkpoint.instance.LockAcquireCheckpointReached;
+import concurrencytest.checkpoint.instance.MonitorCheckpointReached;
+import concurrencytest.checkpoint.instance.ThreadStartCheckpointReached;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import org.slf4j.Logger;
@@ -81,7 +81,7 @@ public class MutableRuntimeState implements RuntimeState {
             synchronized (this) {
                 var state = Objects.requireNonNull(allActors.get(checkpointReached.actorName()), "state not found for actor named '%s'".formatted(checkpointReached.actorName()));
                 executionPath.add("[%s] %s - current state: %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description(), state));
-                if(LOGGER.isTraceEnabled()) {
+                if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 }
             }

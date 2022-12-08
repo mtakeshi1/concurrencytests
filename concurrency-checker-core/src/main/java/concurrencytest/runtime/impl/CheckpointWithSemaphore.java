@@ -1,6 +1,6 @@
 package concurrencytest.runtime.impl;
 
-import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;

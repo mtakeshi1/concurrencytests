@@ -3,8 +3,8 @@ package concurrencytest.runtime;
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runner.CheckpointReachedCallback;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.RegularCheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
+import concurrencytest.checkpoint.instance.RegularCheckpointReached;
 import concurrencytest.runtime.exception.RunAbortedException;
 
 import java.util.List;

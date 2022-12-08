@@ -1,4 +1,4 @@
-package concurrencytest.runtime.checkpoint;
+package concurrencytest.checkpoint.instance;
 
 import concurrencytest.checkpoint.Checkpoint;
 

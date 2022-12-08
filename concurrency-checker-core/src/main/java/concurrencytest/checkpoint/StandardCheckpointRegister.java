@@ -2,7 +2,7 @@ package concurrencytest.checkpoint;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.description.*;
-import concurrencytest.runtime.checkpoint.ParkCheckpoint;
+import concurrencytest.checkpoint.instance.ParkCheckpoint;
 import org.objectweb.asm.Type;
 
 import java.io.Serializable;

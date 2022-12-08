@@ -1,7 +1,7 @@
 package concurrencytest.checkpoint.description;
 
 import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.checkpoint.instance.LockCheckpointReached;
 
 import java.util.concurrent.locks.Lock;
 

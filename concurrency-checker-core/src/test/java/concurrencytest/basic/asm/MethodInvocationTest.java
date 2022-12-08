@@ -8,7 +8,7 @@ import concurrencytest.checkpoint.MethodCallCheckpointDescription;
 import concurrencytest.config.MethodInvocationMatcher;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runner.RecordingCheckpointRuntime;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
 import org.junit.Assert;
 import org.junit.Test;
 

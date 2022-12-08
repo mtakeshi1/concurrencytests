@@ -3,8 +3,8 @@ package concurrencytest.checkpoint;
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.runtime.thread.ManagedThread;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.ThreadStartCheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
+import concurrencytest.checkpoint.instance.ThreadStartCheckpointReached;
 
 public record ThreadStartingCheckpoint(String classUnderEnhancementName, String methodName, String sourceFile,
                                        int lineNumber) implements CheckpointDescription {

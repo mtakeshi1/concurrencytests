@@ -2,8 +2,8 @@ package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.RegularCheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
+import concurrencytest.checkpoint.instance.RegularCheckpointReached;
 
 import java.io.Serializable;
 

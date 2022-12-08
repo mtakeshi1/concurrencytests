@@ -13,6 +13,3 @@ public record ManualCheckpointImpl(String details, String sourceFile, int lineNu
         return "ManualCheckpoint (%s:%d)".formatted(sourceFile, lineNumber);
     }
 }
-
-
-

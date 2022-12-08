@@ -3,7 +3,7 @@ package concurrencytest.runner;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.runtime.CheckpointRuntime;
 import concurrencytest.runtime.StandardCheckpointRuntime;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

@@ -39,8 +39,6 @@ public interface CheckpointRegister {
 
     Checkpoint newParkCheckpoint(String details, String sourceName, int latestLineNumber);
 
-    Checkpoint newObjectWaitCheckpoint(String sourceName, int latestLineNumber);
-
     Checkpoint arrayElementCheckpoint(InjectionPoint injectionPoint, boolean arrayRead, Class<?> arrayType, String sourceName, int latestLineNumber);
 
     Checkpoint managedThreadStartedCheckpoint(String classUnderEnhancementName, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
@@ -52,6 +50,8 @@ public interface CheckpointRegister {
     Checkpoint newLockAcquireCheckpoint(InjectionPoint before, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
 
     Checkpoint newLockReleasedCheckpoint(InjectionPoint injectionPoint, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
+
+    Checkpoint newObjectWaitCheckpoint(String sourceName, int latestLineNumber);
 
     Checkpoint newNotifyCheckpoint(boolean notifyAll, String sourceName, int latestLineNumber);
 }

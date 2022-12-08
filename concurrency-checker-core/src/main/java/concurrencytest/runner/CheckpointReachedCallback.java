@@ -1,6 +1,6 @@
 package concurrencytest.runner;
 
-import concurrencytest.runtime.checkpoint.CheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
 
 public interface CheckpointReachedCallback {
 

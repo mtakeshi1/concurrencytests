@@ -2,8 +2,8 @@ package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.Checkpoint;
-import concurrencytest.runtime.checkpoint.CheckpointReached;
-import concurrencytest.runtime.checkpoint.LockAcquireCheckpointReached;
+import concurrencytest.checkpoint.instance.CheckpointReached;
+import concurrencytest.checkpoint.instance.LockAcquireCheckpointReached;
 
 public record LockAcquireCheckpointDescription(InjectionPoint injectionPoint, String details, String sourceFile, int lineNumber, boolean acquireTry,
                                                boolean timedAcquire) implements CheckpointDescription {

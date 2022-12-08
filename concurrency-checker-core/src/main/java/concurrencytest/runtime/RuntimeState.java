@@ -119,5 +119,7 @@ public interface RuntimeState {
 
     int getWaitCount(ThreadState actor, CheckpointDescription acquisitionPoint, int resourceId);
 
-    boolean isNotifySignalAvailable(RuntimeState state, int resourceId);
+    boolean isNotifySignalAvailable(RuntimeState state, int resourceId, boolean monitor);
+
+    void consumeNotifySignal(RuntimeState state, int resourceId, boolean monitor);
 }
