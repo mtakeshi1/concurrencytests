@@ -6,7 +6,7 @@ import concurrencytest.asm.AccessModifier;
 import concurrencytest.asm.BehaviourModifier;
 import concurrencytest.asm.FieldCheckpointVisitor;
 import concurrencytest.basic.asm.testClasses.InjectionTarget;
-import concurrencytest.checkpoint.FieldAccessCheckpoint;
+import concurrencytest.checkpoint.description.FieldAccessCheckpoint;
 import concurrencytest.checkpoint.matcher.FieldAnnotationMatch;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runner.RecordingCheckpointRuntime;

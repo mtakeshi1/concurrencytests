@@ -1,13 +1,11 @@
 package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
-import concurrencytest.checkpoint.MethodCallCheckpointDescription;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 public record MethodCallCheckpointImpl(InjectionPoint injectionPoint, String sourceFile,
                                        int lineNumber, String methodName, Class<?> declaringType, Class<?>[] parameterTypes,

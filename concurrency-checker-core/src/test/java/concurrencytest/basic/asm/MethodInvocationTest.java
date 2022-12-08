@@ -4,7 +4,7 @@ import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.asm.MethodInvocationVisitor;
 import concurrencytest.basic.asm.testClasses.Example;
 import concurrencytest.basic.asm.testClasses.MethodInvTestsTarget;
-import concurrencytest.checkpoint.MethodCallCheckpointDescription;
+import concurrencytest.checkpoint.description.MethodCallCheckpointDescription;
 import concurrencytest.config.MethodInvocationMatcher;
 import concurrencytest.reflection.ReflectionHelper;
 import concurrencytest.runner.RecordingCheckpointRuntime;

@@ -1,6 +1,7 @@
-package concurrencytest.checkpoint;
+package concurrencytest.checkpoint.description;
 
 import concurrencytest.annotations.InjectionPoint;
+import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.checkpoint.instance.CheckpointReached;
