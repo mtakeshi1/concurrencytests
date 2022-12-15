@@ -1,8 +1,10 @@
 package concurrencytest.runtime;
 
+import concurrencytest.checkpoint.instance.CheckpointReached;
 import concurrencytest.runner.CheckpointReachedCallback;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * A checkpoint runtime is the glue that connects actors, checkpoints and a RuntimeState.
@@ -42,6 +44,10 @@ public interface CheckpointRuntime {
      * @param callback the callback
      */
     void addCheckpointCallback(CheckpointReachedCallback callback);
+
+    default <T extends CheckpointReached> void addTypedCheckpointCallback(Class<T> type, Consumer<T> consumer) {
+        addCheckpointCallback(cb -> {if (type.isInstance(cb)) consumer.accept(type.cast(cb));});
+    }
 
     /**
      * Removes a checkpoint callback. Not sure if this is needed

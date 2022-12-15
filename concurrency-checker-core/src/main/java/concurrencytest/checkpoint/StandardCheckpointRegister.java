@@ -57,12 +57,12 @@ public class StandardCheckpointRegister implements CheckpointRegister, Serializa
 
     @Override
     public Checkpoint newMonitorEnterCheckpoint(Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
-        return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, true));
+        return registerCheckpoint(new MonitorCheckpointDescriptionImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, true));
     }
 
     @Override
     public Checkpoint newMonitorExitCheckpoint(Class<?> classUnderEnhancement, String methodName, String methodDescriptor, Type monitorOwnerType, String sourceName, int latestLineNumber, InjectionPoint injectionPoint) {
-        return registerCheckpoint(new MonitorCheckpointImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, false));
+        return registerCheckpoint(new MonitorCheckpointDescriptionImpl(injectionPoint, monitorOwnerType.getClassName(), sourceName, latestLineNumber, false));
     }
 
     @Override
@@ -95,5 +95,15 @@ public class StandardCheckpointRegister implements CheckpointRegister, Serializa
     @Override
     public Checkpoint newLockReleasedCheckpoint(InjectionPoint injectionPoint, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber) {
         return this.registerCheckpoint(new LockReleaseCheckpointDescription(injectionPoint, "", sourceName, latestLineNumber));
+    }
+
+    @Override
+    public Checkpoint newObjectWaitCheckpoint(String sourceName, int latestLineNumber, boolean monitorWait, boolean timedWait, InjectionPoint injectionPoint) {
+        return this.registerCheckpoint(new WaitAwaitCheckpointDescription(sourceName, latestLineNumber, monitorWait, timedWait, injectionPoint));
+    }
+
+    @Override
+    public Checkpoint newNotifyCheckpoint(boolean notifyAll, String sourceName, int latestLineNumber, boolean monitorNotify) {
+        return this.registerCheckpoint(new NotifySignalCheckpointDescription(sourceName, latestLineNumber, monitorNotify, notifyAll));
     }
 }

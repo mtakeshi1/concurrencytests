@@ -223,7 +223,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                 Throwable throwable = errorHolder.get();
 //                if (throwable != null && throwable != t) throwable.addSuppressed(t);
 //                else
-                    if (throwable == null) errorHolder.set(t);
+                if (throwable == null) errorHolder.set(t);
             }
         };
         Runnable command = monitorTask(stat, futures, configuration.parallelExecutions());
@@ -291,7 +291,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                            Consumer<Throwable> errorReporter, TaskSchedulerInterface taskSchedulerInterface, int actorIndex, Collection<? extends String> collection) {
         Callable<Optional<Throwable>> task = () -> {
             Class<?> mainTestClass = loadMainTestClass(mode);
-            ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration.durationConfiguration(), new ArrayList<>(collection), mainTestClass, configuration.maxLoopIterations(),
+            ActorSchedulerEntryPoint entryPoint = new ActorSchedulerEntryPoint(tree, register, configuration, new ArrayList<>(collection), mainTestClass, configuration.maxLoopIterations(),
                     "scheduler_" + actorIndex, errorReporter, taskSchedulerInterface);
             return entryPoint.exploreAll(treeObserver, stat);
         };

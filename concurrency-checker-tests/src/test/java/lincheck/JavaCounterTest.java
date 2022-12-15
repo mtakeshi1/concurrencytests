@@ -3,7 +3,6 @@ package lincheck;
 import kotlin.jvm.Volatile;
 import org.jetbrains.kotlinx.lincheck.LinCheckerKt;
 import org.jetbrains.kotlinx.lincheck.annotations.Operation;
-import org.jetbrains.kotlinx.lincheck.strategy.stress.StressCTestConfiguration;
 import org.jetbrains.kotlinx.lincheck.strategy.stress.StressOptions;
 import org.junit.Test;
 

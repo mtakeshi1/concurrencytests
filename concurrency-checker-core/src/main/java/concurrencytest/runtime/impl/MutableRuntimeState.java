@@ -2,17 +2,15 @@ package concurrencytest.runtime.impl;
 
 import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
+import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
-import concurrencytest.checkpoint.instance.LockCheckpointReached;
 import concurrencytest.checkpoint.description.LockReleaseCheckpointDescription;
 import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
-import concurrencytest.runner.CheckpointReachedCallback;
+import concurrencytest.checkpoint.instance.*;
+import concurrencytest.config.Configuration;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.StandardCheckpointRuntime;
-import concurrencytest.checkpoint.instance.CheckpointReached;
-import concurrencytest.checkpoint.instance.LockAcquireCheckpointReached;
-import concurrencytest.checkpoint.instance.MonitorCheckpointReached;
-import concurrencytest.checkpoint.instance.ThreadStartCheckpointReached;
+import concurrencytest.runtime.lock.LockType;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import org.slf4j.Logger;
@@ -46,8 +44,22 @@ public class MutableRuntimeState implements RuntimeState {
     private final List<String> executionPath = new ArrayList<>();
     private final Consumer<Throwable> errorReporter;
     private final ExecutorService executorService;
+    private final Configuration configuration;
 
-    public MutableRuntimeState(CheckpointRegister register, Map<String, Function<Object, Throwable>> managedThreadMap, Consumer<Throwable> errorReporter, ExecutorService executorService) {
+    record WaitCountKey(LockType lockType, String actorName, int resourceId, String sourceCode, int lineNumber) {
+    }
+
+    record LockOrMonitor(LockType lockType, int resourceId) {
+    }
+
+    private final ConcurrentMap<WaitCountKey, Integer> waitCount = new ConcurrentHashMap<>();
+
+    private final ConcurrentMap<LockOrMonitor, Integer> nofityCount = new ConcurrentHashMap<>();
+
+//    private final Map<>
+
+    public MutableRuntimeState(CheckpointRegister register, Map<String, Function<Object, Throwable>> managedThreadMap, Consumer<Throwable> errorReporter, ExecutorService executorService, Configuration configuration) {
+        this.configuration = configuration;
         this.register = register;
         this.monitorIds = new ConcurrentHashMap<>();
         this.lockIds = new ConcurrentHashMap<>();
@@ -66,17 +78,10 @@ public class MutableRuntimeState implements RuntimeState {
             }
         });
 
-        this.checkpointRuntime.addCheckpointCallback(new CheckpointReachedCallback() {
-            @Override
-            public void checkpointReached(CheckpointReached checkpointReached) {
-                if (checkpointReached instanceof MonitorCheckpointReached mon) {
-                    registerMonitorCheckpoint(mon);
-                } else if (checkpointReached instanceof LockCheckpointReached lockCheckpoint) {
-                    registerLockAcquireRelease(lockCheckpoint);
-                }
-            }
+        checkpointRuntime.addTypedCheckpointCallback(WaitCheckpointReached.class, this::threadWaitCheckpointReached);
+        checkpointRuntime.addTypedCheckpointCallback(MonitorCheckpointReached.class, this::registerMonitorCheckpoint);
+        checkpointRuntime.addTypedCheckpointCallback(LockCheckpointReached.class, this::registerLockAcquireRelease);
 
-        });
         checkpointRuntime.addCheckpointCallback(checkpointReached -> {
             synchronized (this) {
                 var state = Objects.requireNonNull(allActors.get(checkpointReached.actorName()), "state not found for actor named '%s'".formatted(checkpointReached.actorName()));
@@ -98,6 +103,40 @@ public class MutableRuntimeState implements RuntimeState {
         return this.checkpointRuntime.errorReported();
     }
 
+
+    @Override
+    public int getWaitCount(ThreadState actor, CheckpointDescription acquisitionPoint, int resourceId, LockType lockType) {
+        WaitCountKey key = new WaitCountKey(lockType, actor.actorName(), resourceId, acquisitionPoint.sourceFile(), acquisitionPoint.lineNumber());
+        return waitCount.getOrDefault(key, 0);
+    }
+
+    @Override
+    public boolean isNotifySignalAvailable(int resourceId, boolean monitor) {
+        return nofityCount.getOrDefault(new LockOrMonitor(monitor ? LockType.MONITOR : LockType.LOCK, resourceId), 0) > 0;
+    }
+
+    @Override
+    public void addNotifySignal(int resourceId, boolean monitor) {
+        LockOrMonitor key = new LockOrMonitor(monitor ? LockType.MONITOR : LockType.LOCK, resourceId);
+        nofityCount.merge(key, 1, Integer::sum);
+    }
+
+    @Override
+    public void consumeNotifySignal(int resourceId, boolean monitor) {
+        LockOrMonitor key = new LockOrMonitor(monitor ? LockType.MONITOR : LockType.LOCK, resourceId);
+        Integer remaining = nofityCount.merge(key, -1, Integer::sum);
+        if (remaining < 0) {
+            throw new IllegalStateException("Consumed more signals than what was available. Resource key: %s, remaining notify signals: %d".formatted(key, remaining));
+        } else if (remaining == 0) {
+            nofityCount.remove(key, remaining);
+        }
+    }
+
+    @Override
+    public Configuration configuration() {
+        return this.configuration;
+    }
+
     private void registerLockAcquireRelease(LockCheckpointReached checkpointReached) {
         int lockId = lockIdFor(checkpointReached.theLock());
         String actorName = checkpointReached.actorName();
@@ -113,10 +152,6 @@ public class MutableRuntimeState implements RuntimeState {
         } else {
             allActors.put(actorName, state);
         }
-    }
-
-    private ThreadState removeThreadStateForUpdate(String actorName) {
-        return Objects.requireNonNull(allActors.remove(actorName), "actor state for name '%s' not found".formatted(actorName));
     }
 
     private void registerMonitorCheckpoint(MonitorCheckpointReached mon) {
@@ -136,6 +171,39 @@ public class MutableRuntimeState implements RuntimeState {
             allActors.put(actorName, state);
         }
     }
+
+    private void threadWaitCheckpointReached(WaitCheckpointReached checkpointReached) {
+        CheckpointDescription acquisitionPoint = checkpointReached.checkpoint().description();
+        LockType type = checkpointReached.monitorWait() ? LockType.MONITOR : LockType.LOCK;
+        int resourceId = type == LockType.MONITOR ? monitorIdFor(checkpointReached.monitorOrLock()) : lockIdFor((Lock) checkpointReached.monitorOrLock());
+        String actorName = checkpointReached.actorName();
+        ThreadState state = removeThreadStateForUpdate(actorName);
+        if (acquisitionPoint.injectionPoint() == InjectionPoint.BEFORE) {
+            WaitCountKey key = new WaitCountKey(type, actorName, resourceId, acquisitionPoint.sourceFile(), acquisitionPoint.lineNumber());
+            waitCount.merge(key, 1, Integer::sum);
+            // we must release the actor temporatily
+            if (checkpointReached.monitorWait()) {
+                allActors.put(actorName, state.monitorReleased(resourceId));
+            } else {
+                allActors.put(actorName, state.lockReleased(resourceId));
+            }
+        } else {
+            if (checkpointReached.monitorWait()) {
+                ThreadState value = state.beforeMonitorAcquire(resourceId, checkpointReached.monitorOrLock(), checkpointReached.checkpoint().description()).monitorAcquired(resourceId, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber());
+                allActors.put(actorName, value);
+            } else {
+
+                ThreadState value = state.beforeLockAcquisition(resourceId, (Lock) checkpointReached.monitorOrLock(), checkpointReached.checkpoint().description())
+                        .lockTryAcquire(resourceId, true, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber());
+                allActors.put(actorName, value);
+            }
+        }
+    }
+
+    private ThreadState removeThreadStateForUpdate(String actorName) {
+        return Objects.requireNonNull(allActors.remove(actorName), "actor state for name '%s' not found".formatted(actorName));
+    }
+
 
     @Override
     public CheckpointRegister checkpointRegister() {

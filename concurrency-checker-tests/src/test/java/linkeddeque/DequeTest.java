@@ -1,14 +1,17 @@
 package linkeddeque;
 
-import concurrencytest.annotations.*;
+import concurrencytest.annotations.Actor;
+import concurrencytest.annotations.AfterActorsCompleted;
+import concurrencytest.annotations.ConfigurationSource;
+import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.asm.AccessModifier;
 import concurrencytest.asm.BehaviourModifier;
-import concurrencytest.asm.ManualCheckpointVisitor;
 import concurrencytest.config.*;
 import concurrencytest.runner.ActorSchedulerRunner;
 import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import linkeddeque.CopyConcurrentLinkedDeque.CopyNode;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.objectweb.asm.Type;
 
@@ -27,9 +30,10 @@ public class DequeTest {
 
     private final CopyConcurrentLinkedDeque<Integer> queue = new CopyConcurrentLinkedDeque<>();
 
-    private int actor1Result;
-    private int actor2Result;
+    private Integer actor1Result;
+    private Integer actor2Result;
 
+    @Before
     public void setup() {
         queue.addFirst(1);
     }
@@ -46,12 +50,30 @@ public class DequeTest {
         actor2Result = queue.peekLast();
     }
 
+    // none of them should see null
+    @AfterActorsCompleted
+    public void basicAssertions() {
+        Assert.assertNotNull(actor1Result);
+        Assert.assertNotNull(actor2Result);
+    }
+
     @AfterActorsCompleted
     public void observations() {
+        // in the beggining, the queue is [1]
+
+        // if actor1 goes 'first', the queue becomes []
+
+        // if actor2 goes 'first', the queue becomes [2, 1]
+        // from this:
+        //      - if actor1 polls first, the queue becomes [1], actor1 removed (2) and actor2 sees (1) as the only (and last) element
+        //      - if actor2 peeks first, it should see (1) and actor1 should remove
+
         if(actor1Result == 1) {
-            Assert.assertEquals(2, actor2Result);
+            // actor1 removed (1) before actor2 inserted (2), so actor2 should only ever see (2) as a last element
+            Assert.assertEquals(2, actor2Result.intValue());
         } else if(actor1Result == 2) {
-            Assert.assertEquals(1, actor2Result);
+            // actor1 removed (2), so it happened after actor2 added (2). Actor2 should only be able to see (1)
+            Assert.assertEquals(1, actor2Result.intValue());
         }
     }
 

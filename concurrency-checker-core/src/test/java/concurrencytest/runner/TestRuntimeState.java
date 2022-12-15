@@ -2,7 +2,10 @@ package concurrencytest.runner;
 
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
+import concurrencytest.checkpoint.description.CheckpointDescription;
+import concurrencytest.config.Configuration;
 import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.lock.LockType;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.util.Utils;
 
@@ -15,6 +18,11 @@ public record TestRuntimeState(CheckpointRegister checkpointRegister, Collection
 
     public TestRuntimeState(ThreadState... threads) {
         this(new StandardCheckpointRegister(), Arrays.asList(threads));
+    }
+
+    @Override
+    public Configuration configuration() {
+        return Utils.todo();
     }
 
     @Override
@@ -45,6 +53,26 @@ public record TestRuntimeState(CheckpointRegister checkpointRegister, Collection
     @Override
     public Optional<Throwable> errorReported() {
         return Optional.empty();
+    }
+
+    @Override
+    public int getWaitCount(ThreadState actor, CheckpointDescription acquisitionPoint, int resourceId, LockType lockType) {
+        return Utils.todo();
+    }
+
+    @Override
+    public boolean isNotifySignalAvailable(int resourceId, boolean monitor) {
+        return Utils.todo();
+    }
+
+    @Override
+    public void addNotifySignal(int resourceId, boolean monitor) {
+        Utils.todo();
+    }
+
+    @Override
+    public void consumeNotifySignal(int resourceId, boolean monitor) {
+        Utils.todo();
     }
 
     public TestRuntimeState update(ThreadState locked) {

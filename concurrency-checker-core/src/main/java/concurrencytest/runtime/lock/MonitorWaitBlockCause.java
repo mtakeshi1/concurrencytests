@@ -16,8 +16,8 @@ public record MonitorWaitBlockCause(int resourceId, CheckpointDescription acquis
 
     @Override
     public boolean isBlocked(ThreadState actor, RuntimeState state) {
-        return state.getWaitCount(actor, acquisitionPoint, resourceId) >= state.configuration().maxSpuriousWakeups()
-                && !state.isNotifySignalAvailable(state, resourceId, type() == BlockCauseType.MONITOR_WAIT);
+        return state.getWaitCount(actor, acquisitionPoint, resourceId, LockType.MONITOR) >= state.configuration().maxSpuriousWakeups()
+                && !state.isNotifySignalAvailable(resourceId, type() == BlockCauseType.MONITOR_WAIT);
     }
 
     @Override

@@ -1,23 +1,23 @@
 package concurrencytest.runtime.thread;
 
-import concurrencytest.checkpoint.description.LockAcquireCheckpointDescription;
-import concurrencytest.checkpoint.description.MonitorCheckpointDescription;
-import concurrencytest.runtime.RuntimeState;
+import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.checkpoint.instance.CheckpointReached;
+import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.lock.*;
-import concurrencytest.runtime.lock.BlockCauseType;
 import concurrencytest.util.CollectionUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 
 /**
  * Unmutable thread state snapshot
- *
+ * <p>
  * TODO add information about how many times it has waited. Not sure how we will reset that
- *
+ * <p>
  * after another thread has been selected
- *
  */
 public record ThreadState(String actorName, int checkpoint, int loopCount,
                           List<BlockingResource> ownedResources, Optional<BlockCause> blockedBy, boolean finished) {
@@ -57,7 +57,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
         }
     }
 
-    public ThreadState beforeMonitorAcquire(int monitorId, Object monitorOwner, MonitorCheckpointDescription description) {
+    public ThreadState beforeMonitorAcquire(int monitorId, Object monitorOwner, CheckpointDescription description) {
         assertNotFinished();
         this.blockedBy().ifPresent(ignored -> {
             throw new IllegalStateException("actor %s is already waiting for %s but its requesting another monitor: %d".formatted(actorName, ignored, monitorId));
@@ -74,7 +74,7 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
                 .orElseThrow(() -> new IllegalStateException("actor %s was not waiting for monitor %d but tried to acquire (was waiting for %s)".formatted(actorName, monitorId, blockedBy())));
     }
 
-    public ThreadState beforeLockAcquisition(int lockId, Lock lock, LockAcquireCheckpointDescription checkpointDescription) {
+    public ThreadState beforeLockAcquisition(int lockId, Lock lock, CheckpointDescription checkpointDescription) {
         assertNotFinished();
         this.blockedBy().ifPresent(ignored -> {
             throw new IllegalStateException("actor %s is already waiting for %s but its requesting another lock: %d".formatted(actorName, ignored, lockId));
@@ -109,8 +109,8 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
         return new ThreadState(actorName, checkpoint, loopCount, newResources, blockedBy, false);
     }
 
-    public ThreadState newCheckpointReached(CheckpointReached newCheckpoint, boolean lastCheckpoint) {
-        return new ThreadState(actorName, newCheckpoint.checkpointId(), newCheckpoint.checkpointId() == this.checkpoint() ? loopCount + 1 : 0, ownedResources, blockedBy, lastCheckpoint);
+    public ThreadState newCheckpointReached(CheckpointReached newCheckpoint, boolean actorFinishCheckpoint) {
+        return new ThreadState(actorName, newCheckpoint.checkpointId(), newCheckpoint.checkpointId() == this.checkpoint() ? loopCount + 1 : 0, ownedResources, blockedBy, actorFinishCheckpoint);
     }
 
     @Override

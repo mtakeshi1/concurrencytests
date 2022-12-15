@@ -5,6 +5,7 @@ import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.config.Configuration;
 import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.lock.BlockingResource;
+import concurrencytest.runtime.lock.LockType;
 import concurrencytest.runtime.thread.ThreadState;
 
 import java.time.Duration;
@@ -117,9 +118,11 @@ public interface RuntimeState {
         return allActors().stream().allMatch(ts -> ts.checkpoint() == checkpointRegister().taskFinishedCheckpoint().checkpointId());
     }
 
-    int getWaitCount(ThreadState actor, CheckpointDescription acquisitionPoint, int resourceId);
+    int getWaitCount(ThreadState actor, CheckpointDescription acquisitionPoint, int resourceId, LockType lockType);
 
-    boolean isNotifySignalAvailable(RuntimeState state, int resourceId, boolean monitor);
+    boolean isNotifySignalAvailable(int resourceId, boolean monitor);
 
-    void consumeNotifySignal(RuntimeState state, int resourceId, boolean monitor);
+    void addNotifySignal(int resourceId, boolean monitor);
+
+    void consumeNotifySignal(int resourceId, boolean monitor);
 }

@@ -5,8 +5,8 @@ import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.instance.CheckpointReached;
 import concurrencytest.checkpoint.instance.MonitorCheckpointReached;
 
-public record MonitorCheckpointImpl(InjectionPoint injectionPoint, String details, String sourceFile, int lineNumber,
-                                    boolean monitorAcquire) implements MonitorCheckpointDescription {
+public record MonitorCheckpointDescriptionImpl(InjectionPoint injectionPoint, String details, String sourceFile, int lineNumber,
+                                               boolean monitorAcquire) implements MonitorCheckpointDescription {
     @Override
     public CheckpointReached newCheckpointReached(Checkpoint checkpoint, Object context, Thread triggeredThread) {
         return new MonitorCheckpointReached(checkpoint, context, triggeredThread);

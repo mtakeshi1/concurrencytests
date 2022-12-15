@@ -1,15 +1,15 @@
 package concurrencytest.runner;
 
-import concurrencytest.annotations.Invariant;
 import concurrencytest.annotations.AfterActorsCompleted;
+import concurrencytest.annotations.Invariant;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.config.CheckpointDurationConfiguration;
 import concurrencytest.config.Configuration;
 import concurrencytest.runner.statistics.MutableRunStatistics;
-import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.exception.RunAbortedException;
 import concurrencytest.runtime.exception.SchedulerAbortedException;
+import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.Tree;
@@ -39,7 +39,7 @@ public class ActorSchedulerEntryPoint {
     private static final Logger LOGGER = LoggerFactory.getLogger(ActorSchedulerEntryPoint.class);
 
     private final Tree explorationTree;
-    private final CheckpointDurationConfiguration configuration;
+    private final Configuration configuration;
     private final List<String> initialPathActorNames;
     private final int maxLoopCount;
     private final Class<?> mainTestClass;
@@ -54,10 +54,10 @@ public class ActorSchedulerEntryPoint {
     private ScheduledExecutorService managedExecutorService;
 
     public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, Class<?> mainTestClass, Consumer<Throwable> errorReporter, TaskSchedulerInterface schedulerInterface) {
-        this(explorationTree, register, configuration.durationConfiguration(), Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler", errorReporter, schedulerInterface);
+        this(explorationTree, register, configuration, Collections.emptyList(), mainTestClass, configuration.maxLoopIterations(), "scheduler", errorReporter, schedulerInterface);
     }
 
-    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, CheckpointDurationConfiguration configuration, List<String> initialPathActorNames, Class<?> mainTestClass,
+    public ActorSchedulerEntryPoint(Tree explorationTree, CheckpointRegister register, Configuration configuration, List<String> initialPathActorNames, Class<?> mainTestClass,
                                     int maxLoopCount, String schedulerName, Consumer<Throwable> externalErrorReporter, TaskSchedulerInterface schedulerInterface) {
         this.explorationTree = explorationTree;
         this.checkpointRegister = register;
@@ -152,7 +152,7 @@ public class ActorSchedulerEntryPoint {
          * - every non-explored node is scheduled by someone other than me
          */
         Optional<TreeNode> node = walk(explorationTree.getOrInitializeRootNode(
-                ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister),
+                        ActorSchedulerSetup.parseActorMethods(mainTestClass).keySet(), checkpointRegister),
                 new LinkedList<>(initialPathActorNames));
         return !node.map(TreeNode::isFullyExplored).orElse(false);
     }
@@ -187,11 +187,11 @@ public class ActorSchedulerEntryPoint {
         Collection<Future<Throwable>> actorTasks = Collections.emptyList(); //FIXME change this to Future<Void>
         List<String> pathSoFar = new ArrayList<>();
         try {
-            actorTasks = runtime.start(mainTestObject, configuration.checkpointTimeout());
+            actorTasks = runtime.start(mainTestObject, configuration.durationConfiguration().checkpointTimeout());
             String lastActor = null;
             TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
             invokeBefore(mainTestObject);
-            long maxTime = System.nanoTime() + configuration.maxDurationPerRun().toNanos();
+            long maxTime = System.nanoTime() + configuration.durationConfiguration().maxDurationPerRun().toNanos();
             runtime.errorReported().ifPresent(this::reportActorError);
             while (!runtime.finished() && actorError == null) {
                 callInvariants(mainTestObject, runtime);
@@ -214,13 +214,13 @@ public class ActorSchedulerEntryPoint {
                     }
                 }
                 ThreadState selected = runtime.actorNamesToThreadStates().get(myChosenPath);
-                RuntimeState next = runtime.advance(selected, configuration.checkpointTimeout());
+                RuntimeState next = runtime.advance(selected, configuration.durationConfiguration().checkpointTimeout());
                 node = node.advance(selected, next);
                 lastActor = myChosenPath;
                 pathSoFar.add(myChosenPath);
                 runtime = next;
                 if (System.nanoTime() > maxTime) {
-                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.maxDurationPerRun().toMillis()));
+                    throw new TimeoutException("max timeout (%dms) exceeded".formatted(configuration.durationConfiguration().maxDurationPerRun().toMillis()));
                 }
                 runtime.errorReported().ifPresent(this::reportActorError);
             }
@@ -409,14 +409,14 @@ public class ActorSchedulerEntryPoint {
             errorReporter.accept(t);
             if (actorError == null) {
                 this.actorError = t;
-            } else if(actorError != t){
+            } else if (actorError != t) {
                 actorError.addSuppressed(t);
             }
         }
     }
 
     private RuntimeState initialState(Map<String, Function<Object, Throwable>> initialActorNames, ThreadPoolExecutor executorService) {
-        return new MutableRuntimeState(this.checkpointRegister, initialActorNames, this::reportActorError, executorService);
+        return new MutableRuntimeState(this.checkpointRegister, initialActorNames, this::reportActorError, executorService, this.configuration);
     }
 
     private Object[] collectParametersForActorRun() {
@@ -427,8 +427,8 @@ public class ActorSchedulerEntryPoint {
         return explorationTree;
     }
 
-    public CheckpointDurationConfiguration getConfiguration() {
-        return configuration;
+    public CheckpointDurationConfiguration getDurationConfiguration() {
+        return configuration.durationConfiguration();
     }
 
     public CheckpointRegister getCheckpointRegister() {

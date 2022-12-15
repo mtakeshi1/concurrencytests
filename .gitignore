@@ -3,3 +3,4 @@
 /concurrency-checker-tests/target/
 /concurrency-checker-core/dependency-reduced-pom.xml
 /concurrency-checker-tests.iml
+/jmh-tests/target/

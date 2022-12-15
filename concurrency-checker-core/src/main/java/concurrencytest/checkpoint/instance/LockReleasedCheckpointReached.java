@@ -1,4 +1,4 @@
-package concurrencytest.checkpoint.description;
+package concurrencytest.checkpoint.instance;
 
 import concurrencytest.checkpoint.Checkpoint;
 import concurrencytest.checkpoint.instance.LockCheckpointReached;

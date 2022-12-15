@@ -1,7 +1,9 @@
 package concurrencytest.asm;
 
+import concurrencytest.annotations.InjectionPoint;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.reflection.ClassResolver;
+import concurrencytest.util.Utils;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -20,10 +22,14 @@ public class WaitParkWakeupVisitor extends BaseClassVisitor {
 
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                //TODO add support for Condition.await / signal - it should mirror wait / notify
                 String callTarget = Type.getObjectType(owner).getClassName();
                 if (isWait(name, descriptor)) {
                     // monitor_target, args
                     dropArguments(descriptor);
+
+                    int argsCount = Type.getArgumentTypes(descriptor).length;
+
                     // monitor_target
                     super.visitInsn(Opcodes.DUP);
                     // monitor_target, monitor_target
@@ -31,21 +37,31 @@ public class WaitParkWakeupVisitor extends BaseClassVisitor {
                     // monitor_target
                     super.visitInsn(Opcodes.DUP);
                     // monitor_target, monitor_target
-                    invokeGenericCheckpointWithContext(checkpointRegister.newObjectWaitCheckpoint(sourceName, latestLineNumber));
+                    invokeGenericCheckpointWithContext(checkpointRegister.newObjectWaitCheckpoint(sourceName, latestLineNumber, true, argsCount > 0, InjectionPoint.BEFORE));
+
+                    super.visitInsn(Opcodes.DUP);
+                    invokeGenericCheckpointWithContext(checkpointRegister.newObjectWaitCheckpoint(sourceName, latestLineNumber, true, argsCount > 0, InjectionPoint.AFTER));
                     // monitor_target
                     super.visitInsn(Opcodes.MONITORENTER);
                     // empty stack
                 } else if (isPark(owner, name)) {
                     dropArguments(descriptor);
                     super.visitInsn(Opcodes.POP);
-                    // top of the stack should be the wait target. We unlock maybe?
-                    invokeEmptyCheckpoint(checkpointRegister.newParkCheckpoint(callTarget + "." + name, sourceName, latestLineNumber));
+                    // top of the stack should be the wait target. We unlock maybe? TODO implement this correctly
+                    Utils.todo("park support not yet implemented");
+//                    invokeEmptyCheckpoint(checkpointRegister.newParkCheckpoint(callTarget + "." + name, sourceName, latestLineNumber));
                 } else if (isNotify(owner, name, descriptor)) {
                     // monitor_target
-                    var cp = checkpointRegister.newNotifyCheckpoint(name.equals("notifyAll"), sourceName, latestLineNumber);
+                    var cp = checkpointRegister.newNotifyCheckpoint(name.equals("notifyAll"), sourceName, latestLineNumber, true);
                     super.visitInsn(Opcodes.DUP);
                     invokeGenericCheckpointWithContext(cp);
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+                if (isUnpark(owner, name)) {
+                    super.visitInsn(Opcodes.POP);
+                    Utils.todo("park support not yet implemented");
+                    // top of the stack should be the wait target. We unlock maybe? TODO
+//                    invokeEmptyCheckpoint(checkpointRegister.newParkCheckpoint(callTarget + "." + name, sourceName, latestLineNumber));
                 } else {
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }
@@ -84,6 +100,15 @@ public class WaitParkWakeupVisitor extends BaseClassVisitor {
                     return true;
                 } else if ("java/util/concurrent/locks/LockSupport".equals(owner)) {
                     return name.startsWith("park");
+                }
+                return false;
+            }
+
+            private boolean isUnpark(String owner, String name) {
+                if (("jdk/internal/misc/Unsafe".equals(owner) || "sun/misc/Unsafe".equals(owner)) && "unpark".equals(name)) {
+                    return true;
+                } else if ("java/util/concurrent/locks/LockSupport".equals(owner)) {
+                    return name.equals("unpark");
                 }
                 return false;
             }

@@ -51,7 +51,7 @@ public interface CheckpointRegister {
 
     Checkpoint newLockReleasedCheckpoint(InjectionPoint injectionPoint, Class<?> classUnderEnhancement, String methodName, String methodDescriptor, String sourceName, int latestLineNumber);
 
-    Checkpoint newObjectWaitCheckpoint(String sourceName, int latestLineNumber);
+    Checkpoint newObjectWaitCheckpoint(String sourceName, int latestLineNumber, boolean monitorWait, boolean timedWait, InjectionPoint before);
 
-    Checkpoint newNotifyCheckpoint(boolean notifyAll, String sourceName, int latestLineNumber);
+    Checkpoint newNotifyCheckpoint(boolean notifyAll, String sourceName, int latestLineNumber, boolean monitorNotify);
 }
