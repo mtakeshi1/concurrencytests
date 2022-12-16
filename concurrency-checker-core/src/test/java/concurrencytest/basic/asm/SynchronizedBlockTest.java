@@ -1,16 +1,19 @@
 package concurrencytest.basic.asm;
 
 import concurrencytest.asm.SynchronizedBlockVisitor;
+import concurrencytest.asm.WaitParkWakeupVisitor;
 import concurrencytest.basic.asm.testClasses.SyncBlockTarget;
+import concurrencytest.basic.asm.testClasses.WaitNotifyTestTarget;
 import concurrencytest.checkpoint.instance.CheckpointReached;
 import concurrencytest.checkpoint.instance.MonitorCheckpointReached;
-import concurrencytest.runner.RecordingCheckpointRuntime;
+import concurrencytest.checkpoint.instance.NotifySignalCheckpoint;
+import concurrencytest.checkpoint.instance.WaitCheckpointReached;
 import concurrencytest.reflection.ReflectionHelper;
+import concurrencytest.runner.RecordingCheckpointRuntime;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class SynchronizedBlockTest extends BaseClassVisitorTest {
-
 
     @Test
     public void monitorCheckpointTest() throws Exception {
@@ -23,5 +26,12 @@ public class SynchronizedBlockTest extends BaseClassVisitorTest {
         Assert.assertTrue(mon.checkpoint().lineNumber() > 0);
     }
 
-
+    @Test
+    public void monitorWaitNotifyTest() throws Exception {
+        var enhanced = prepare(WaitNotifyTestTarget.class, (c, delegate) -> new WaitParkWakeupVisitor(delegate, register, c, ReflectionHelper.getInstance()));
+        RecordingCheckpointRuntime runtime = execute(enhanced.getConstructor().newInstance(), c -> ((Runnable) c).run());
+        Assert.assertEquals(4, runtime.getCheckpoints().size());
+        Assert.assertEquals(2, runtime.getCheckpoints().stream().filter(i -> i instanceof NotifySignalCheckpoint).count());
+        Assert.assertEquals(2, runtime.getCheckpoints().stream().filter(i -> i instanceof WaitCheckpointReached).count());
+    }
 }

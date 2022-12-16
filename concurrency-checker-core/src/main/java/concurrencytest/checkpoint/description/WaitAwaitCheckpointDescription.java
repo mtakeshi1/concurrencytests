@@ -14,6 +14,6 @@ public record WaitAwaitCheckpointDescription(String sourceFile, int lineNumber, 
 
     @Override
     public CheckpointReached newCheckpointReached(Checkpoint checkpoint, Object context, Thread triggeredThread) {
-        return new WaitCheckpointReached(checkpoint, context, triggeredThread, this.monitorWait, timedWait, this.injectionPoint);
+        return new WaitCheckpointReached(checkpoint, context, triggeredThread, this.monitorWait, timedWait);
     }
 }

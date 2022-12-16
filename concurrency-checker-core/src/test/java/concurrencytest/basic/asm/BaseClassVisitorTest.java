@@ -3,8 +3,8 @@ package concurrencytest.basic.asm;
 import concurrencytest.asm.utils.OpenClassLoader;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.StandardCheckpointRegister;
-import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.runner.RecordingCheckpointRuntime;
+import concurrencytest.runtime.CheckpointRuntimeAccessor;
 import concurrencytest.util.ASMUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -27,7 +27,7 @@ public abstract class BaseClassVisitorTest {
 
     private static int idSeed;
 
-    private byte[] lastBytecode;
+    protected byte[] lastBytecode;
 
     @Rule
     public TestWatcher bytecodeDumper() {
@@ -78,30 +78,36 @@ public abstract class BaseClassVisitorTest {
     }
 
     public Class<?> prepare(Class<?> target, VisitorBuilderFunction factory, boolean dump) throws Exception {
-        ClassReader reader = ASMUtils.readClass(target);
-        Assert.assertNotNull(reader);
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        ClassVisitor delegate;
-        if (dump) {
-            delegate = new TraceClassVisitor(writer, new PrintWriter(System.out));
-        } else {
-            delegate = writer;
+        try {
+            ClassReader reader = ASMUtils.readClass(target);
+            Assert.assertNotNull(reader);
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            ClassVisitor delegate;
+            if (dump) {
+                delegate = new TraceClassVisitor(writer, new PrintWriter(System.out));
+            } else {
+                delegate = writer;
+            }
+            String newName = target.getName() + "$$Injected_" + idSeed++;
+            String oldInternalName = Type.getType(target).getInternalName();
+            String newInternalName = newName.replace('.', '/');
+            ClassRemapper map = new ClassRemapper(delegate, new SimpleRemapper(oldInternalName, newInternalName));
+            ClassVisitor visitor = factory.buildFor(target, map);
+            reader.accept(visitor, ClassReader.EXPAND_FRAMES);
+            byte[] byteCode = writer.toByteArray();
+            lastBytecode = byteCode;
+            reader = new ClassReader(byteCode);
+            reader.accept(new CheckClassAdapter(null, true), ClassReader.EXPAND_FRAMES);
+            OpenClassLoader loader = new OpenClassLoader();
+            loader.addClass(newName, byteCode);
+            Class<?> name = Class.forName(newName, true, loader);
+            name.getConstructor().newInstance();
+            return name;
+        } catch (Exception e) {
+            if (!dump) prepare(target, factory, true);
+            throw e;
         }
-        String newName = target.getName() + "$$Injected_" + idSeed++;
-        String oldInternalName = Type.getType(target).getInternalName();
-        String newInternalName = newName.replace('.', '/');
-        ClassRemapper map = new ClassRemapper(delegate, new SimpleRemapper(oldInternalName, newInternalName));
-        ClassVisitor visitor = factory.buildFor(target, map);
-        reader.accept(visitor, ClassReader.EXPAND_FRAMES);
-        byte[] byteCode = writer.toByteArray();
-        lastBytecode = byteCode;
-        reader = new ClassReader(byteCode);
-        reader.accept(new CheckClassAdapter(null, true), ClassReader.EXPAND_FRAMES);
-        OpenClassLoader loader = new OpenClassLoader();
-        loader.addClass(newName, byteCode);
-        Class<?> name = Class.forName(newName, true, loader);
-        name.getConstructor().newInstance();
-        return name;
     }
+
 
 }
