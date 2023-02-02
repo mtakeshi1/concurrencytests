@@ -1,5 +1,7 @@
 package concurrencytest.runtime;
 
+import java.util.function.Supplier;
+
 /**
  * Entrypoint for signalling checkpoints.
  * <p>
@@ -71,6 +73,33 @@ public class CheckpointRuntimeAccessor {
         CheckpointRuntime runtime = runtimeThreadLocal.get();
         if (runtime != null) {
             runtime.beforeActorStartCheckpoint();
+        }
+    }
+
+    public static void ignoringCheckpoints(Runnable run) {
+        CheckpointRuntime runtime = runtimeThreadLocal.get();
+        if (runtime == null) {
+            run.run();
+            return;
+        }
+        try {
+            runtimeThreadLocal.remove();
+            run.run();
+        } finally {
+            runtimeThreadLocal.set(runtime);
+        }
+    }
+
+    public static <T> T ignoringCheckpoints(Supplier<T> supplier) {
+        CheckpointRuntime runtime = runtimeThreadLocal.get();
+        if (runtime == null) {
+            return supplier.get();
+        }
+        try {
+            runtimeThreadLocal.remove();
+            return supplier.get();
+        } finally {
+            runtimeThreadLocal.set(runtime);
         }
     }
 }
