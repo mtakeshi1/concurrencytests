@@ -22,7 +22,7 @@ import java.util.List;
 
 /**
  * Test to check if we can detect this bug
- *
+ * <p>
  * https://bugs.openjdk.org/browse/JDK-8256833
  */
 @RunWith(ActorSchedulerRunner.class)
@@ -46,7 +46,9 @@ public class DequeTest {
     @Actor
     public void actor2() {
         queue.addFirst(2);
-        CheckpointRuntimeAccessor.manualCheckpoint();
+        CheckpointRuntimeAccessor.manualCheckpoint(
+                CheckpointRuntimeAccessor.ignoringCheckpoints(() -> Helper.stringRep(queue))
+        );
         actor2Result = queue.peekLast();
     }
 
@@ -68,12 +70,12 @@ public class DequeTest {
         //      - if actor1 polls first, the queue becomes [1], actor1 removed (2) and actor2 sees (1) as the only (and last) element
         //      - if actor2 peeks first, it should see (1) and actor1 should remove
 
-        if(actor1Result == 1) {
+        if (actor1Result == 1) {
             // actor1 removed (1) before actor2 inserted (2), so actor2 should only ever see (2) as a last element
-            Assert.assertEquals(2, actor2Result.intValue());
-        } else if(actor1Result == 2) {
+            Assert.assertEquals("expected 1, 2 but was: 1, " + actor2Result, 2, actor2Result.intValue());
+        } else if (actor1Result == 2) {
             // actor1 removed (2), so it happened after actor2 added (2). Actor2 should only be able to see (1)
-            Assert.assertEquals(1, actor2Result.intValue());
+            Assert.assertEquals("expected 2, 1 but was: 2, " + actor2Result, 1, actor2Result.intValue());
         }
     }
 
