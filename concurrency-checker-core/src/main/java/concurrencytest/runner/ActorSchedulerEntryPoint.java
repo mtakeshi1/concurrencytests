@@ -193,6 +193,7 @@ public class ActorSchedulerEntryPoint {
             invokeBefore(mainTestObject);
             long maxTime = System.nanoTime() + configuration.durationConfiguration().maxDurationPerRun().toNanos();
             runtime.errorReported().ifPresent(this::reportActorError);
+            outer:
             while (!runtime.finished() && actorError == null) {
                 callInvariants(mainTestObject, runtime);
                 Collection<String> options = allAvailableActors(lastActor, node, runtime, preSelectedActorNames, maxLoopCount);
@@ -205,6 +206,9 @@ public class ActorSchedulerEntryPoint {
                 var myChosenPath = iterator.next();
                 if (scheduler.canFork()) {
                     while (iterator.hasNext()) {
+                        if(actorError != null) {
+                            break outer;
+                        }
                         var next = iterator.next();
                         List<String> copy = new ArrayList<>(pathSoFar);
                         copy.add(next);

@@ -1,14 +1,13 @@
 package concurrencytest.reflection;
 
+import org.objectweb.asm.Type;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -106,6 +105,32 @@ public class ReflectionHelper implements ClassResolver {
         return INSTANCE;
     }
 
+    public static boolean paramsMatch(Method m, Class<?>[] params) {
+        if (m.getParameterCount() > params.length) {
+            return false;
+        }
+        int count = m.getParameterCount();
+        if (m.isVarArgs()) {
+            count--;
+        }
+        Class<?>[] types = m.getParameterTypes();
+        int i;
+        for (i = 0; i < count; i++) {
+            if (!types[i].isAssignableFrom(params[i])) {
+                return false;
+            }
+        }
+        if (m.isVarArgs()) {
+            Class<?> lastType = types[types.length - 1].componentType();
+            for (; i < params.length; i++) {
+                if (!lastType.isAssignableFrom(params[i])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @Override
     public Class<?> resolveName(String className) {
         try {
@@ -161,4 +186,52 @@ public class ReflectionHelper implements ClassResolver {
         }
     }
 
+    public Member resolveMethodOrConstructor(Class<?> callTarget, String methodName, String descriptor) {
+        org.objectweb.asm.Type type = org.objectweb.asm.Type.getMethodType(descriptor);
+        Type[] argTypes = type.getArgumentTypes();
+        Class<?>[] params = new Class[argTypes.length];
+        for (int i = 0; i < argTypes.length; i++) {
+            params[i] = resolveName(argTypes[i].getClassName());
+        }
+        try {
+            if (methodName.equals("<init>")) {
+                return callTarget.getDeclaredConstructor(params);
+            }
+            if(methodName.equals("<clinit>")) {
+                return null;
+            }
+            return resolveMethodRecursive(callTarget, methodName, params);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Executable resolveMethodRecursive(Class<?> callTarget, String methodName, Class<?>[] params) throws NoSuchMethodException {
+        try {
+            return callTarget.getDeclaredMethod(methodName, params);
+        } catch (NoSuchMethodException e) {
+            for (var m : callTarget.getDeclaredMethods()) {
+                if (m.getName().equals(methodName) && ReflectionHelper.paramsMatch(m, params)) {
+                    return m;
+                }
+            }
+            if (callTarget.getSuperclass() == null && callTarget.getInterfaces().length == 0) {
+                throw e;
+            }
+            for (Class<?> implementedInterface : callTarget.getInterfaces()) {
+                try {
+                    var m = resolveMethodRecursive(implementedInterface, methodName, params);
+                    if (m != null) {
+                        return m;
+                    }
+                } catch (NoSuchMethodException ex) {
+                    //ignore
+                }
+            }
+            if (callTarget.getSuperclass() != null) {
+                return resolveMethodRecursive(callTarget.getSuperclass(), methodName, params);
+            }
+            return null;
+        }
+    }
 }
