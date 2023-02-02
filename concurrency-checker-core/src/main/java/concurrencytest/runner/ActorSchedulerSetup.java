@@ -195,7 +195,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
                 double timeDiff = System.nanoTime() - lastTimeNanos.get(); // it should be almost impossible to be zero, but in a low resolution system maybe
                 double cpuUsage = timeDiff < 0.1 ? 0 : (100.0 * cpu / procs / timeDiff);
                 double gcUsage = timeDiff < 0.1 ? 0 : (100.0 * gc / procs / timeDiff);
-                LOGGER.info("%s - total runs: %d, running threads: %d, cpu usage: %.2f gc: %.2f".formatted(collected.format(), total, runningThreads, cpuUsage, gcUsage));
+                LOGGER.info("%s - total histories: %d, running threads: %d, cpu usage: %.2f gc: %.2f".formatted(collected.format(), total, runningThreads, cpuUsage, gcUsage));
                 gcTime.set(GenericStatistics.totalGCTimeNanos());
                 cpuTime.set(GenericStatistics.totalCPUUsageTimeNanos());
                 lastTimeNanos.set(System.nanoTime());
