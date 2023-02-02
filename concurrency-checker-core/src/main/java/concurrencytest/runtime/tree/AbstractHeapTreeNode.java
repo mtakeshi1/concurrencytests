@@ -34,6 +34,21 @@ public abstract class AbstractHeapTreeNode implements TreeNode {
         return ByteBufferBackedTreeNode.toActorInformation(runtimeState, runtimeState.actorNamesToThreadStates().values()).stream().collect(Collectors.toMap(ActorInformation::actorName, ai -> ai));
     }
 
+    public ArrayList<String> pathFromRoot() {
+        if (parent == null) return new ArrayList<>();
+        var list = parent.pathFromRoot();
+        if (parent instanceof AbstractHeapTreeNode node) {
+            for (int i = 0; i < node.actorNames.length; i++) {
+                if (node.treeNodes[i] == this) {
+                    list.add(node.actorNames[i]);
+                    return list;
+                }
+            }
+        }
+        list.add("<unknown>");
+        return list;
+    }
+
     protected int indexFor(String actorName) {
         for (int i = 0; i < actorNames.length; i++) {
             if (actorNames[i].equals(actorName)) {
@@ -85,6 +100,9 @@ public abstract class AbstractHeapTreeNode implements TreeNode {
     @Override
     public void checkAllChildrenExplored() {
         for (int i = 0; i < actorNames.length; i++) {
+            if(startingPoints[i] && (treeNodes[i] != null && !treeNodes[i].isFullyExplored())) {
+                return;
+            }
             if (!shouldExplore(i)) continue;
             if (treeNodes[i] == null || !treeNodes[i].isFullyExplored()) {
                 return;

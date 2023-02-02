@@ -84,8 +84,8 @@ public class MutableRuntimeState implements RuntimeState {
 
         checkpointRuntime.addCheckpointCallback(checkpointReached -> {
             synchronized (this) {
-                var state = Objects.requireNonNull(allActors.get(checkpointReached.actorName()), "state not found for actor named '%s'".formatted(checkpointReached.actorName()));
-                executionPath.add("[%s] %s - current state: %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description(), state));
+//                var state = Objects.requireNonNull(allActors.get(checkpointReached.actorName()), "state not found for actor named '%s'".formatted(checkpointReached.actorName()));
+                executionPath.add("[%s] %s - current state: %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 }
