@@ -14,4 +14,7 @@ public class Utils {
         throw new RuntimeException("Not yet implemented: %%s%s".formatted(message));
     }
 
+    public static boolean notEmpty(String details) {
+        return details != null && details.length() > 0;
+    }
 }

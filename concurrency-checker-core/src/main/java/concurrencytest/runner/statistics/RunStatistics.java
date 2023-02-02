@@ -21,7 +21,7 @@ public interface RunStatistics {
         double averageDepth = ((double) totalDepth()) / numberOfRuns();
         var tt = new TimeWithUnit(averageTime, TimeUnit.NANOSECONDS);
 
-        return "runs: %d, average depth: %.2f, average run time: %s".formatted(numberOfRuns(), averageDepth, tt.format());
+        return "histories: %d, average depth: %.2f, average run time: %s".formatted(numberOfRuns(), averageDepth, tt.format());
     }
 
 }
