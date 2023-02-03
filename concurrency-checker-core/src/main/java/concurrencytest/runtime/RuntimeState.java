@@ -3,6 +3,7 @@ package concurrencytest.runtime;
 import concurrencytest.checkpoint.CheckpointRegister;
 import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.config.Configuration;
+import concurrencytest.runtime.impl.ExecutionPath;
 import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.lock.BlockingResource;
 import concurrencytest.runtime.lock.LockType;
@@ -44,7 +45,7 @@ public interface RuntimeState {
     /**
      * Returns a list of strings representing a trace of what threads reached which checkpoint. Should be used to try to find causes of error.
      */
-    List<String> getExecutionPath();
+    List<ExecutionPath> getExecutionPath();
 
     /**
      * @return all of the actors currently active

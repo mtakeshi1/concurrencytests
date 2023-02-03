@@ -41,7 +41,7 @@ public class MutableRuntimeState implements RuntimeState {
     private final Map<String, Function<Object, Throwable>> threads;
     private final ThreadRendezvouCheckpointCallback rendezvouCallback;
 
-    private final List<String> executionPath = new ArrayList<>();
+    private final List<ExecutionPath> executionPath = new ArrayList<>();
     private final Consumer<Throwable> errorReporter;
     private final ExecutorService executorService;
     private final Configuration configuration;
@@ -85,7 +85,8 @@ public class MutableRuntimeState implements RuntimeState {
         checkpointRuntime.addCheckpointCallback(checkpointReached -> {
             synchronized (this) {
 //                var state = Objects.requireNonNull(allActors.get(checkpointReached.actorName()), "state not found for actor named '%s'".formatted(checkpointReached.actorName()));
-                executionPath.add("[%s] %s - current state: %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description(), checkpointReached.details()));
+                executionPath.add(new ExecutionPath(checkpointReached.actorName(), checkpointReached.checkpointId(), checkpointReached.details()));
+//                executionPath.add("[%s] %s - current state: %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 }
@@ -94,7 +95,7 @@ public class MutableRuntimeState implements RuntimeState {
         this.checkpointRuntime.addCheckpointCallback(rendezvouCallback);
     }
 
-    public List<String> getExecutionPath() {
+    public List<ExecutionPath> getExecutionPath() {
         return Collections.unmodifiableList(executionPath);
     }
 

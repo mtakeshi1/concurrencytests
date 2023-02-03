@@ -9,6 +9,7 @@ import concurrencytest.runner.statistics.MutableRunStatistics;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.exception.RunAbortedException;
 import concurrencytest.runtime.exception.SchedulerAbortedException;
+import concurrencytest.runtime.impl.ExecutionPath;
 import concurrencytest.runtime.impl.MutableRuntimeState;
 import concurrencytest.runtime.thread.ManagedThread;
 import concurrencytest.runtime.thread.ThreadState;
@@ -186,9 +187,10 @@ public class ActorSchedulerEntryPoint {
         RuntimeState runtime = initialState(initialActorNames, executorService);
         Collection<Future<Throwable>> actorTasks = Collections.emptyList(); //FIXME change this to Future<Void>
         List<String> pathSoFar = new ArrayList<>();
+        String lastActor = null;
         try {
             actorTasks = runtime.start(mainTestObject, configuration.durationConfiguration().checkpointTimeout());
-            String lastActor = null;
+
             TreeNode node = explorationTree.getOrInitializeRootNode(initialActorNames.keySet(), checkpointRegister);
             invokeBefore(mainTestObject);
             long maxTime = System.nanoTime() + configuration.durationConfiguration().maxDurationPerRun().toNanos();
@@ -206,7 +208,7 @@ public class ActorSchedulerEntryPoint {
                 var myChosenPath = iterator.next();
                 if (scheduler.canFork()) {
                     while (iterator.hasNext()) {
-                        if(actorError != null) {
+                        if (actorError != null) {
                             break outer;
                         }
                         var next = iterator.next();
@@ -234,11 +236,18 @@ public class ActorSchedulerEntryPoint {
                 long duration = System.nanoTime() - t0;
                 stat.record(duration, runtime.getExecutionPath().size());
                 LOGGER.debug("Finished executiong in {}ns with path: {}", duration, runtime.getExecutionPath());
+            } else {
+                LOGGER.warn("Actor %s threw error: %s".formatted(lastActor, actorError.getMessage()));
+                extractLogExecutionPath(runtime);
             }
             callJUnitAfter(mainTestObject, runtime);
             for (Future<?> f : actorTasks) {
                 try {
-                    f.get();
+                    var error = f.get();
+                    if (error != null) {
+                        LOGGER.warn("Actor threw error: %s".formatted(actorError.getMessage()));
+                        extractLogExecutionPath(runtime);
+                    }
                 } catch (ExecutionException e) {
                     cancelTasks(actorTasks);
                     reportActorError(e.getCause());
@@ -247,13 +256,17 @@ public class ActorSchedulerEntryPoint {
         } catch (CancellationException | RunAbortedException | InterruptedException | RejectedExecutionException e) {
             LOGGER.trace("Task cancelled");
             cancelTasks(actorTasks);
+            if(actorError != null) {
+                LOGGER.warn("Actor %s threw error: %s".formatted(lastActor, actorError.getMessage()));
+                extractLogExecutionPath(runtime);
+            }
         } catch (SchedulerAbortedException e) {
             LOGGER.trace("Scheduler aborted");
             cancelTasks(actorTasks);
             throw e;
         } catch (TimeoutException e) {
             LOGGER.warn("Timing out waiting for actors to converge.");
-            LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
+            extractLogExecutionPath(runtime);
             reportActorError(e);
             cancelTasks(actorTasks);
         } catch (InitialPathBlockedException e) {
@@ -262,7 +275,7 @@ public class ActorSchedulerEntryPoint {
 //            reportActorError(e);
         } catch (ActorSchedulingException e) {
             LOGGER.warn("Scheduling error - either a deadlock or starvation");
-            LOGGER.warn("Execution path follows:\n" + String.join("\n", runtime.getExecutionPath()));
+            extractLogExecutionPath(runtime);
             reportActorError(e);
             cancelTasks(actorTasks);
         } catch (Throwable t) {
@@ -276,6 +289,77 @@ public class ActorSchedulerEntryPoint {
             }
             scheduler.notifyTaskFinished();
         }
+    }
+
+    private void extractLogExecutionPath(RuntimeState runtime) {
+        Function<ExecutionPath, String> checkpointRenderer;
+//        if(LOGGER.isDebugEnabled()) {
+//            checkpointRenderer = new Function<ExecutionPath, String>() {
+//                @Override
+//                public String apply(ExecutionPath executionPath) {
+//                    return null;
+//                }
+//            };
+//        } else {
+        checkpointRenderer = executionPath -> checkpointRegister.checkpointById(executionPath.checkpointId()).description().toString();
+
+        List<ExecutionPath> path = runtime.getExecutionPath();
+        String[] actorNames = path.stream().map(ExecutionPath::actor).distinct().toArray(String[]::new);
+        Map<String, Integer> map = new HashMap<>(actorNames.length);
+        for(int i = 0; i < actorNames.length; i++) {
+            map.put(actorNames[i], i);
+        }
+        int[] colLengths = new int[1 + actorNames.length];
+        for(int i = 0; i < actorNames.length; i++) {
+            colLengths[i+1] = actorNames[i].length();
+        }
+        String[][] dataGrid = new String[path.size()][1 + actorNames.length];
+
+        for(int i = 0; i < path.size(); i++) {
+            dataGrid[i][0] = leftPadUntil(String.valueOf(i), colLengths[0]);
+            colLengths[0] = dataGrid[i][0].length();
+            ExecutionPath exec = path.get(i);
+            for(int j  = 0; j < actorNames.length; j++) {
+                var actorIndex = map.get(exec.actor());
+                if(actorNames[j].equals(exec.actor())) {
+                    dataGrid[i][j+1] = leftPadUntil(checkpointRenderer.apply(exec) + "( " +  exec.details() + ") ", colLengths[actorIndex+1]);
+                    colLengths[actorIndex+1] = Math.max(colLengths[actorIndex+1], dataGrid[i][j+1].length());
+                } else {
+                    dataGrid[i][j+1] = leftPadUntil("", colLengths[actorIndex]);
+                }
+            }
+        }
+        var sb = new StringBuilder("\n");
+        sb.append(leftPadUntil("", colLengths[0])).append(" | ");
+        for(int i = 0; i < actorNames.length; i++) {
+            sb.append(leftPadUntil(actorNames[i], colLengths[i+1]));
+            if(i < actorNames.length - 1) sb.append(" | ");
+        }
+        sb.append("\n");
+        for(String[] row : dataGrid) {
+            sb.append(leftPadUntil(row[0], colLengths[0])).append(" | ");
+            for(int i = 0; i < actorNames.length; i++) {
+                sb.append(leftPadUntil(row[i+1], colLengths[i+1]));
+                if(i < actorNames.length - 1) sb.append(" | ");
+            }
+            sb.append("\n");
+        }
+        LOGGER.warn("Execution path follows:\n");
+        LOGGER.warn(sb.toString());
+    }
+
+    private String leftPadUntil(String string, int maxLength) {
+        if(string.length() > maxLength) return string;
+        char[] c = new char[maxLength];
+        int i;
+        for(i = 0; i < maxLength - string.length(); i++) {
+            c[i] = ' ';
+        }
+        int j = 0;
+        while (i < maxLength && j < string.length()) {
+            c[i++] = string.charAt(j++);
+        }
+        return new String(c);
     }
 
     private void cancelTasks(Collection<Future<Throwable>> actorTasks) {
@@ -315,7 +399,7 @@ public class ActorSchedulerEntryPoint {
                     reportActorError(new IllegalStateException("Security error trying to invoke method: %s with annotation %s. Is it public?".formatted(m, desiredAnnotation.getName()), e));
                 } catch (InvocationTargetException e) {
                     LOGGER.warn("@AfterActorCompleted %s threw %s (%s). Execution path follows:".formatted(m.getName(), e.getTargetException().getClass().getName(), e.getTargetException().getMessage()));
-                    LOGGER.warn("Execution path follows:\n%s".formatted(String.join("\n", runtime.getExecutionPath())));
+                    extractLogExecutionPath(runtime);
                     reportActorError(e.getTargetException());
                 }
             }

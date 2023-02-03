@@ -7,6 +7,6 @@ public record MonitorCheckpointReached(Checkpoint checkpoint, Object monitorOwne
 
     @Override
     public String details() {
-        return "MONITOR for %s ( %s )".formatted(monitorOwner, monitorOwner.getClass());
+        return "class=%s, identity=%d".formatted(monitorOwner.getClass().getName(), System.identityHashCode(monitorOwner));
     }
 }
