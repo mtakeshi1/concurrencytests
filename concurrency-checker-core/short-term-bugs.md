@@ -1,0 +1,3 @@
+- too many parallel tasks vs too short tasks makes it end prematurely (racing condition marking treenode as explored )
+- wait / notify
+- syncCounter

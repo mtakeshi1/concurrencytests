@@ -5,6 +5,7 @@ import concurrencytest.checkpoint.StandardCheckpointRegister;
 import concurrencytest.checkpoint.description.CheckpointDescription;
 import concurrencytest.config.Configuration;
 import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.impl.ExecutionPath;
 import concurrencytest.runtime.lock.LockType;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.util.Utils;
@@ -36,7 +37,7 @@ public record TestRuntimeState(CheckpointRegister checkpointRegister, Collection
     }
 
     @Override
-    public List<String> getExecutionPath() {
+    public List<ExecutionPath> getExecutionPath() {
         return Collections.emptyList();
     }
 
