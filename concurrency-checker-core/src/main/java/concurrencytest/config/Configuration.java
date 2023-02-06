@@ -3,6 +3,7 @@ package concurrencytest.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Main configuration class that controls how everything will run
@@ -80,5 +81,7 @@ public interface Configuration extends Serializable {
     default int maxSpuriousWakeups() {
         return 2;
     }
+
+    default List<String> startingPath() {return List.of();}
 
 }

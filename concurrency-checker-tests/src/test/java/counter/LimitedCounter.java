@@ -4,19 +4,19 @@ import concurrencytest.runtime.CheckpointRuntimeAccessor;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class LimitedCounter {
-
-    private final int max;
+public class LimitedCounter implements ConcurrentLimitedCounter{
 
     private static final int MIN = -1;
-
-    private final AtomicInteger counter = new AtomicInteger(MIN);
-    private final Object lock = new Object();
-    private final AtomicInteger resetCounter = new AtomicInteger();
 
     public LimitedCounter(int max) {
         this.max = max;
     }
+
+    private final AtomicInteger resetCounter = new AtomicInteger();
+
+    private final int max;
+    private final AtomicInteger counter = new AtomicInteger(MIN);
+    private final Object lock = new Object();
 
     public int inc() {
         int x = counter.incrementAndGet();
@@ -32,7 +32,12 @@ public class LimitedCounter {
                 CheckpointRuntimeAccessor.manualCheckpoint("after check, new value was: " + x);
             }
         }
-        return x;
+        return x % (max + 1);
+    }
+
+    @Override
+    public int resetCount() {
+        return resetCounter.get();
     }
 
 }

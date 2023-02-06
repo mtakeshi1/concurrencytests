@@ -1,33 +1,36 @@
-[actor2] ACTOR_STARTING - current state:
-[actor1] ACTOR_STARTING - current state:
-[actor2] AFTER java.lang.invoke.VarHandle.set (CopyConcurrentLinkedDeque.java:307) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque.head (CopyConcurrentLinkedDeque.java:319) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque.head (CopyConcurrentLinkedDeque.java:712) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:320) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:320) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:325) - current state:
-[actor2] AFTER java.lang.invoke.VarHandle.set (CopyConcurrentLinkedDeque.java:329) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:713) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:713) - current state:
-[actor1] AFTER java.lang.invoke.VarHandle.compareAndSet (CopyConcurrentLinkedDeque.java:721) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:917) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:919) - current state:
-[actor2] AFTER java.lang.invoke.VarHandle.compareAndSet (CopyConcurrentLinkedDeque.java:330) - current state:
-[actor2] AFTER java.lang.invoke.VarHandle.weakCompareAndSet (CopyConcurrentLinkedDeque.java:335) - current state:
-[actor2] ManualCheckpoint (DequeTest.java:49) - current state: [ 2 1 ]
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque.tail (CopyConcurrentLinkedDeque.java:737) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:738) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:888) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:889) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:888) - current state:
-[actor2] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:894) - current state:
-[actor2] ACTOR_FINISHING - current state: actor_finished
-[actor1] AFTER java.lang.invoke.VarHandle.compareAndSet (CopyConcurrentLinkedDeque.java:920) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:386) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:387) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:418) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:439) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:444) - current state:
-[actor1] AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:446) - current state:
-[actor1] ACTOR_FINISHING - current state: actor_finished
-[MONITOR] INFO  c.runner.ActorSchedulerSetup - histories: 55113, average depth: 36,43, average run time: 1,71ms - total histories: 15325823, running threads: 0, cpu usage: -1496,28 gc: 0,06
+   |                                                                                                   actor2 |                                                                                                   actor1
+ 0 |                                                                                       ACTOR_STARTING( )  |                                                                                                         
+ 1 |                                                                                                          |                                                                                       ACTOR_STARTING( ) 
+ 2 |                            AFTER java.lang.invoke.VarHandle.set (CopyConcurrentLinkedDeque.java:307)( )  |                                                                                                         
+ 3 |          AFTER  read linkeddeque.CopyConcurrentLinkedDeque.head (CopyConcurrentLinkedDeque.java:319)( )  |                                                                                                         
+ 4 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:320)( )  |                                                                                                         
+ 5 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:320)( )  |                                                                                                         
+ 6 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:325)( )  |                                                                                                         
+ 7 |                            AFTER java.lang.invoke.VarHandle.set (CopyConcurrentLinkedDeque.java:329)( )  |                                                                                                         
+ 8 |                                                                                                          |          AFTER  read linkeddeque.CopyConcurrentLinkedDeque.head (CopyConcurrentLinkedDeque.java:712)( ) 
+ 9 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:713)( ) 
+10 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:713)( ) 
+11 |                                                                                                          |                  AFTER java.lang.invoke.VarHandle.compareAndSet (CopyConcurrentLinkedDeque.java:721)( ) 
+12 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:917)( ) 
+13 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:919)( ) 
+14 |                  AFTER java.lang.invoke.VarHandle.compareAndSet (CopyConcurrentLinkedDeque.java:330)( )  |                                                                                                         
+15 |              AFTER java.lang.invoke.VarHandle.weakCompareAndSet (CopyConcurrentLinkedDeque.java:335)( )  |                                                                                                         
+16 |                                                          ManualCheckpoint (DequeTest.java:49)( [ 2 1 ])  |                                                                                                         
+17 |          AFTER  read linkeddeque.CopyConcurrentLinkedDeque.tail (CopyConcurrentLinkedDeque.java:737)( )  |                                                                                                         
+18 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:738)( )  |                                                                                                         
+19 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:888)( )  |                                                                                                         
+20 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:889)( )  |                                                                                                         
+21 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:888)( )  |                                                                                                         
+22 | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:894)( )  |                                                                                                         
+23 |                                                                        ACTOR_FINISHING( actor_finished)  |                                                                                                         
+24 |                                                                                                          |                  AFTER java.lang.invoke.VarHandle.compareAndSet (CopyConcurrentLinkedDeque.java:920)( ) 
+25 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:386)( ) 
+26 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:387)( ) 
+27 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:418)( ) 
+28 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.item (CopyConcurrentLinkedDeque.java:439)( ) 
+29 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.next (CopyConcurrentLinkedDeque.java:444)( ) 
+30 |                                                                                                          | AFTER  read linkeddeque.CopyConcurrentLinkedDeque$CopyNode.prev (CopyConcurrentLinkedDeque.java:446)( ) 
+31 |                                                                                                          |                                                                        ACTOR_FINISHING( actor_finished) 
+
+[scheduler_14] WARN  c.runner.ActorSchedulerEntryPoint - actor scheduling: 
+"actor2", "actor1", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor1", "actor1", "actor1", "actor1", "actor1", "actor1", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor1", "actor1", "actor1", "actor1", "actor1", "actor1"

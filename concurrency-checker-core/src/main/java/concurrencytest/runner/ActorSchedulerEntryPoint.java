@@ -256,7 +256,7 @@ public class ActorSchedulerEntryPoint {
         } catch (CancellationException | RunAbortedException | InterruptedException | RejectedExecutionException e) {
             LOGGER.trace("Task cancelled");
             cancelTasks(actorTasks);
-            if(actorError != null) {
+            if (actorError != null) {
                 LOGGER.warn("Actor %s threw error: %s".formatted(lastActor, actorError.getMessage()));
                 extractLogExecutionPath(runtime);
             }
@@ -306,53 +306,59 @@ public class ActorSchedulerEntryPoint {
         List<ExecutionPath> path = runtime.getExecutionPath();
         String[] actorNames = path.stream().map(ExecutionPath::actor).distinct().toArray(String[]::new);
         Map<String, Integer> map = new HashMap<>(actorNames.length);
-        for(int i = 0; i < actorNames.length; i++) {
+        for (int i = 0; i < actorNames.length; i++) {
             map.put(actorNames[i], i);
         }
         int[] colLengths = new int[1 + actorNames.length];
-        for(int i = 0; i < actorNames.length; i++) {
-            colLengths[i+1] = actorNames[i].length();
+        for (int i = 0; i < actorNames.length; i++) {
+            colLengths[i + 1] = actorNames[i].length();
         }
         String[][] dataGrid = new String[path.size()][1 + actorNames.length];
-
-        for(int i = 0; i < path.size(); i++) {
+        List<String> actorPath = new ArrayList<>(path.size() - actorNames.length);
+        for (int i = 0; i < path.size(); i++) {
+            if (i < path.size() - actorNames.length) {
+                actorPath.add('"'+ path.get(i).actor() + '"');
+            }
             dataGrid[i][0] = leftPadUntil(String.valueOf(i), colLengths[0]);
             colLengths[0] = dataGrid[i][0].length();
             ExecutionPath exec = path.get(i);
-            for(int j  = 0; j < actorNames.length; j++) {
+            for (int j = 0; j < actorNames.length; j++) {
                 var actorIndex = map.get(exec.actor());
-                if(actorNames[j].equals(exec.actor())) {
-                    dataGrid[i][j+1] = leftPadUntil(checkpointRenderer.apply(exec) + "( " +  exec.details() + ") ", colLengths[actorIndex+1]);
-                    colLengths[actorIndex+1] = Math.max(colLengths[actorIndex+1], dataGrid[i][j+1].length());
+                if (actorNames[j].equals(exec.actor())) {
+                    dataGrid[i][j + 1] = leftPadUntil(checkpointRenderer.apply(exec) + "( " + exec.details() + ") ", colLengths[actorIndex + 1]);
+                    colLengths[actorIndex + 1] = Math.max(colLengths[actorIndex + 1], dataGrid[i][j + 1].length());
                 } else {
-                    dataGrid[i][j+1] = leftPadUntil("", colLengths[actorIndex]);
+                    dataGrid[i][j + 1] = leftPadUntil("", colLengths[actorIndex]);
                 }
             }
         }
         var sb = new StringBuilder("\n");
         sb.append(leftPadUntil("", colLengths[0])).append(" | ");
-        for(int i = 0; i < actorNames.length; i++) {
-            sb.append(leftPadUntil(actorNames[i], colLengths[i+1]));
-            if(i < actorNames.length - 1) sb.append(" | ");
+        for (int i = 0; i < actorNames.length; i++) {
+            sb.append(leftPadUntil(actorNames[i], colLengths[i + 1]));
+            if (i < actorNames.length - 1) sb.append(" | ");
         }
         sb.append("\n");
-        for(String[] row : dataGrid) {
+        for (String[] row : dataGrid) {
             sb.append(leftPadUntil(row[0], colLengths[0])).append(" | ");
-            for(int i = 0; i < actorNames.length; i++) {
-                sb.append(leftPadUntil(row[i+1], colLengths[i+1]));
-                if(i < actorNames.length - 1) sb.append(" | ");
+            for (int i = 0; i < actorNames.length; i++) {
+                sb.append(leftPadUntil(row[i + 1], colLengths[i + 1]));
+                if (i < actorNames.length - 1) sb.append(" | ");
             }
             sb.append("\n");
         }
         LOGGER.warn("Execution path follows:\n");
         LOGGER.warn(sb.toString());
+        String actors = String.join(", ", actorPath);
+        LOGGER.warn("actor scheduling: \n" + actors);
+
     }
 
     private String leftPadUntil(String string, int maxLength) {
-        if(string.length() > maxLength) return string;
+        if (string.length() > maxLength) return string;
         char[] c = new char[maxLength];
         int i;
-        for(i = 0; i < maxLength - string.length(); i++) {
+        for (i = 0; i < maxLength - string.length(); i++) {
             c[i] = ' ';
         }
         int j = 0;

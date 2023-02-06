@@ -25,7 +25,7 @@ public class LimitedCounterTest {
 
             @Override
             public Collection<Class<?>> classesToInstrument() {
-                return List.of(LimitedCounter.class);
+                return List.of(LimitedCounter.class, LimitedCounterFixed.class);
             }
 
             @Override
@@ -45,7 +45,9 @@ public class LimitedCounterTest {
                     @Override
                     public Collection<MethodInvocationMatcher> methodsCallsToInstrument() {
                         return List.of((classUnderEnhancement, invocationTargetType, methodName, methodDescriptorType, accessModifier, behaviourModifiers, injectionPoint) ->
-                                invocationTargetType == LimitedCounter.class && injectionPoint == InjectionPoint.AFTER);
+                                invocationTargetType == LimitedCounter.class && injectionPoint == InjectionPoint.AFTER,
+                                (classUnderEnhancement, invocationTargetType, methodName, methodDescriptorType, accessModifier, behaviourModifiers, injectionPoint) ->
+                                        invocationTargetType == LimitedCounter.class && injectionPoint == InjectionPoint.AFTER);
                     }
 
                     @Override
@@ -68,7 +70,7 @@ public class LimitedCounterTest {
     public static final int LOOP = 2;
     public static final int LIMIT = 2;
 
-    private final LimitedCounter limitedCounter = new LimitedCounter(LIMIT);
+    private final ConcurrentLimitedCounter limitedCounter = new LimitedCounterFixed(LIMIT);
 
     private final AtomicInteger[] frequencies = new AtomicInteger[LIMIT + 1];
 
