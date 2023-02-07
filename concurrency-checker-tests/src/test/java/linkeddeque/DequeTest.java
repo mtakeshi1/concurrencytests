@@ -124,6 +124,11 @@ public class DequeTest {
             }
 
             @Override
+            public List<? extends String> startingPath() {
+                return List.of("actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor1", "actor1", "actor1", "actor1", "actor1", "actor1", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor2", "actor1", "actor1", "actor1", "actor1", "actor1", "actor1");
+            }
+
+            @Override
             public TreeMode treeMode() {
                 return TreeMode.COMPACT_HEAP;
             }

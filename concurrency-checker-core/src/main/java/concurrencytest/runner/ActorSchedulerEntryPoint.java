@@ -304,7 +304,7 @@ public class ActorSchedulerEntryPoint {
         checkpointRenderer = executionPath -> checkpointRegister.checkpointById(executionPath.checkpointId()).description().toString();
 
         List<ExecutionPath> path = runtime.getExecutionPath();
-        String[] actorNames = path.stream().map(ExecutionPath::actor).distinct().toArray(String[]::new);
+        String[] actorNames = path.stream().map(ExecutionPath::actor).distinct().sorted().toArray(String[]::new);
         Map<String, Integer> map = new HashMap<>(actorNames.length);
         for (int i = 0; i < actorNames.length; i++) {
             map.put(actorNames[i], i);
@@ -316,7 +316,7 @@ public class ActorSchedulerEntryPoint {
         String[][] dataGrid = new String[path.size()][1 + actorNames.length];
         List<String> actorPath = new ArrayList<>(path.size() - actorNames.length);
         for (int i = 0; i < path.size(); i++) {
-            if (i < path.size() - actorNames.length) {
+            if (i > actorNames.length) {
                 actorPath.add('"'+ path.get(i).actor() + '"');
             }
             dataGrid[i][0] = leftPadUntil(String.valueOf(i), colLengths[0]);

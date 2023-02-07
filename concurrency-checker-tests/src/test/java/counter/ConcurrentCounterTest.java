@@ -54,6 +54,11 @@ public class ConcurrentCounterTest {
             }
 
             @Override
+            public List<? extends String> startingPath() {
+                return List.of("actor_1", "actor_0", "actor_1", "actor_1", "actor_1", "actor_0", "actor_0", "actor_0", "actor_0");
+            }
+
+            @Override
             public int parallelExecutions() {
                 return 1;
             }
