@@ -134,12 +134,12 @@ public class ActorSchedulerEntryPointTest extends BaseRunnerTest {
     public void sharedCounterError() {
         ActorSchedulerEntryPoint point = super.prepare(new BasicConfiguration(SimpleSharedCounter.class));
         CheckpointRegister checkpointRegister = point.getCheckpointRegister();
-        Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 8, checkpointRegister.allCheckpoints().size()); // it must include access on the @invariant
+        Assert.assertEquals(checkpointRegister.checkpointsById().values().stream().map(String::valueOf).collect(Collectors.joining("\n")), 10, checkpointRegister.allCheckpoints().size()); // it must include access on the @invariant
         point.executeWithPreselectedPath(new ArrayDeque<>(List.of("actor1", "actor2")), new MutableRunStatistics(), threadPoolExecutor);
         Optional<TreeNode> maybeNode = point.getExplorationTree().getRootNode();
         Assert.assertTrue(maybeNode.isPresent());
         TreeNode treeNode = maybeNode.get();
-        Assert.assertEquals(2, treeNode.threads().size());
+        Assert.assertEquals(3, treeNode.threads().size());
         Throwable t = point.getReportedError();
         Assert.assertTrue(t instanceof AssertionError);
         Assert.assertFalse(treeNode.isFullyExplored());

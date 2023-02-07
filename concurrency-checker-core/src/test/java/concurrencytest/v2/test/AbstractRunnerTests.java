@@ -11,7 +11,6 @@ import org.junit.runner.notification.RunNotifier;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,9 +42,8 @@ public abstract class AbstractRunnerTests {
         runExpectError(mainTestClass, Collections.emptyList(), errorMatcher, additionalClasses);
     }
 
-    public void runExpectError(Class<?> mainTestClass, Collection<? extends String> preselectedPath, Predicate<Throwable> errorMatcher, Class<?>...additionalClasses) {
-        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass, additionalClasses);
-        runner.setPreselectedPath(preselectedPath);
+    public void runExpectError(Class<?> mainTestClass, List<? extends String> preselectedPath, Predicate<Throwable> errorMatcher, Class<?>...additionalClasses) {
+        ActorSchedulerRunner runner = new ActorSchedulerRunner(mainTestClass, preselectedPath, additionalClasses);
         files.add(runner.getConfiguration().outputFolder());
 
         RunNotifier notifier = new RunNotifier();

@@ -143,7 +143,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         return actorName;
     }
 
-    public Optional<Throwable> run(Consumer<TreeNode> treeObserver, Collection<? extends String> preselectedPath) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException, TimeoutException {
+    public Optional<Throwable> run(Consumer<TreeNode> treeObserver) throws IOException, ActorSchedulingException, InterruptedException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, ClassNotFoundException, TimeoutException {
         File folder = configuration.outputFolder();
         if (!folder.isDirectory()) {
             throw new RuntimeException("%s is not a directory".formatted(folder.getAbsolutePath()));
@@ -152,7 +152,7 @@ public class ActorSchedulerSetup implements TaskSchedulerInterface {
         if (mode == ExecutionMode.FORK) {
             return Utils.todo();
         } else {
-            return runInVm(mode, configuration, checkpointRegister, treeObserver, preselectedPath);
+            return runInVm(mode, configuration, checkpointRegister, treeObserver, configuration.startingPath());
         }
     }
 

@@ -3,6 +3,7 @@ package concurrencytest.runner;
 import concurrencytest.annotations.ConfigurationSource;
 import concurrencytest.config.BasicConfiguration;
 import concurrencytest.config.Configuration;
+import concurrencytest.config.DelegatingConfiguration;
 import concurrencytest.runtime.tree.TreeNode;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
@@ -14,8 +15,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -25,7 +25,7 @@ public class ActorSchedulerRunner extends Runner {
     private final String testName;
     private final Configuration configuration;
 
-    private Collection<? extends String> preselectedPath = Collections.emptyList();
+//    private Collection<? extends String> preselectedPath = Collections.emptyList();
 
     private volatile Consumer<TreeNode> treeObserver = ignored -> {
     };
@@ -38,6 +38,12 @@ public class ActorSchedulerRunner extends Runner {
         this.testClass = testClass;
         this.testName = String.join("+", ActorSchedulerSetup.parseInitialActorNames(testClass));
         this.configuration = parseConfiguration(testClass, additionalClasses);
+    }
+
+    public ActorSchedulerRunner(Class<?> testClass, List<? extends String> preselectedPath, Class<?>... additionalClasses) {
+        this.testClass = testClass;
+        this.testName = String.join("+", ActorSchedulerSetup.parseInitialActorNames(testClass));
+        this.configuration = new ConfigurationWithStartingPath(ActorSchedulerRunner.parseConfiguration(testClass, additionalClasses), preselectedPath);
     }
 
     @Override
@@ -62,9 +68,10 @@ public class ActorSchedulerRunner extends Runner {
         try {
             ActorSchedulerSetup setup = new ActorSchedulerSetup(configuration);
             notifier.fireTestStarted(description);
-            Optional<Throwable> error = setup.run(treeObserver, preselectedPath);
+            Optional<Throwable> error = setup.run(treeObserver);
             error.ifPresent(t -> notifier.fireTestFailure(new Failure(description, t)));
-        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException | ActorSchedulingException | TimeoutException e) {
+        } catch (IOException | IllegalAccessException | NoSuchMethodException | InstantiationException | ClassNotFoundException | RuntimeException |
+                 ActorSchedulingException | TimeoutException e) {
             // infrastructure error =(
             notifier.fireTestFailure(new Failure(description, e));
         } catch (InvocationTargetException e) {
@@ -96,7 +103,17 @@ public class ActorSchedulerRunner extends Runner {
         return new BasicConfiguration(Arrays.asList(additionalClasses), testClass);
     }
 
-    public void setPreselectedPath(Collection<? extends String> preselectedPath) {
-        this.preselectedPath = preselectedPath;
+    private static class ConfigurationWithStartingPath extends DelegatingConfiguration {
+        private final List<? extends String> list;
+
+        public ConfigurationWithStartingPath(Configuration delegate, List<? extends String> list) {
+            super(delegate);
+            this.list = list;
+        }
+
+        @Override
+        public List<? extends String> startingPath() {
+            return list;
+        }
     }
 }

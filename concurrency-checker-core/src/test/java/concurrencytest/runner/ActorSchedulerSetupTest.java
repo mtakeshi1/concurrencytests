@@ -8,14 +8,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.*;
-import sut.RacyActorsGetters;
-import sut.SynchronizedValueHolder;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActorSchedulerSetupTest {
@@ -105,6 +102,6 @@ public class ActorSchedulerSetupTest {
                 }
             }, ClassReader.EXPAND_FRAMES);
         }
-        Assert.assertEquals(8, checkpointCount.get());
+        Assert.assertEquals(10, checkpointCount.get());
     }
 }

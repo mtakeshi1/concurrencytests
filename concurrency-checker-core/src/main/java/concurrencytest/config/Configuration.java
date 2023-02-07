@@ -82,6 +82,6 @@ public interface Configuration extends Serializable {
         return 2;
     }
 
-    default List<String> startingPath() {return List.of();}
+    default List<? extends String> startingPath() {return List.of();}
 
 }
