@@ -47,7 +47,7 @@ public class LimitedCounterTest {
                         return List.of((classUnderEnhancement, invocationTargetType, methodName, methodDescriptorType, accessModifier, behaviourModifiers, injectionPoint) ->
                                 invocationTargetType == LimitedCounter.class && injectionPoint == InjectionPoint.AFTER,
                                 (classUnderEnhancement, invocationTargetType, methodName, methodDescriptorType, accessModifier, behaviourModifiers, injectionPoint) ->
-                                        invocationTargetType == LimitedCounter.class && injectionPoint == InjectionPoint.AFTER);
+                                        invocationTargetType == ConcurrentLimitedCounter.class && injectionPoint == InjectionPoint.AFTER);
                     }
 
                     @Override
@@ -70,12 +70,14 @@ public class LimitedCounterTest {
     public static final int LOOP = 2;
     public static final int LIMIT = 2;
 
-    private final ConcurrentLimitedCounter limitedCounter = new LimitedCounterFixed(LIMIT);
+    private ConcurrentLimitedCounter limitedCounter;
 
     private final AtomicInteger[] frequencies = new AtomicInteger[LIMIT + 1];
 
     @Before
     public void setup() {
+        limitedCounter = new LimitedCounter(LIMIT);
+//        limitedCounter = new LimitedCounterFixed(LIMIT);
         for (int i = 0; i < frequencies.length; i++) {
             frequencies[i] = new AtomicInteger();
         }

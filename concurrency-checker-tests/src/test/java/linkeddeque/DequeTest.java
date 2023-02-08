@@ -79,6 +79,7 @@ public class DequeTest {
         }
     }
 
+    //region configuration
     @ConfigurationSource
     public static Configuration configuration() {
         return new BasicConfiguration(DequeTest.class) {
@@ -134,5 +135,6 @@ public class DequeTest {
             }
         };
     }
+    //endregion
 
 }
