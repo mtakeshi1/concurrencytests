@@ -9,7 +9,6 @@ import org.junit.Test;
 public class JavaCounterTest {
 
     public static class Counter {
-        @Volatile
         private int count = 0;
 
         public void inc() {
