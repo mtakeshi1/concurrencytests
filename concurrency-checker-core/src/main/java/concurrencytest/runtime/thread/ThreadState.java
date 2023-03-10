@@ -17,6 +17,12 @@ import java.util.concurrent.locks.Lock;
  * <p>
  * TODO add information about how many times it has waited. Not sure how we will reset that
  * <p>
+ *    Actually, lets make ThreadState an interface, with impls:
+ *    - RunnableThread
+ *    - BlockedThread / LockedThread
+ *    - Waiting
+ *    - IO Maybe?
+ * <p>
  * after another thread has been selected
  */
 public record ThreadState(String actorName, int checkpoint, int loopCount,
@@ -48,6 +54,9 @@ public record ThreadState(String actorName, int checkpoint, int loopCount,
     }
 
     public boolean canProceed(RuntimeState state) {
+//        if(state.checkpointRegister().isWaitOrAwait(checkpoint) && !state.allowSpuriousWakeup(this.actorName())) {
+//              TODO we may need to add another state thing
+//        }
         return this.blockedBy().map(cause -> cause.isRunnable(this, state)).orElse(true);
     }
 

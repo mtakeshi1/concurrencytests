@@ -113,7 +113,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
         }
         List<ActorInformation> list = new ArrayList<>();
         for (ThreadState threadState : threadStates) {
-            Optional<BlockingCause> blockCause = threadState.blockedBy().map(cause -> new BlockingCause(cause.type(), cause.blockedBy(state).stream().map(ThreadState::actorName).filter(name -> !name.equals(threadState.actorName())).findAny()));
+            Optional<BlockingCause> blockCause = threadState.blockedBy().map(cause -> new BlockingCause(cause.type(), cause.ownedBy(state).stream().map(ThreadState::actorName).filter(name -> !name.equals(threadState.actorName())).findAny()));
             list.add(new ActorInformation(threadState.actorName(), threadState.checkpoint(), threadState.loopCount(), threadState.ownedResources().stream().map(res -> toResourceInformation(threadState.actorName(), res, resourceOwners)).toList(), blockCause, threadState.finished()));
         }
         return list;

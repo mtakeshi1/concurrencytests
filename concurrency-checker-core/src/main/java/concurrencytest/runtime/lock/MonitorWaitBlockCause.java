@@ -21,7 +21,7 @@ public record MonitorWaitBlockCause(int resourceId, CheckpointDescription acquis
     }
 
     @Override
-    public Collection<? extends ThreadState> blockedBy(RuntimeState state) {
+    public Collection<? extends ThreadState> ownedBy(RuntimeState state) {
         return Collections.emptyList();
     }
 

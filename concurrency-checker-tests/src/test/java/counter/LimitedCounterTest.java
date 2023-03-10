@@ -98,6 +98,9 @@ public class LimitedCounterTest {
     @AfterActorsCompleted
     public void noMissedIncrement() {
         for (int i = 0; i < frequencies.length; i++) {
+            System.out.printf("value: %d, freq: %d %n", i, frequencies[i].get());
+        }
+        for (int i = 0; i < frequencies.length; i++) {
             Assert.assertEquals("value: %d - count: %d expected: %d".formatted(i, frequencies[i].get(), NUM_THREADS * LOOP), NUM_THREADS * LOOP, frequencies[i].get());
         }
     }

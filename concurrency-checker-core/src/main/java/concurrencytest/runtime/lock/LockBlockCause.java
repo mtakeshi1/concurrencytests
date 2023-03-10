@@ -33,7 +33,7 @@ public record LockBlockCause(int resourceId, Lock lock, CheckpointDescription ac
     }
 
     @Override
-    public Collection<? extends ThreadState> blockedBy(RuntimeState state) {
+    public Collection<? extends ThreadState> ownedBy(RuntimeState state) {
         if (acquisitionPoint instanceof LockAcquireCheckpointDescription desc && desc.acquireTry()) {
             return Collections.emptyList();
         }

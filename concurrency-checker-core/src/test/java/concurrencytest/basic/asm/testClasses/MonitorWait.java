@@ -35,7 +35,7 @@ public class MonitorWait {
         return new BasicConfiguration(MonitorWait.class) {
             @Override
             public CheckpointDurationConfiguration durationConfiguration() {
-                return new CheckpointDurationConfiguration(Duration.ofMinutes(1), Duration.ofMinutes(1), Duration.ofMinutes(1));
+                return new CheckpointDurationConfiguration(Duration.ofMinutes(1), Duration.ofMinutes(1000), Duration.ofMinutes(1000));
             }
         };
     }

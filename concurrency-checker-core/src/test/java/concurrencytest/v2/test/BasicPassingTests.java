@@ -46,7 +46,7 @@ public class BasicPassingTests extends AbstractRunnerTests {
     }
 
     @Test
-    @Ignore("for now its not working ")
+//    @Ignore("for now it's not working ")
     public void syncWaitNotify() {
         runToCompletion(MonitorWait.class);
     }

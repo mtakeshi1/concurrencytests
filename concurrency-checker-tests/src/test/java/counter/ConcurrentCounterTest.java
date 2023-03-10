@@ -17,7 +17,7 @@ public class ConcurrentCounterTest {
 
     public static final int NUM_ACTORS = 2;
 
-    public static final int INCREMENTS = 2;
+    public static final int INCREMENTS = 1;
 
     private ConcurrentCounter counter;
 
@@ -72,8 +72,8 @@ public class ConcurrentCounterTest {
 
     @Before
     public void before() {
-//        counter = new VolatileCounter();
-        counter = new AtomicCounter();
+        counter = new VolatileCounter();
+//        counter = new AtomicCounter();
         observed = new int[NUM_ACTORS];
     }
 

@@ -435,9 +435,9 @@ public class ActorSchedulerEntryPoint {
             /*
              * I know this is going to bother me later, as it has many times already.
              *
-             * This can happen on multi threaded cases (parallel executions > 0) where the marking of the fully visited node started after
+             * This can happen on multithreaded cases (parallel executions > 0) where the marking of the fully visited node started after
              * this node tried to determine if the tree is commpletely exausted. In this case, in th middle of the exploration, the conditions (fully explored)
-             * can change to true so we return empty and let the upstream caller deal
+             * can change to true, so we return empty and let the upstream caller deal
              */
             return List.of();
         }
@@ -473,7 +473,7 @@ public class ActorSchedulerEntryPoint {
     public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
         Map<String, Set<String>> directDependencies = new HashMap<>();
         for (var actor : currentState.allActors()) {
-            actor.blockedBy().ifPresent($ -> $.blockedBy(currentState).forEach(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName())));
+            actor.blockedBy().ifPresent($ -> $.ownedBy(currentState).forEach(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName())));
         }
 
         Set<String> actorNames = new HashSet<>(directDependencies.keySet());

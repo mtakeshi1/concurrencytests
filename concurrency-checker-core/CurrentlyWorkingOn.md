@@ -5,7 +5,9 @@ More detailed listing of what I'm currently looking at
   - need some way to work with while(!condition) object.wait(). The current implementation assumes that spurious wakeup happens, so that actor can be selected to run and be stuck
     - need some way to signal wait and other conditionals as 'should always yield'
     - maybe make a mandatory yield after a single spurious wakeup?
+    - only allow spurious wakeup once per monitor, until another actor is selected
 - Clean-up of various FIXME and TODO
+- Better loop detection 
 - Documentation
 - callbacks should be invoked by the scheduler thread and not by the actor threads
 - bytebuffer backed trees 
@@ -21,6 +23,7 @@ More detailed listing of what I'm currently looking at
 # planned
 - add checkpoint for exception catching
 - park / unpark
+- @Quiescent
 - Fork to another jvm
   - we could export the classes to the other jvm via standard classpath mechanism
   - jdk classes must be patched https://openjdk.org/jeps/261

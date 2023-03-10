@@ -14,7 +14,7 @@ public record MonitorBlockCause(int resourceId, Object monitorOwner, CheckpointD
     }
 
     @Override
-    public Collection<? extends ThreadState> blockedBy(RuntimeState state) {
+    public Collection<? extends ThreadState> ownedBy(RuntimeState state) {
         return CollectionUtils.nonNull(state.ownedResources().get(new BlockingResource(LockType.MONITOR, this.resourceId, monitorOwner.getClass(), acquisitionPoint.sourceFile(), acquisitionPoint.lineNumber())));
     }
 }

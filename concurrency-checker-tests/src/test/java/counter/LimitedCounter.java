@@ -13,9 +13,9 @@ public class LimitedCounter implements ConcurrentLimitedCounter{
     }
 
     private final AtomicInteger resetCounter = new AtomicInteger();
+    private final AtomicInteger counter = new AtomicInteger(MIN);
 
     private final int max;
-    private final AtomicInteger counter = new AtomicInteger(MIN);
     private final Object lock = new Object();
 
     public int inc() {
