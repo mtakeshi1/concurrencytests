@@ -317,7 +317,7 @@ public class ActorSchedulerEntryPoint {
         List<String> actorPath = new ArrayList<>(path.size() - actorNames.length);
         for (int i = 0; i < path.size(); i++) {
             if (i > actorNames.length) {
-                actorPath.add('"'+ path.get(i).actor() + '"');
+                actorPath.add('"' + path.get(i).actor() + '"');
             }
             dataGrid[i][0] = leftPadUntil(String.valueOf(i), colLengths[0]);
             colLengths[0] = dataGrid[i][0].length();
@@ -473,7 +473,8 @@ public class ActorSchedulerEntryPoint {
     public static void findCircularDependency(RuntimeState currentState) throws DeadlockFoundException {
         Map<String, Set<String>> directDependencies = new HashMap<>();
         for (var actor : currentState.allActors()) {
-            actor.blockedBy().ifPresent($ -> $.ownedBy(currentState).forEach(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName())));
+//            actor.blockedBy().ifPresent($ -> $.ownedBy(currentState).forEach(ts -> directDependencies.computeIfAbsent(actor.actorName(), ignored -> new HashSet<>()).add(ts.actorName())));
+            //TODO remake this
         }
 
         Set<String> actorNames = new HashSet<>(directDependencies.keySet());

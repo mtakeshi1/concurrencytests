@@ -106,7 +106,7 @@ public interface RuntimeState {
     }
 
     /**
-     * Returns a Stream of ThreadState of actors that are runnable - ie: not blocked by other actors and also not finished
+     * Returns a Stream of RunnableThreadState of actors that are runnable - ie: not blocked by other actors and also not finished
      */
     default Stream<? extends ThreadState> runnableActors() {
         return allActors().stream().filter(e -> e.canProceed(this));

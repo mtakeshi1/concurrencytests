@@ -1,8 +1,8 @@
 package concurrencytest.runtime.tree.offheap;
 
 import concurrencytest.checkpoint.CheckpointRegister;
-import concurrencytest.runtime.lock.BlockingResource;
 import concurrencytest.runtime.RuntimeState;
+import concurrencytest.runtime.lock.BlockingResource;
 import concurrencytest.runtime.thread.ThreadState;
 import concurrencytest.runtime.tree.ActorInformation;
 import concurrencytest.runtime.tree.BlockingCause;
@@ -113,7 +113,7 @@ public class ByteBufferBackedTreeNode implements TreeNode {
         }
         List<ActorInformation> list = new ArrayList<>();
         for (ThreadState threadState : threadStates) {
-            Optional<BlockingCause> blockCause = threadState.blockedBy().map(cause -> new BlockingCause(cause.type(), cause.ownedBy(state).stream().map(ThreadState::actorName).filter(name -> !name.equals(threadState.actorName())).findAny()));
+            Optional<BlockingCause> blockCause = threadState.resourceDependency().map(cause -> new BlockingCause(cause.type(), cause.ownedBy(state).stream().map(ThreadState::actorName).filter(name -> !name.equals(threadState.actorName())).findAny()));
             list.add(new ActorInformation(threadState.actorName(), threadState.checkpoint(), threadState.loopCount(), threadState.ownedResources().stream().map(res -> toResourceInformation(threadState.actorName(), res, resourceOwners)).toList(), blockCause, threadState.finished()));
         }
         return list;

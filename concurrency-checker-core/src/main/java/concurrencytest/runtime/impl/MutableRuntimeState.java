@@ -10,9 +10,12 @@ import concurrencytest.checkpoint.instance.*;
 import concurrencytest.config.Configuration;
 import concurrencytest.runtime.RuntimeState;
 import concurrencytest.runtime.StandardCheckpointRuntime;
+import concurrencytest.runtime.lock.BlockingResource;
 import concurrencytest.runtime.lock.LockType;
 import concurrencytest.runtime.thread.ManagedThread;
+import concurrencytest.runtime.thread.RunnableThreadState;
 import concurrencytest.runtime.thread.ThreadState;
+import concurrencytest.runtime.thread.WaitingAwaitingThreadState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +76,7 @@ public class MutableRuntimeState implements RuntimeState {
         this.checkpointRuntime.addCheckpointCallback(cb -> {
             if (cb.checkpointId() == register.taskStartingCheckpoint().checkpointId()) {
                 if (cb.thread() instanceof ManagedThread mt) {
-                    allActors.putIfAbsent(mt.getActorName(), new ThreadState(mt.getActorName(), cb.checkpointId()));
+                    allActors.putIfAbsent(mt.getActorName(), new RunnableThreadState(mt.getActorName(), cb.checkpointId()));
                 }
             }
         });
@@ -84,9 +87,7 @@ public class MutableRuntimeState implements RuntimeState {
 
         checkpointRuntime.addCheckpointCallback(checkpointReached -> {
             synchronized (this) {
-//                var state = Objects.requireNonNull(allActors.get(checkpointReached.actorName()), "state not found for actor named '%s'".formatted(checkpointReached.actorName()));
                 executionPath.add(new ExecutionPath(checkpointReached.actorName(), checkpointReached.checkpointId(), checkpointReached.details()));
-//                executionPath.add("[%s] %s - current state: %s".formatted(checkpointReached.actorName(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("reached checkpoint %d - %s - %s".formatted(checkpointReached.checkpointId(), checkpointReached.checkpoint().description(), checkpointReached.details()));
                 }
@@ -184,17 +185,26 @@ public class MutableRuntimeState implements RuntimeState {
             waitCount.merge(key, 1, Integer::sum);
             // we must release the actor temporatily
             if (checkpointReached.monitorWait()) {
-                allActors.put(actorName, state.monitorReleased(resourceId));
+                ThreadState intermediary = state.monitorReleased(resourceId);
+                allActors.put(actorName, new WaitingAwaitingThreadState(intermediary.actorName(), checkpointReached.checkpointId(), 0, intermediary.ownedResources(), acquisitionPoint,
+                        new BlockingResource(LockType.MONITOR, resourceId, checkpointReached.monitorOrLock().getClass(), acquisitionPoint.sourceFile(), acquisitionPoint.lineNumber())));
             } else {
-                allActors.put(actorName, state.lockReleased(resourceId));
+                ThreadState intermediary = state.lockReleased(resourceId);
+                allActors.put(actorName, new WaitingAwaitingThreadState(intermediary.actorName(), checkpointReached.checkpointId(), 0, intermediary.ownedResources(), acquisitionPoint,
+                        new BlockingResource(LockType.LOCK, resourceId, checkpointReached.monitorOrLock().getClass(), acquisitionPoint.sourceFile(), acquisitionPoint.lineNumber())));
             }
         } else {
             if (checkpointReached.monitorWait()) {
-                ThreadState value = state.beforeMonitorAcquire(resourceId, checkpointReached.monitorOrLock(), checkpointReached.checkpoint().description()).monitorAcquired(resourceId, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber());
+                ThreadState value = state
+                        .newCheckpointReached(checkpointReached) // we reset state
+                        .beforeMonitorAcquire(resourceId, checkpointReached.monitorOrLock(), checkpointReached.checkpoint().description())
+                        .monitorAcquired(resourceId, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber());
                 allActors.put(actorName, value);
             } else {
 
-                ThreadState value = state.beforeLockAcquisition(resourceId, (Lock) checkpointReached.monitorOrLock(), checkpointReached.checkpoint().description())
+                ThreadState value = state
+                        .newCheckpointReached(checkpointReached) // we reset state
+                        .beforeLockAcquisition(resourceId, (Lock) checkpointReached.monitorOrLock(), checkpointReached.checkpoint().description())
                         .lockTryAcquire(resourceId, true, checkpointReached.checkpoint().sourceFile(), checkpointReached.checkpoint().lineNumber());
                 allActors.put(actorName, value);
             }
@@ -301,8 +311,10 @@ public class MutableRuntimeState implements RuntimeState {
 //            ts.freshThread().setUncaughtExceptionHandler();
             rendezvouCallback.waitForActors(maxWaitTime, before);
         }
+        //TODO not sure if we need to reset wait count
         ThreadState oldActorState = removeThreadStateForUpdate(selected.actorName());
-        ThreadState newActorState = oldActorState.newCheckpointReached(lastCheckpoint, register.isFinishedCheckpoint(lastCheckpoint.checkpointId()));
+        boolean finishedCheckpoint = register.isFinishedCheckpoint(lastCheckpoint.checkpointId());
+        ThreadState newActorState = finishedCheckpoint ? oldActorState.actorFinished(lastCheckpoint) : oldActorState.newCheckpointReached(lastCheckpoint);
         allActors.put(selected.actorName(), newActorState);
         if (newActorState.finished()) {
             rendezvouCallback.actorFinished(selected.actorName(), maxWaitTime);

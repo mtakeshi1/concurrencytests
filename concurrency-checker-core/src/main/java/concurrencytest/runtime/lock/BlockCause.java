@@ -25,4 +25,9 @@ public interface BlockCause {
 
     CheckpointDescription acquisitionPoint();
 
+    Class<?> resourceClass();
+
+    default boolean matches(BlockCauseType blockType, int resourceId) {
+        return this.type() == blockType && this.resourceId() == resourceId;
+    }
 }

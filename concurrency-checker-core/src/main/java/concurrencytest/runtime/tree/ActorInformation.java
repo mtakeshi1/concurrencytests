@@ -8,15 +8,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public record ActorInformation(String actorName, int checkpointId, int loopCount,
-                               List<ResourceInformation> resourcesOwned, Optional<BlockingCause> blockedBy,
-                               boolean finished) {
+public record ActorInformation(String actorName, int checkpointId, int loopCount, List<ResourceInformation> resourcesOwned,
+                               Optional<BlockingCause> blockedBy, boolean finished) {
 
     public ActorInformation(String actorName, int initialCheckpointId) {
         this(actorName, initialCheckpointId, 0, Collections.emptyList(), Optional.empty(), false);
     }
 
-    public ActorInformation{
+    public ActorInformation {
         Objects.requireNonNull(resourcesOwned, "resources cannot be null");
         Objects.requireNonNull(blockedBy, "blockedBy cannot be null");
         if (actorName == null || actorName.isEmpty()) {
